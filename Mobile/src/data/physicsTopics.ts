@@ -1,0 +1,88 @@
+import { PhysicsTopic } from '../types';
+
+export const POPULAR_TOPICS: PhysicsTopic[] = [
+  {
+    id: 'electricity',
+    title: 'Electricity',
+    chaptersCount: 12,
+    iconName: 'Zap',
+    color: '#6C4DFF',
+    category: 'Physics',
+    description: 'Electric charges, circuits, magnetic effects and induction',
+  },
+  {
+    id: 'magnetism',
+    title: 'Magnetism',
+    chaptersCount: 9,
+    iconName: 'Magnet',
+    color: '#00C897',
+    category: 'Physics',
+    description: 'Magnetic poles, magnetic fields, Lorentz force and motors',
+  },
+  {
+    id: 'optics',
+    title: 'Optics',
+    chaptersCount: 8,
+    iconName: 'Sun',
+    color: '#8A56FF',
+    category: 'Physics',
+    description: 'Light reflection, refraction, lenses, prisms and wave optics',
+  },
+];
+
+export const LIBRARY_TOPICS: PhysicsTopic[] = [
+  {
+    id: 'mechanics',
+    title: 'Mechanics',
+    chaptersCount: 18,
+    iconName: 'Settings',
+    color: '#3B82F6',
+    category: 'Physics',
+    description: 'Kinematics, dynamics, energy, momentum and rotational motion',
+  },
+  {
+    id: 'electricity',
+    title: 'Electricity',
+    chaptersCount: 22,
+    iconName: 'Zap',
+    color: '#8B5CF6',
+    category: 'Physics',
+    description: 'Coulombs law, electric fields, potential, DC & AC circuits',
+  },
+  {
+    id: 'magnetism',
+    title: 'Magnetism',
+    chaptersCount: 14,
+    iconName: 'Magnet',
+    color: '#EC4899',
+    category: 'Physics',
+    description: 'Biot-Savart law, Ampere law, electromagnetic induction',
+  },
+  {
+    id: 'optics',
+    title: 'Optics',
+    chaptersCount: 16,
+    iconName: 'Triangle',
+    color: '#6366F1',
+    category: 'Physics',
+    description: 'Geometric optics, wave phenomena, diffraction and interference',
+  },
+  {
+    id: 'modern_physics',
+    title: 'Modern Physics',
+    chaptersCount: 12,
+    iconName: 'Atom',
+    color: '#F59E0B',
+    category: 'Physics',
+    description: 'Quantum theory, atomic models, nuclear reactions and relativity',
+  },
+  {
+    id: 'waves',
+    title: 'Waves',
+    chaptersCount: 10,
+    iconName: 'Activity',
+    color: '#10B981',
+    category: 'Physics',
+    description: 'Oscillations, sound waves, Doppler effect and harmonic motion',
+  },
+];
