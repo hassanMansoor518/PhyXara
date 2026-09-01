@@ -12,6 +12,7 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
+import { StatusBar } from 'expo-status-bar';
 import { AtomSplashVisual } from '../components/illustrations/AtomSplashVisual';
 
 export const SplashScreen: React.FC = () => {
@@ -94,6 +95,7 @@ export const SplashScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="light" />
       {/* === Background Glows === */}
       <View style={styles.glowCenter} />
       <View style={styles.glowBottomLeft} />

@@ -245,6 +245,7 @@ export const OnboardingScreen: React.FC = () => {
         {currentIndex < SLIDES.length - 1 ? (
           <Pressable
             onPress={handleNext}
+            className="w-[54px] h-[54px] bg-primary rounded-full items-center justify-center"
             style={({ pressed }) => [
               styles.arrowBtn,
               pressed && styles.arrowBtnPressed,
@@ -255,6 +256,7 @@ export const OnboardingScreen: React.FC = () => {
         ) : (
           <Pressable
             onPress={handleNext}
+            className="w-full h-[54px] bg-primary rounded-full flex-row items-center justify-center"
             style={({ pressed }) => [
               styles.getStartedBtn,
               pressed && styles.getStartedBtnPressed,

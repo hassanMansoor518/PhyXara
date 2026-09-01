@@ -53,33 +53,21 @@ export const AtomSplashVisual: React.FC<{ size?: number }> = ({ size = 320 }) =>
 
   return (
     <View className="items-center justify-center relative" style={{ width: size, height: size }}>
-      {/* Deep Cosmic Background Glow */}
-      <View
-        style={{
-          position: 'absolute',
-          width: size * 0.95,
-          height: size * 0.95,
-          borderRadius: size,
-          backgroundColor: '#3B2BB0',
-          opacity: 0.35,
-          filter: 'blur(45px)',
-        }}
-      />
-      <View
-        style={{
-          position: 'absolute',
-          width: size * 0.45,
-          height: size * 0.45,
-          borderRadius: size,
-          backgroundColor: '#38BDF8',
-          opacity: 0.4,
-          filter: 'blur(25px)',
-        }}
-      />
-
       {/* Main SVG Container */}
       <Svg width={size} height={size} viewBox="0 0 340 340" fill="none">
         <Defs>
+          {/* Deep Cosmic Background Glow Gradients (Cross-Platform) */}
+          <RadialGradient id="outerCosmicGlow" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#3B2BB0" stopOpacity="0.5" />
+            <Stop offset="50%" stopColor="#3B2BB0" stopOpacity="0.25" />
+            <Stop offset="100%" stopColor="#3B2BB0" stopOpacity="0" />
+          </RadialGradient>
+          <RadialGradient id="innerCyanGlow" cx="50%" cy="50%" r="50%">
+            <Stop offset="0%" stopColor="#38BDF8" stopOpacity="0.5" />
+            <Stop offset="60%" stopColor="#38BDF8" stopOpacity="0.2" />
+            <Stop offset="100%" stopColor="#38BDF8" stopOpacity="0" />
+          </RadialGradient>
+
           {/* Intense Core Glow */}
           <RadialGradient id="brightCoreGlow" cx="50%" cy="50%" r="50%">
             <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
@@ -114,6 +102,10 @@ export const AtomSplashVisual: React.FC<{ size?: number }> = ({ size = 320 }) =>
             <Stop offset="100%" stopColor="#6B21A8" stopOpacity="0" />
           </LinearGradient>
         </Defs>
+
+        {/* Deep Cosmic Background Glow Circles (Cross-Platform Native + Web) */}
+        <Circle cx="170" cy="170" r="160" fill="url(#outerCosmicGlow)" />
+        <Circle cx="170" cy="170" r="80" fill="url(#innerCyanGlow)" />
 
         {/* Outer Background Celestial Orbit Rings */}
         <G stroke="#334155" strokeWidth="1" strokeOpacity="0.45" fill="none">
@@ -215,6 +207,24 @@ export const AtomSplashVisual: React.FC<{ size?: number }> = ({ size = 320 }) =>
         ]}
       >
         <Svg width={130} height={130} viewBox="0 0 130 130" fill="none">
+          <Defs>
+            {/* Intense Core Glow */}
+            <RadialGradient id="brightCoreGlow" cx="50%" cy="50%" r="50%">
+              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="1" />
+              <Stop offset="25%" stopColor="#67E8F9" stopOpacity="0.95" />
+              <Stop offset="55%" stopColor="#3B82F6" stopOpacity="0.8" />
+              <Stop offset="85%" stopColor="#6C4DFF" stopOpacity="0.4" />
+              <Stop offset="100%" stopColor="#6C4DFF" stopOpacity="0" />
+            </RadialGradient>
+
+            {/* Core Halo */}
+            <RadialGradient id="coreHalo" cx="50%" cy="50%" r="50%">
+              <Stop offset="0%" stopColor="#38BDF8" stopOpacity="0.7" />
+              <Stop offset="60%" stopColor="#6366F1" stopOpacity="0.25" />
+              <Stop offset="100%" stopColor="#0B112C" stopOpacity="0" />
+            </RadialGradient>
+          </Defs>
+
           {/* Outer soft aura */}
           <Circle cx="65" cy="65" r="58" fill="url(#coreHalo)" />
           {/* Core sphere with glowing gradient */}
@@ -232,6 +242,26 @@ export const AtomSplashVisual: React.FC<{ size?: number }> = ({ size = 320 }) =>
         ]}
       >
         <Svg width={65} height={70} viewBox="0 0 65 70" fill="none">
+          <Defs>
+            {/* 3D Isometric Cube Gradients */}
+            <LinearGradient id="cubeTop" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor="#9333EA" />
+              <Stop offset="100%" stopColor="#6B21A8" />
+            </LinearGradient>
+            <LinearGradient id="cubeLeft" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor="#581C87" />
+              <Stop offset="100%" stopColor="#3B0764" />
+            </LinearGradient>
+            <LinearGradient id="cubeRight" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor="#7E22CE" />
+              <Stop offset="100%" stopColor="#4C1D95" />
+            </LinearGradient>
+            <LinearGradient id="cubeGlow" x1="0" y1="0" x2="1" y2="1">
+              <Stop offset="0%" stopColor="#C084FC" stopOpacity="0.8" />
+              <Stop offset="100%" stopColor="#6B21A8" stopOpacity="0" />
+            </LinearGradient>
+          </Defs>
+
           {/* Cube Soft Aura */}
           <Circle cx="32" cy="35" r="28" fill="url(#cubeGlow)" />
 
