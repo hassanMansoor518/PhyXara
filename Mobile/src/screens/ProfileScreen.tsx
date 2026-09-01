@@ -1,25 +1,29 @@
-import React, { useState } from 'react';
-import { View, Text, ScrollView, Pressable, Alert } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
+import { useAuth, useUser } from '@clerk/expo';
 import { router } from 'expo-router';
+import {
+  Bookmark,
+  ChevronRight,
+  Download,
+  HelpCircle,
+  History,
+  Info,
+  LogOut,
+  Settings,
+} from 'lucide-react-native';
+import React from 'react';
+import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { UserAvatarSvg } from '../components/illustrations/UserAvatarSvg';
-import { authService } from '../services/authService';
-import {
-  Download,
-  Bookmark,
-  History,
-  Settings,
-  HelpCircle,
-  Info,
-  ChevronRight,
-  LogOut,
-} from 'lucide-react-native';
 
 export const ProfileScreen: React.FC = () => {
-  const [userName] = useState('Ali Hassan');
-  const [userEmail] = useState('ali.hassan@example.com');
+  const { user } = useUser();
+  const { signOut } = useAuth();
+
+  const userName = user?.fullName || user?.firstName || 'Learner';
+  const userEmail = user?.primaryEmailAddress?.emailAddress || 'user@example.com';
+  const avatarUrl = user?.imageUrl;
 
   const menuItems = [
     {
@@ -63,7 +67,7 @@ export const ProfileScreen: React.FC = () => {
         text: 'Log Out',
         style: 'destructive',
         onPress: async () => {
-          await authService.logout();
+          await signOut();
           router.replace('/login');
         },
       },
@@ -76,7 +80,7 @@ export const ProfileScreen: React.FC = () => {
       <AppHeader
         title="Profile"
         rightIcon="settings"
-        onRightPress={() => Alert.alert('Settings', 'App version 1.0.0 (Expo SDK 54)')}
+        onRightPress={() => Alert.alert('Settings', 'App version 1.0.0')}
         onBack={() => router.replace('/(tabs)')}
       />
 
@@ -86,7 +90,14 @@ export const ProfileScreen: React.FC = () => {
       >
         {/* User Card */}
         <View className="bg-white rounded-3xl p-5 border border-border items-center shadow-sm mb-4">
-          <UserAvatarSvg size={76} />
+          {avatarUrl ? (
+            <Image
+              source={{ uri: avatarUrl }}
+              className="w-20 h-20 rounded-full border-2 border-primary"
+            />
+          ) : (
+            <UserAvatarSvg size={76} />
+          )}
           <Text className="text-lg font-extrabold text-navy mt-3">{userName}</Text>
           <Text className="text-xs text-muted mt-0.5">{userEmail}</Text>
 
