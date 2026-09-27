@@ -1,7 +1,16 @@
 import { router } from 'expo-router';
-import { Maximize2, Play, Sparkles, X } from 'lucide-react-native';
+import {
+  BookOpen,
+  Box,
+  Maximize2,
+  Play,
+  RotateCcw,
+  Sparkles,
+  Trophy,
+  X,
+} from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Modal, Pressable, Share, Text, View } from 'react-native';
+import { Modal, Pressable, Text, View } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
@@ -24,7 +33,6 @@ export const MotorViewerScreen: React.FC = () => {
   const [showLabels, setShowLabels] = useState(true);
   const [isStarred, setIsStarred] = useState(false);
   const [selectedPartKey, setSelectedPartKey] = useState<string | null>(null);
-  const [isAutoRotating, setIsAutoRotating] = useState(false);
 
   // Gesture state for interactive 3D rotation & scale
   const rotationAngle = useSharedValue(0);
@@ -32,10 +40,9 @@ export const MotorViewerScreen: React.FC = () => {
   const savedScale = useSharedValue(1);
 
   // Pan gesture for 3D rotation
-  const panGesture = Gesture.Pan()
-    .onUpdate((e) => {
-      rotationAngle.value = (rotationAngle.value + e.velocityX / 300) % 360;
-    });
+  const panGesture = Gesture.Pan().onUpdate((e) => {
+    rotationAngle.value = (rotationAngle.value + e.velocityX / 300) % 360;
+  });
 
   // Pinch gesture for 3D zoom
   const pinchGesture = Gesture.Pinch()
@@ -52,18 +59,7 @@ export const MotorViewerScreen: React.FC = () => {
     transform: [{ scale: scale.value }],
   }));
 
-  const handleShare = async () => {
-    try {
-      await Share.share({
-        message: 'Check out the Electric Motor 3D Model on Physics AR 3D Viewer!',
-      });
-    } catch {
-      // ignore
-    }
-  };
-
   const handleToggleRotate = () => {
-    setIsAutoRotating((prev) => !prev);
     rotationAngle.value = withSpring((rotationAngle.value + 45) % 360);
   };
 
@@ -77,47 +73,76 @@ export const MotorViewerScreen: React.FC = () => {
     }
   };
 
-  const handleExplode = () => {
-    router.push('/exploded-view');
+  const handleReset = () => {
+    rotationAngle.value = withSpring(0);
+    scale.value = withSpring(1);
+    savedScale.value = 1;
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-[#F8FAFC] justify-between" edges={['top', 'left', 'right']}>
       {/* Header */}
       <AppHeader
-        title="3D View - Electric Motor"
+        title="3D Model - DC Electric Motor"
         rightIcon="star"
         isStarred={isStarred}
         onRightPress={() => setIsStarred(!isStarred)}
         onBack={() => router.replace('/(tabs)')}
       />
 
+      {/* Floating Light Theme Quick Navigation Strip */}
+      <View className="flex-row items-center justify-between px-5 -mt-1 mb-2">
+        <Pressable
+          onPress={() => router.push('/animation')}
+          className="bg-white border border-[#E2E8F0] px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-gray-50"
+        >
+          <Play size={13} color="#2563EB" fill="#2563EB" />
+          <Text className="text-[11px] font-bold text-[#2563EB] ml-1">Animation</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/ai-tutor')}
+          className="bg-white border border-[#E2E8F0] px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-gray-50"
+        >
+          <Sparkles size={13} color="#7C3AED" />
+          <Text className="text-[11px] font-bold text-[#7C3AED] ml-1">AI Tutor</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={() => router.push('/quiz')}
+          className="bg-white border border-[#E2E8F0] px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-gray-50"
+        >
+          <Trophy size={13} color="#F59E0B" />
+          <Text className="text-[11px] font-bold text-[#F59E0B] ml-1">Quiz</Text>
+        </Pressable>
+
+        <Pressable
+          onPress={handleReset}
+          className="w-8 h-8 rounded-full bg-white border border-[#E2E8F0] items-center justify-center shadow-sm active:bg-gray-50"
+        >
+          <RotateCcw size={13} color="#64748B" />
+        </Pressable>
+      </View>
+
       {/* Main Interactive 3D Canvas */}
       <View className="flex-1 px-5 justify-center items-center relative">
         {/* Viewport Card */}
-        <View className="w-full h-80 bg-white rounded-3xl border border-border items-center justify-center relative overflow-hidden shadow-sm">
-          {/* Quick Floating Actions on Top Right */}
-          <View className="absolute top-4 right-4 z-20 flex-row space-x-2">
-            <Pressable
-              onPress={() => router.push('/animation')}
-              className="px-3 py-1.5 rounded-full bg-primary/10 border border-primary/20 flex-row items-center active:bg-primary/20 mr-2"
-            >
-              <Play size={12} color="#6C4DFF" fill="#6C4DFF" />
-              <Text className="text-[11px] font-bold text-primary ml-1">Animation</Text>
-            </Pressable>
-
-            <Pressable
-              onPress={handleToggleZoom}
-              className="w-8 h-8 rounded-full bg-background border border-border items-center justify-center active:bg-gray-100"
-            >
-              <Maximize2 size={14} color="#737A96" />
-            </Pressable>
-          </View>
+        <View className="w-full h-80 bg-white rounded-3xl border border-[#E2E8F0] items-center justify-center relative overflow-hidden shadow-sm">
+          {/* Zoom toggle on top-right */}
+          <Pressable
+            onPress={handleToggleZoom}
+            className="absolute top-3.5 right-3.5 z-20 w-8 h-8 rounded-full bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center active:bg-gray-100 shadow-sm"
+          >
+            <Maximize2 size={14} color="#64748B" />
+          </Pressable>
 
           {/* Interactive 3D Model with Gestures */}
           <GestureDetector gesture={composedGestures}>
             <Animated.View
-              style={[modelAnimatedStyle, { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }]}
+              style={[
+                modelAnimatedStyle,
+                { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' },
+              ]}
             >
               {selectedView === 'front' && (
                 <ElectricMotorFrontSvg width={290} height={230} rotationAngle={rotationAngle.value} />
@@ -149,10 +174,11 @@ export const MotorViewerScreen: React.FC = () => {
         <MotorControls
           onRotate={handleToggleRotate}
           onZoom={handleToggleZoom}
-          onExplode={handleExplode}
+          onExplode={() => router.push('/exploded-view')}
           onToggleLabels={() => setShowLabels(!showLabels)}
           labelsActive={showLabels}
           isExploded={false}
+          onReset={handleReset}
         />
 
         {/* Thumbnail Selector */}
@@ -168,7 +194,7 @@ export const MotorViewerScreen: React.FC = () => {
         />
       </View>
 
-      {/* Part Info Bottom Modal */}
+      {/* Part Info Bottom Modal in Light Theme */}
       <Modal
         visible={!!selectedPartKey}
         transparent
@@ -176,28 +202,30 @@ export const MotorViewerScreen: React.FC = () => {
         onRequestClose={() => setSelectedPartKey(null)}
       >
         <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6 border-t border-border shadow-2xl">
+          <View className="bg-white rounded-t-3xl p-6 border-t border-[#E2E8F0] shadow-2xl">
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <View className="w-9 h-9 rounded-xl bg-primary-subtle items-center justify-center mr-2.5">
-                  <Sparkles size={18} color="#6C4DFF" />
+                <View className="w-10 h-10 rounded-2xl bg-[#EFF6FF] items-center justify-center mr-3 border border-[#DBEAFE]">
+                  <Sparkles size={18} color="#2563EB" />
                 </View>
-                <Text className="text-base font-extrabold text-navy">
-                  {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.title : ''}
-                </Text>
+                <View>
+                  <Text className="text-base font-extrabold text-[#0F172A]">
+                    {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.title : ''}
+                  </Text>
+                  <Text className="text-xs font-bold text-[#2563EB]">
+                    {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.role : ''}
+                  </Text>
+                </View>
               </View>
               <Pressable
                 onPress={() => setSelectedPartKey(null)}
-                className="w-8 h-8 rounded-full bg-background items-center justify-center"
+                className="w-8 h-8 rounded-full bg-[#F8FAFC] items-center justify-center border border-[#E2E8F0]"
               >
-                <X size={16} color="#737A96" />
+                <X size={16} color="#64748B" />
               </Pressable>
             </View>
 
-            <Text className="text-xs font-semibold text-primary mb-1">
-              Role: {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.role : ''}
-            </Text>
-            <Text className="text-xs text-muted leading-5 mb-4">
+            <Text className="text-xs text-[#475569] leading-5 mb-5">
               {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.description : ''}
             </Text>
 
@@ -206,9 +234,9 @@ export const MotorViewerScreen: React.FC = () => {
                 setSelectedPartKey(null);
                 router.push('/ai-tutor');
               }}
-              className="h-12 rounded-2xl bg-primary items-center justify-center active:bg-primary-dark"
+              className="h-12 rounded-2xl bg-[#2563EB] items-center justify-center active:bg-[#1D4ED8] shadow-md"
             >
-              <Text className="text-xs font-bold text-white">Ask AI Tutor about this part</Text>
+              <Text className="text-xs font-bold text-white">Ask AI Tutor about this component</Text>
             </Pressable>
           </View>
         </View>

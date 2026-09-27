@@ -1,42 +1,52 @@
 import { router } from 'expo-router';
-import { Award, Trophy } from 'lucide-react-native';
+import { Award, CheckCircle2, ChevronRight, RotateCcw, Trophy, XCircle, Zap } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { QuizOption } from '../components/QuizOption';
 import { PHYSICS_QUIZZES } from '../data/quizzes';
+import { progressService } from '../services/progressService';
 
 export const QuizScreen: React.FC = () => {
-  const [currentIndex, setCurrentIndex] = useState(1); // Question 2 by default as shown in reference, or start at 0
-  const [selectedKey, setSelectedKey] = useState<string | null>('C');
-  const [showFeedback, setShowFeedback] = useState(true);
-  const [score, setScore] = useState(10);
+  const [currentIndex, setCurrentIndex] = useState(0);
+  const [selectedKey, setSelectedKey] = useState<string | null>(null);
+  const [showFeedback, setShowFeedback] = useState(false);
+  const [correctCount, setCorrectCount] = useState(0);
+  const [incorrectCount, setIncorrectCount] = useState(0);
   const [isCompleted, setIsCompleted] = useState(false);
 
   const currentQuestion = PHYSICS_QUIZZES[currentIndex] || PHYSICS_QUIZZES[0];
+  const totalQuestions = PHYSICS_QUIZZES.length;
+  const xpEarned = correctCount * 10;
 
   const handleSelectOption = (key: string) => {
+    if (showFeedback) return;
     setSelectedKey(key);
     setShowFeedback(true);
+
     if (key === currentQuestion.correctOptionKey) {
-      setScore((prev) => prev + 10);
+      setCorrectCount((prev) => prev + 1);
+    } else {
+      setIncorrectCount((prev) => prev + 1);
     }
   };
 
-  const handleNext = () => {
+  const handleNext = async () => {
     if (!selectedKey) {
-      Alert.alert('Please select an option', 'Choose one of the multiple-choice options to continue.');
+      Alert.alert('Select an Answer', 'Please choose an option to continue.');
       return;
     }
 
-    if (currentIndex < PHYSICS_QUIZZES.length - 1) {
+    if (currentIndex < totalQuestions - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedKey(null);
       setShowFeedback(false);
     } else {
       setIsCompleted(true);
+      // Save result using real service
+      await progressService.recordQuizCompleted(xpEarned, totalQuestions);
     }
   };
 
@@ -44,43 +54,92 @@ export const QuizScreen: React.FC = () => {
     setCurrentIndex(0);
     setSelectedKey(null);
     setShowFeedback(false);
-    setScore(0);
+    setCorrectCount(0);
+    setIncorrectCount(0);
     setIsCompleted(false);
   };
 
+  // Result Screen in Light Theme
   if (isCompleted) {
+    const accuracy = Math.round((correctCount / totalQuestions) * 100);
+
     return (
-      <SafeAreaView className="flex-1 bg-background justify-between p-6">
+      <SafeAreaView className="flex-1 bg-[#F8FAFC] justify-between p-6">
         <AppHeader title="Quiz Results" showBack={false} />
 
-        <View className="items-center justify-center">
-          <View className="w-24 h-24 rounded-full bg-primary/10 items-center justify-center mb-6">
-            <Trophy size={48} color="#6C4DFF" />
+        <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingVertical: 12 }}>
+          {/* Trophy & Congrats */}
+          <View className="items-center justify-center mb-6">
+            <View className="w-24 h-24 rounded-3xl bg-[#EFF6FF] items-center justify-center mb-4 border border-[#DBEAFE] shadow-sm">
+              <Trophy size={48} color="#2563EB" />
+            </View>
+
+            <Text className="text-2xl font-black text-[#0F172A] text-center mb-1">
+              Quiz Completed! 🎉
+            </Text>
+            <Text className="text-xs text-[#64748B] text-center max-w-[80%] leading-5">
+              Great job! You reviewed Sindh Board Physics principles and earned XP.
+            </Text>
           </View>
 
-          <Text className="text-2xl font-extrabold text-navy text-center mb-2">
-            Quiz Completed! 🎉
-          </Text>
-          <Text className="text-sm text-muted text-center mb-6">
-            Great job! You mastered the fundamentals of electric motors and electromagnetism.
-          </Text>
+          {/* Stats Summary Card */}
+          <View className="bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-sm mb-4">
+            <View className="flex-row items-center justify-around pb-4 border-b border-[#F1F5F9]">
+              {/* Score / Accuracy */}
+              <View className="items-center">
+                <Text className="text-3xl font-black text-[#2563EB]">{accuracy}%</Text>
+                <Text className="text-[11px] font-bold text-[#64748B] mt-0.5">Accuracy</Text>
+              </View>
 
-          <View className="bg-white rounded-3xl p-6 border border-border w-full shadow-sm mb-6 items-center">
-            <Text className="text-xs font-semibold text-muted uppercase">Final Score</Text>
-            <Text className="text-4xl font-extrabold text-primary my-2">{score} pts</Text>
-            <View className="flex-row items-center bg-green-50 px-3 py-1 rounded-full border border-green-200">
-              <Award size={14} color="#32C978" />
-              <Text className="text-xs font-bold text-success ml-1">Physics Pro Badge Unlocked</Text>
+              <View className="w-[1px] h-8 bg-[#E2E8F0]" />
+
+              {/* Correct */}
+              <View className="items-center">
+                <Text className="text-3xl font-black text-[#16A34A]">{correctCount}</Text>
+                <Text className="text-[11px] font-bold text-[#64748B] mt-0.5">Correct</Text>
+              </View>
+
+              <View className="w-[1px] h-8 bg-[#E2E8F0]" />
+
+              {/* Incorrect */}
+              <View className="items-center">
+                <Text className="text-3xl font-black text-[#DC2626]">{incorrectCount}</Text>
+                <Text className="text-[11px] font-bold text-[#64748B] mt-0.5">Incorrect</Text>
+              </View>
+            </View>
+
+            {/* XP Badge */}
+            <View className="mt-4 flex-row items-center justify-between bg-[#EFF6FF] rounded-2xl p-3 border border-[#DBEAFE]">
+              <View className="flex-row items-center">
+                <Zap size={18} color="#2563EB" />
+                <Text className="text-xs font-extrabold text-[#2563EB] ml-2">XP Earned</Text>
+              </View>
+              <Text className="text-sm font-black text-[#2563EB]">+{xpEarned} XP</Text>
             </View>
           </View>
-        </View>
 
-        <View className="w-full space-y-3">
+          {/* Recommended Lesson Card */}
+          <View className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm mb-6">
+            <Text className="text-xs font-bold text-[#64748B] uppercase mb-2">Recommended Next Step</Text>
+            <Pressable
+              onPress={() => router.push('/motor-viewer')}
+              className="bg-[#F8FAFC] p-3 rounded-2xl border border-[#E2E8F0] flex-row items-center justify-between active:bg-gray-100"
+            >
+              <View className="flex-1 mr-2">
+                <Text className="text-xs font-bold text-[#0F172A]">Master Electric Motor in 3D AR</Text>
+                <Text className="text-[11px] text-[#64748B] mt-0.5">Interactive simulation & vectors</Text>
+              </View>
+              <ChevronRight size={16} color="#2563EB" />
+            </Pressable>
+          </View>
+        </ScrollView>
+
+        {/* Bottom Actions */}
+        <View className="w-full gap-2.5">
           <PrimaryButton
             title="Try Again"
             onPress={handleRestart}
             variant="outline"
-            className="mb-2"
           />
           <PrimaryButton
             title="Back to Home"
@@ -92,45 +151,48 @@ export const QuizScreen: React.FC = () => {
   }
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-[#F8FAFC] justify-between" edges={['top', 'left', 'right']}>
       {/* Header */}
       <AppHeader
-        title="Quiz"
+        title="Physics Practice Quiz"
         rightIcon="none"
         onBack={() => router.back()}
       />
 
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 12, paddingBottom: 24 }}>
+      <ScrollView
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 24 }}
+        showsVerticalScrollIndicator={false}
+      >
         {/* Question Counter & Score Badges */}
-        <View className="flex-row items-center justify-between mb-4">
-          <View className="bg-primary/10 px-3.5 py-1.5 rounded-full border border-primary/20">
-            <Text className="text-xs font-bold text-primary">
-              Question {currentIndex + 1} of {PHYSICS_QUIZZES.length}
+        <View className="flex-row items-center justify-between mb-3">
+          <View className="bg-[#EFF6FF] px-3.5 py-1.5 rounded-full border border-[#DBEAFE]">
+            <Text className="text-xs font-extrabold text-[#2563EB]">
+              Question {currentIndex + 1} of {totalQuestions}
             </Text>
           </View>
 
-          <View className="bg-white px-3.5 py-1.5 rounded-full border border-border shadow-sm">
-            <Text className="text-xs font-bold text-navy">Score: {score}</Text>
+          <View className="bg-white px-3.5 py-1.5 rounded-full border border-[#E2E8F0] shadow-sm">
+            <Text className="text-xs font-extrabold text-[#0F172A]">Score: {correctCount * 10} pts</Text>
           </View>
         </View>
 
-        {/* Progress bar */}
-        <View className="h-2 bg-white rounded-full overflow-hidden mb-6 border border-border/60">
+        {/* Progress Bar */}
+        <View className="h-2 bg-[#EFF6FF] rounded-full overflow-hidden mb-5 border border-[#E2E8F0]">
           <View
-            className="h-full bg-primary rounded-full"
-            style={{ width: `${((currentIndex + 1) / PHYSICS_QUIZZES.length) * 100}%` }}
+            className="h-full bg-[#2563EB] rounded-full"
+            style={{ width: `${((currentIndex + 1) / totalQuestions) * 100}%` }}
           />
         </View>
 
-        {/* Question Text */}
-        <View className="bg-white rounded-3xl p-5 border border-border mb-6 shadow-sm">
-          <Text className="text-base font-extrabold text-navy leading-6">
+        {/* Question Card */}
+        <View className="bg-white rounded-3xl p-5 border border-[#E2E8F0] mb-5 shadow-sm">
+          <Text className="text-base font-extrabold text-[#0F172A] leading-6">
             {currentQuestion.question}
           </Text>
         </View>
 
         {/* Multiple Choice Options */}
-        <View className="mb-4">
+        <View className="mb-3">
           {currentQuestion.options.map((option) => (
             <QuizOption
               key={option.key}
@@ -144,19 +206,19 @@ export const QuizScreen: React.FC = () => {
           ))}
         </View>
 
-        {/* Explanation Card when feedback is shown */}
+        {/* Educational Feedback Explanation */}
         {showFeedback && (
-          <View className="bg-primary-subtle/50 rounded-2xl p-4 border border-primary/20 mb-4">
-            <Text className="text-xs font-bold text-primary mb-1">Explanation</Text>
-            <Text className="text-xs text-navy leading-5">{currentQuestion.explanation}</Text>
+          <View className="bg-[#F0F7FF] rounded-2xl p-4 border border-[#DBEAFE] mb-4 shadow-sm">
+            <Text className="text-xs font-black text-[#2563EB] mb-1">Concept Explanation</Text>
+            <Text className="text-xs text-[#0F172A] leading-5">{currentQuestion.explanation}</Text>
           </View>
         )}
       </ScrollView>
 
-      {/* Bottom Next Button */}
-      <View className="p-5 bg-background border-t border-border/40">
+      {/* Bottom Next / Submit Action */}
+      <View className="p-5 bg-white border-t border-[#E2E8F0]">
         <PrimaryButton
-          title={currentIndex === PHYSICS_QUIZZES.length - 1 ? 'Finish Quiz' : 'Next'}
+          title={currentIndex === totalQuestions - 1 ? 'Finish Quiz' : 'Next Question'}
           onPress={handleNext}
           className="w-full shadow-md"
         />

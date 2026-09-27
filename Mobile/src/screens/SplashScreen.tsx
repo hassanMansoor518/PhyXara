@@ -1,4 +1,5 @@
 import { router } from 'expo-router';
+import { StatusBar } from 'expo-status-bar';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import Animated, {
@@ -12,14 +13,13 @@ import Animated, {
 } from 'react-native-reanimated';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
-import { StatusBar } from 'expo-status-bar';
 import { AtomSplashVisual } from '../components/illustrations/AtomSplashVisual';
 
 export const SplashScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
 
   // Visual size — nicely centered
-  const visualSize = Math.min(width * 0.75, height * 0.38, 300);
+  const visualSize = Math.min(width * 0.75, height * 0.38, 280);
 
   // --- Animation shared values ---
   const logoScale = useSharedValue(0.6);
@@ -61,10 +61,10 @@ export const SplashScreen: React.FC = () => {
       )
     );
 
-    // Auto-navigate after 2 seconds
+    // Auto-navigate after 2.2 seconds
     const timer = setTimeout(() => {
       router.replace('/onboarding');
-    }, 2000);
+    }, 2200);
 
     return () => clearTimeout(timer);
   }, []);
@@ -95,15 +95,14 @@ export const SplashScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      <StatusBar style="light" />
-      {/* === Background Glows === */}
+      <StatusBar style="dark" />
+      {/* Background Soft Glows */}
       <View style={styles.glowCenter} />
       <View style={styles.glowBottomLeft} />
       <View style={styles.glowTopRight} />
 
-      {/* === Main centered layout === */}
+      {/* Main centered layout */}
       <View style={styles.content}>
-
         {/* Logo Badge */}
         <Animated.View style={[styles.logoBadge, logoStyle]}>
           <View style={styles.logoBadgeInner}>
@@ -121,15 +120,15 @@ export const SplashScreen: React.FC = () => {
         {/* App Name + Tagline */}
         <Animated.View style={[styles.textBlock, textStyle]}>
           <Text style={styles.appName}>Physics AR</Text>
-          <Text style={styles.appSubName}>3D Viewer</Text>
+          <Text style={styles.appSubName}>3D Learning Lab</Text>
           <View style={styles.divider} />
           <Text style={styles.tagline}>
-            Bring physics to life{'\n'}in Augmented Reality
+            SCAN → EXPLORE → UNDERSTAND{'\n'}Sindh Textbook Board Physics
           </Text>
         </Animated.View>
       </View>
 
-      {/* === Bottom Loading Bar === */}
+      {/* Bottom Loading Bar */}
       <Animated.View style={[styles.loaderContainer, barStyle]}>
         <View style={styles.loaderTrack}>
           {/* Shimmer highlight */}
@@ -137,17 +136,16 @@ export const SplashScreen: React.FC = () => {
             <Svg width={120} height={4}>
               <Defs>
                 <LinearGradient id="shimmerGrad" x1="0" y1="0" x2="1" y2="0">
-                  <Stop offset="0%" stopColor="#6C4DFF" stopOpacity="0" />
-                  <Stop offset="40%" stopColor="#A78BFA" stopOpacity="1" />
-                  <Stop offset="60%" stopColor="#38BDF8" stopOpacity="1" />
-                  <Stop offset="100%" stopColor="#6C4DFF" stopOpacity="0" />
+                  <Stop offset="0%" stopColor="#2563EB" stopOpacity="0" />
+                  <Stop offset="50%" stopColor="#2563EB" stopOpacity="1" />
+                  <Stop offset="100%" stopColor="#06B6D4" stopOpacity="0" />
                 </LinearGradient>
               </Defs>
               <Rect x="0" y="0" width="120" height="4" rx="2" fill="url(#shimmerGrad)" />
             </Svg>
           </Animated.View>
         </View>
-        <Text style={styles.loaderLabel}>Loading experience...</Text>
+        <Text style={styles.loaderLabel}>Loading Physics Engine...</Text>
       </Animated.View>
     </SafeAreaView>
   );
@@ -156,19 +154,18 @@ export const SplashScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#070B20',
+    backgroundColor: '#FFFFFF',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingVertical: 32,
   },
-  // Background glows
   glowCenter: {
     position: 'absolute',
-    width: 380,
-    height: 380,
-    borderRadius: 190,
-    backgroundColor: '#4B35C8',
-    opacity: 0.18,
+    width: 360,
+    height: 360,
+    borderRadius: 180,
+    backgroundColor: '#EFF6FF',
+    opacity: 0.8,
     top: '20%',
     alignSelf: 'center',
   },
@@ -177,8 +174,8 @@ const styles = StyleSheet.create({
     width: 200,
     height: 200,
     borderRadius: 100,
-    backgroundColor: '#0EA5E9',
-    opacity: 0.1,
+    backgroundColor: '#F0F9FF',
+    opacity: 0.8,
     bottom: '10%',
     left: -60,
   },
@@ -187,95 +184,93 @@ const styles = StyleSheet.create({
     width: 150,
     height: 150,
     borderRadius: 75,
-    backgroundColor: '#A855F7',
-    opacity: 0.12,
+    backgroundColor: '#F5F3FF',
+    opacity: 0.8,
     top: '5%',
     right: -30,
   },
-  // Main content
   content: {
     flex: 1,
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 20,
+    gap: 16,
   },
-  // Logo badge
   logoBadge: {
     marginBottom: 4,
   },
   logoBadgeInner: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: 'rgba(108, 77, 255, 0.15)',
+    backgroundColor: '#EFF6FF',
     borderWidth: 1,
-    borderColor: 'rgba(108, 77, 255, 0.4)',
+    borderColor: '#DBEAFE',
     borderRadius: 16,
-    paddingHorizontal: 20,
-    paddingVertical: 8,
+    paddingHorizontal: 18,
+    paddingVertical: 6,
   },
   logoLetter: {
-    fontSize: 22,
-    fontWeight: '700',
-    color: '#E2E8F0',
-    letterSpacing: 1,
+    fontSize: 20,
+    fontWeight: '800',
+    color: '#0F172A',
+    letterSpacing: 0.5,
   },
   logoAccent: {
-    fontSize: 26,
+    fontSize: 24,
     fontWeight: '900',
-    color: '#A78BFA',
-    letterSpacing: 1,
+    color: '#2563EB',
+    letterSpacing: 0.5,
   },
-  // Atom
   atomWrapper: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-  // Text
   textBlock: {
     alignItems: 'center',
     marginTop: 4,
   },
   appName: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: '#FFFFFF',
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#0F172A',
     letterSpacing: -0.5,
     textAlign: 'center',
   },
   appSubName: {
-    fontSize: 38,
-    fontWeight: '800',
-    color: '#A78BFA',
+    fontSize: 34,
+    fontWeight: '900',
+    color: '#2563EB',
     letterSpacing: -0.5,
     textAlign: 'center',
     marginTop: -6,
   },
   divider: {
     width: 40,
-    height: 2,
-    backgroundColor: 'rgba(108, 77, 255, 0.5)',
-    borderRadius: 1,
+    height: 3,
+    backgroundColor: '#2563EB',
+    borderRadius: 2,
     marginTop: 14,
     marginBottom: 12,
   },
   tagline: {
-    fontSize: 15,
-    fontWeight: '400',
-    color: 'rgba(148, 163, 184, 0.9)',
+    fontSize: 13,
+    fontWeight: '700',
+    color: '#64748B',
     textAlign: 'center',
-    lineHeight: 22,
+    lineHeight: 20,
+    letterSpacing: 0.5,
   },
-  // Loading bar
   loaderContainer: {
     alignItems: 'center',
     paddingBottom: 8,
-    gap: 10,
+    gap: 8,
   },
   loaderTrack: {
     width: 180,
     height: 4,
     borderRadius: 2,
-    backgroundColor: 'rgba(255,255,255,0.08)',
+    backgroundColor: '#EFF6FF',
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
     overflow: 'hidden',
   },
   shimmer: {
@@ -284,8 +279,9 @@ const styles = StyleSheet.create({
     left: 0,
   },
   loaderLabel: {
-    fontSize: 12,
-    color: 'rgba(148, 163, 184, 0.5)',
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#64748B',
     letterSpacing: 0.5,
   },
 });

@@ -1,7 +1,9 @@
+import { ArrowLeft, Image as GalleryIcon, HelpCircle, Zap, ZapOff } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { ArrowLeft, Zap, ZapOff, Image as GalleryIcon, Info } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+
+export type ScannerStatus = 'READY' | 'SCANNING' | 'DETECTED' | 'FAILED' | 'LOADING';
 
 interface ScanOverlayProps {
   onBack: () => void;
@@ -10,6 +12,7 @@ interface ScanOverlayProps {
   onTips: () => void;
   flashMode: 'on' | 'off';
   onToggleFlash: () => void;
+  status?: ScannerStatus;
 }
 
 export const ScanOverlay: React.FC<ScanOverlayProps> = ({
@@ -19,93 +22,128 @@ export const ScanOverlay: React.FC<ScanOverlayProps> = ({
   onTips,
   flashMode,
   onToggleFlash,
+  status = 'READY',
 }) => {
   const insets = useSafeAreaInsets();
 
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
-      {/* Top action bar */}
+      {/* Top Action Bar: Clean Light Floating Controls */}
       <View
-        className="flex-row items-center justify-between px-6 z-10"
+        className="flex-row items-center justify-between px-5 z-10"
         style={{ paddingTop: Math.max(insets.top, 16) }}
       >
         <Pressable
           onPress={onBack}
-          className="w-10 h-10 rounded-full bg-black/40 items-center justify-center active:bg-black/60 border border-white/20"
+          className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0]"
         >
-          <ArrowLeft size={20} color="#FFFFFF" />
+          <ArrowLeft size={20} color="#0F172A" />
         </Pressable>
 
-        <Text className="text-base font-bold text-white tracking-wide">AR Scanner</Text>
+        <View className="bg-white/95 backdrop-blur-md px-4 py-2 rounded-full border border-[#E2E8F0] shadow-md flex-row items-center">
+          <View
+            className={`w-2.5 h-2.5 rounded-full mr-2 ${
+              status === 'DETECTED'
+                ? 'bg-[#16A34A]'
+                : status === 'FAILED'
+                ? 'bg-[#DC2626]'
+                : status === 'SCANNING'
+                ? 'bg-[#F59E0B]'
+                : 'bg-[#2563EB]'
+            }`}
+          />
+          <Text className="text-xs font-bold text-[#0F172A] tracking-wide">
+            {status === 'READY'
+              ? 'AR Scanner Ready'
+              : status === 'SCANNING'
+              ? 'Analyzing Diagram...'
+              : status === 'DETECTED'
+              ? 'Diagram Detected!'
+              : 'AR Scanner'}
+          </Text>
+        </View>
 
         <Pressable
           onPress={onToggleFlash}
-          className="w-10 h-10 rounded-full bg-black/40 items-center justify-center active:bg-black/60 border border-white/20"
+          className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0]"
         >
           {flashMode === 'on' ? (
-            <Zap size={18} color="#FFB020" fill="#FFB020" />
+            <Zap size={19} color="#F59E0B" fill="#F59E0B" />
           ) : (
-            <ZapOff size={18} color="#FFFFFF" />
+            <ZapOff size={19} color="#64748B" />
           )}
         </Pressable>
       </View>
 
-      {/* Center Reticle / Scanning Frame */}
+      {/* Center Viewfinder & Instructions */}
       <View className="flex-1 items-center justify-center px-8">
-        {/* Instruction pill on top */}
-        <View className="bg-black/60 px-5 py-2.5 rounded-full mb-6 border border-white/10 shadow-md">
-          <Text className="text-xs font-semibold text-white/90 text-center">
-            Point your camera at the diagram
+        {/* Floating Instruction Card */}
+        <View className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl mb-6 border border-[#E2E8F0] shadow-md items-center">
+          <Text className="text-xs font-extrabold text-[#0F172A] text-center">
+            Point your camera at a Physics diagram
+          </Text>
+          <Text className="text-[11px] font-medium text-[#64748B] text-center mt-0.5">
+            Keep the diagram inside the frame
           </Text>
         </View>
 
-        {/* Viewfinder Target Box */}
-        <View className="w-full aspect-[4/3] rounded-3xl border-2 border-white/40 overflow-hidden items-center justify-center relative bg-white/5">
-          {/* Corner Brackets */}
-          <View className="absolute top-2 left-2 w-6 h-6 border-t-4 border-l-4 border-cyan rounded-tl-xl" />
-          <View className="absolute top-2 right-2 w-6 h-6 border-t-4 border-r-4 border-cyan rounded-tr-xl" />
-          <View className="absolute bottom-2 left-2 w-6 h-6 border-b-4 border-l-4 border-cyan rounded-bl-xl" />
-          <View className="absolute bottom-2 right-2 w-6 h-6 border-b-4 border-r-4 border-cyan rounded-br-xl" />
+        {/* Viewfinder Target Box with Light Accents & Tracking Points */}
+        <View className="w-full aspect-[4/3] rounded-3xl border-2 border-white/80 overflow-hidden items-center justify-center relative bg-white/10 shadow-lg">
+          {/* Corner Electric Blue Tracking Brackets */}
+          <View className="absolute top-3 left-3 w-7 h-7 border-t-4 border-l-4 border-[#2563EB] rounded-tl-xl" />
+          <View className="absolute top-3 right-3 w-7 h-7 border-t-4 border-r-4 border-[#2563EB] rounded-tr-xl" />
+          <View className="absolute bottom-3 left-3 w-7 h-7 border-b-4 border-l-4 border-[#2563EB] rounded-bl-xl" />
+          <View className="absolute bottom-3 right-3 w-7 h-7 border-b-4 border-r-4 border-[#2563EB] rounded-br-xl" />
 
-          {/* Center Target Mark */}
-          <View className="w-12 h-12 border border-dashed border-white/40 rounded-full items-center justify-center" />
+          {/* AR Tracking Points Visualizer */}
+          <View className="absolute top-1/4 left-1/4 w-2 h-2 rounded-full bg-[#06B6D4]" />
+          <View className="absolute top-1/4 right-1/4 w-2 h-2 rounded-full bg-[#06B6D4]" />
+          <View className="absolute bottom-1/4 left-1/4 w-2 h-2 rounded-full bg-[#06B6D4]" />
+          <View className="absolute bottom-1/4 right-1/4 w-2 h-2 rounded-full bg-[#06B6D4]" />
+
+          {/* Center Reticle */}
+          <View className="w-14 h-14 border border-dashed border-white/80 rounded-full items-center justify-center bg-white/20">
+            <View className="w-2.5 h-2.5 rounded-full bg-[#2563EB]" />
+          </View>
         </View>
       </View>
 
-      {/* Bottom Controls Bar */}
+      {/* Bottom Floating Controls Bar (White / Light Theme) */}
       <View
-        className="flex-row items-center justify-around px-8 z-10"
+        className="px-6 z-10"
         style={{ paddingBottom: Math.max(insets.bottom, 24) }}
       >
-        {/* Gallery */}
-        <Pressable
-          onPress={onGallery}
-          className="items-center justify-center active:opacity-75"
-        >
-          <View className="w-12 h-12 rounded-full bg-black/40 border border-white/20 items-center justify-center mb-1">
-            <GalleryIcon size={20} color="#FFFFFF" />
-          </View>
-          <Text className="text-[11px] font-medium text-white">Gallery</Text>
-        </Pressable>
+        <View className="bg-white/95 backdrop-blur-md rounded-3xl p-4 border border-[#E2E8F0] shadow-xl flex-row items-center justify-around">
+          {/* Gallery Button */}
+          <Pressable
+            onPress={onGallery}
+            className="items-center justify-center active:opacity-75"
+          >
+            <View className="w-12 h-12 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center mb-1">
+              <GalleryIcon size={20} color="#0F172A" />
+            </View>
+            <Text className="text-[11px] font-bold text-[#475569]">Gallery</Text>
+          </Pressable>
 
-        {/* Shutter Capture Button */}
-        <Pressable
-          onPress={onCapture}
-          className="w-20 h-20 rounded-full bg-white/20 items-center justify-center border-2 border-white/60 active:scale-95 shadow-xl"
-        >
-          <View className="w-16 h-16 rounded-full bg-white shadow-md items-center justify-center" />
-        </Pressable>
+          {/* Shutter Capture Button */}
+          <Pressable
+            onPress={onCapture}
+            className="w-18 h-18 rounded-full bg-[#EFF6FF] items-center justify-center border-4 border-[#2563EB] active:scale-95 shadow-lg p-1"
+          >
+            <View className="w-14 h-14 rounded-full bg-[#2563EB] items-center justify-center shadow-md" />
+          </Pressable>
 
-        {/* Tips */}
-        <Pressable
-          onPress={onTips}
-          className="items-center justify-center active:opacity-75"
-        >
-          <View className="w-12 h-12 rounded-full bg-black/40 border border-white/20 items-center justify-center mb-1">
-            <Info size={20} color="#FFFFFF" />
-          </View>
-          <Text className="text-[11px] font-medium text-white">Tips</Text>
-        </Pressable>
+          {/* Tips / Help Button */}
+          <Pressable
+            onPress={onTips}
+            className="items-center justify-center active:opacity-75"
+          >
+            <View className="w-12 h-12 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center mb-1">
+              <HelpCircle size={20} color="#0F172A" />
+            </View>
+            <Text className="text-[11px] font-bold text-[#475569]">Tips</Text>
+          </Pressable>
+        </View>
       </View>
     </View>
   );

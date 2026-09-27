@@ -1,11 +1,11 @@
-import { Check } from 'lucide-react-native';
+import { Check, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
-  withTiming
+  withTiming,
 } from 'react-native-reanimated';
 
 interface DetectionLoaderProps {
@@ -15,7 +15,7 @@ interface DetectionLoaderProps {
 
 export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
   onComplete,
-  detectedName = 'Electric Motor',
+  detectedName = 'Electric Motor (DC)',
 }) => {
   const [percentage, setPercentage] = useState(0);
   const scale = useSharedValue(0.3);
@@ -38,7 +38,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
         }
         return prev + 5;
       });
-    }, 60);
+    }, 50);
 
     return () => clearInterval(interval);
   }, []);
@@ -49,36 +49,37 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
   }));
 
   return (
-    <View className="items-center justify-center px-8 w-full">
-      {/* Large Green Check Circle */}
+    <View className="items-center justify-center px-8 w-full max-w-sm">
+      {/* Large Green / Emerald Check Circle */}
       <Animated.View
         style={[badgeAnimatedStyle, styles.glowShadow]}
-        className="w-24 h-24 rounded-full bg-success items-center justify-center mb-6 border-4 border-white/80"
+        className="w-22 h-22 rounded-full bg-[#16A34A] items-center justify-center mb-5 border-4 border-white shadow-xl"
       >
-        <Check size={48} color="#FFFFFF" strokeWidth={3.5} />
+        <Check size={44} color="#FFFFFF" strokeWidth={3.5} />
       </Animated.View>
 
       {/* Title */}
-      <Text className="text-2xl font-extrabold text-white text-center mb-1">
+      <Text className="text-2xl font-black text-[#0F172A] text-center mb-1">
         Diagram Detected!
       </Text>
 
       {/* Detected Object Name */}
-      <Text className="text-lg font-bold text-cyan text-center mb-6">
-        {detectedName}
-      </Text>
+      <View className="bg-[#EFF6FF] border border-[#BFDBFE] px-4 py-1.5 rounded-full mb-6 flex-row items-center">
+        <Sparkles size={14} color="#2563EB" />
+        <Text className="text-sm font-extrabold text-[#2563EB] ml-1.5">{detectedName}</Text>
+      </View>
 
       {/* Progress Card Container */}
-      <View className="w-full bg-white/10 backdrop-blur-md rounded-3xl p-5 border border-white/20">
+      <View className="w-full bg-white rounded-3xl p-5 border border-[#E2E8F0] shadow-md">
         <View className="flex-row items-center justify-between mb-2">
-          <Text className="text-xs font-semibold text-white/80">Loading 3D Model...</Text>
-          <Text className="text-xs font-bold text-cyan">{percentage}%</Text>
+          <Text className="text-xs font-bold text-[#64748B]">Preparing 3D AR Experience...</Text>
+          <Text className="text-xs font-black text-[#2563EB]">{percentage}%</Text>
         </View>
 
         {/* Animated Progress Track */}
-        <View className="h-2.5 bg-black/40 rounded-full overflow-hidden">
+        <View className="h-2.5 bg-[#EFF6FF] rounded-full overflow-hidden border border-[#E2E8F0]">
           <View
-            className="h-full bg-success rounded-full"
+            className="h-full bg-[#2563EB] rounded-full"
             style={{ width: `${percentage}%` }}
           />
         </View>
@@ -89,11 +90,11 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
 
 const styles = StyleSheet.create({
   glowShadow: {
-    shadowColor: '#32C978',
+    shadowColor: '#16A34A',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.6,
+    shadowOpacity: 0.35,
     shadowRadius: 16,
-    elevation: 12,
+    elevation: 8,
   },
 });
 

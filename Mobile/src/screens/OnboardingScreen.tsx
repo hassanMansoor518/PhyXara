@@ -1,3 +1,5 @@
+import { router } from 'expo-router';
+import { ArrowRight, Box, Eye, GraduationCap, ScanLine, Zap } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
 import {
   Animated,
@@ -11,12 +13,10 @@ import {
   View,
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import { router } from 'expo-router';
-import { ArrowRight, Box, Eye, GraduationCap, ScanLine, Zap } from 'lucide-react-native';
-import { authService } from '../services/authService';
 import { ARIllustration } from '../components/illustrations/ARIllustration';
 import { PhysicsModelIllustration } from '../components/illustrations/PhysicsModelIllustration';
 import { ScanIllustration } from '../components/illustrations/ScanIllustration';
+import { authService } from '../services/authService';
 
 interface SlideData {
   id: string;
@@ -33,53 +33,53 @@ const SLIDES: SlideData[] = [
   {
     id: '0',
     title: 'Scan Diagrams',
-    highlight: 'Instantly',
+    highlight: 'Instantly in AR',
     description:
-      'Use your camera to scan any physics diagram from your book. We’ll recognize it in a snap.',
-    featureTitle: 'Fast Recognition',
-    featureDesc: 'Advanced AI instantly detects and prepares your diagram.',
+      'Point your camera at any Sindh Board textbook physics diagram to bring it to life instantly.',
+    featureTitle: 'Fast AR Recognition',
+    featureDesc: 'Advanced AI detects and prepares interactive 3D simulations.',
     featureIconKey: 'zap',
     topBadgeKey: 'scan',
   },
   {
     id: '1',
     title: 'Experience in',
-    highlight: '3D AR',
+    highlight: 'Interactive 3D',
     description:
-      'View diagrams in immersive 3D with real-time Augmented Reality. Rotate, zoom, and explore freely.',
-    featureTitle: 'Immersive 3D',
-    featureDesc: 'Interact with models naturally just like the real thing.',
+      'Explore physics with interactive 3D models. Rotate, zoom, explode components, and track force vectors.',
+    featureTitle: '3D Simulation Lab',
+    featureDesc: 'Understand complex physics mechanisms visually.',
     featureIconKey: 'eye',
     topBadgeKey: 'box',
   },
   {
     id: '2',
     title: 'Learn Better',
-    highlight: 'Understand Deeper',
+    highlight: 'With AI Tutor',
     description:
-      'Clear visuals. Better understanding. Perfect for students, by students.',
+      'Get step-by-step guidance, practice MCQs, and master the Sindh Board physics curriculum.',
     featureTitle: 'Study Smarter',
-    featureDesc: 'Visualize, analyze and remember concepts more effectively.',
+    featureDesc: 'Track your XP, streak, and chapter mastery.',
     featureIconKey: 'grad',
     topBadgeKey: 'grad',
   },
 ];
 
-// ── Top Left 3D Icon Badge ────────────────────────────────────────────
+// Top Left 3D Icon Badge
 const TopBadgeIcon: React.FC<{ badgeKey: SlideData['topBadgeKey'] }> = ({ badgeKey }) => {
-  if (badgeKey === 'scan') return <ScanLine size={20} color="#6C4DFF" />;
-  if (badgeKey === 'box') return <Box size={20} color="#6C4DFF" />;
-  return <GraduationCap size={20} color="#6C4DFF" />;
+  if (badgeKey === 'scan') return <ScanLine size={20} color="#2563EB" />;
+  if (badgeKey === 'box') return <Box size={20} color="#2563EB" />;
+  return <GraduationCap size={20} color="#2563EB" />;
 };
 
-// ── Bottom Feature Card Icon ───────────────────────────────────────────
+// Bottom Feature Card Icon
 const FeatureIcon: React.FC<{ iconKey: SlideData['featureIconKey'] }> = ({ iconKey }) => {
-  if (iconKey === 'zap') return <Zap size={18} color="#6C4DFF" />;
-  if (iconKey === 'eye') return <Eye size={18} color="#6C4DFF" />;
-  return <GraduationCap size={18} color="#6C4DFF" />;
+  if (iconKey === 'zap') return <Zap size={18} color="#2563EB" />;
+  if (iconKey === 'eye') return <Eye size={18} color="#2563EB" />;
+  return <GraduationCap size={18} color="#2563EB" />;
 };
 
-// ── Illustration resolver ─────────────────────────────────────────────
+// Illustration resolver
 const IllustrationForSlide: React.FC<{ index: number; size: number; illustrationH: number }> = ({
   index,
   size,
@@ -90,7 +90,6 @@ const IllustrationForSlide: React.FC<{ index: number; size: number; illustration
   return <PhysicsModelIllustration width={size} height={illustrationH} />;
 };
 
-// ── Slide Item ────────────────────────────────────────────────────────
 const SlideItem: React.FC<{
   item: SlideData;
   index: number;
@@ -113,20 +112,18 @@ const SlideItem: React.FC<{
 
   return (
     <View style={[styles.slide, { width: slideWidth, height: slideHeight }]}>
-      {/* ── Top Section: 3D Badge + Clean Typography ── */}
+      {/* Top Section */}
       <Animated.View style={[styles.topSection, { opacity: contentOpacity }]}>
-        {/* Top 3D Icon Badge */}
         <View style={styles.topBadgeCard}>
           <TopBadgeIcon badgeKey={item.topBadgeKey} />
         </View>
 
-        {/* Headlines */}
         <Text style={styles.slideTitle}>{item.title}</Text>
         <Text style={styles.slideHighlight}>{item.highlight}</Text>
         <Text style={styles.slideDesc}>{item.description}</Text>
       </Animated.View>
 
-      {/* ── Middle Section: Animated 3D Visual Illustration ── */}
+      {/* Middle Section: Illustration */}
       <Animated.View
         style={[
           styles.illustrationArea,
@@ -137,7 +134,7 @@ const SlideItem: React.FC<{
         <IllustrationForSlide index={index} size={slideWidth - 32} illustrationH={illustrationH} />
       </Animated.View>
 
-      {/* ── Bottom Section: 3D Soft Feature Card ── */}
+      {/* Bottom Feature Card */}
       <Animated.View style={[styles.bottomSection, { opacity: contentOpacity }]}>
         <View style={styles.featureCard}>
           <View style={styles.featureIconBox}>
@@ -191,7 +188,7 @@ export const OnboardingScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
-      {/* ── Top Bar ── */}
+      {/* Top Bar */}
       <View style={[styles.topBar, { height: TOPBAR_H }]}>
         {/* Pagination Dots */}
         <View style={styles.dotsRow}>
@@ -212,7 +209,7 @@ export const OnboardingScreen: React.FC = () => {
         </Pressable>
       </View>
 
-      {/* ── FlatList Horizontal Pager ── */}
+      {/* FlatList Horizontal Pager */}
       <FlatList
         ref={flatListRef}
         data={SLIDES}
@@ -240,12 +237,11 @@ export const OnboardingScreen: React.FC = () => {
         )}
       />
 
-      {/* ── Bottom Navigation Button ── */}
+      {/* Bottom Navigation Button */}
       <View style={[styles.bottomNav, { height: BOTTOMNAV_H }]}>
         {currentIndex < SLIDES.length - 1 ? (
           <Pressable
             onPress={handleNext}
-            className="w-[54px] h-[54px] bg-primary rounded-full items-center justify-center"
             style={({ pressed }) => [
               styles.arrowBtn,
               pressed && styles.arrowBtnPressed,
@@ -256,7 +252,6 @@ export const OnboardingScreen: React.FC = () => {
         ) : (
           <Pressable
             onPress={handleNext}
-            className="w-full h-[54px] bg-primary rounded-full flex-row items-center justify-center"
             style={({ pressed }) => [
               styles.getStartedBtn,
               pressed && styles.getStartedBtnPressed,
@@ -276,10 +271,8 @@ export const OnboardingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#F8F8FF',
+    backgroundColor: '#FFFFFF',
   },
-
-  // Top Bar
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -297,11 +290,11 @@ const styles = StyleSheet.create({
   },
   dotActive: {
     width: 22,
-    backgroundColor: '#6C4DFF',
+    backgroundColor: '#2563EB',
   },
   dotInactive: {
     width: 6,
-    backgroundColor: '#DCD6FF',
+    backgroundColor: '#DBEAFE',
   },
   skipBtn: {
     paddingVertical: 4,
@@ -309,11 +302,9 @@ const styles = StyleSheet.create({
   },
   skipText: {
     fontSize: 14,
-    fontWeight: '600',
-    color: '#6C4DFF',
+    fontWeight: '700',
+    color: '#2563EB',
   },
-
-  // Slide Layout
   slide: {
     flex: 1,
     justifyContent: 'space-between',
@@ -326,13 +317,13 @@ const styles = StyleSheet.create({
     width: 44,
     height: 44,
     borderRadius: 14,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginBottom: 14,
     borderWidth: 1,
-    borderColor: '#EFEFFF',
-    shadowColor: '#6C4DFF',
+    borderColor: '#DBEAFE',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.1,
     shadowRadius: 10,
@@ -348,26 +339,22 @@ const styles = StyleSheet.create({
   slideHighlight: {
     fontSize: 32,
     fontWeight: '900',
-    color: '#6546F5',
+    color: '#2563EB',
     letterSpacing: -0.6,
     lineHeight: 38,
     marginBottom: 12,
   },
   slideDesc: {
-    fontSize: 15,
+    fontSize: 14.5,
     fontWeight: '400',
     color: '#475569',
-    lineHeight: 23,
+    lineHeight: 22,
     maxWidth: '96%',
   },
-
-  // Illustration Area
   illustrationArea: {
     alignItems: 'center',
     justifyContent: 'center',
   },
-
-  // Bottom Section
   bottomSection: {
     paddingHorizontal: 24,
     paddingBottom: 6,
@@ -378,23 +365,25 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFFFFF',
     borderRadius: 20,
     borderWidth: 1,
-    borderColor: '#EAEBFF',
+    borderColor: '#E2E8F0',
     paddingHorizontal: 16,
     paddingVertical: 14,
-    shadowColor: '#6C4DFF',
+    shadowColor: '#000000',
     shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.08,
+    shadowOpacity: 0.05,
     shadowRadius: 12,
-    elevation: 3,
+    elevation: 2,
   },
   featureIconBox: {
     width: 42,
     height: 42,
     borderRadius: 14,
-    backgroundColor: '#F0ECFF',
+    backgroundColor: '#EFF6FF',
     alignItems: 'center',
     justifyContent: 'center',
     marginRight: 14,
+    borderWidth: 1,
+    borderColor: '#DBEAFE',
   },
   featureTextBox: {
     flex: 1,
@@ -411,8 +400,6 @@ const styles = StyleSheet.create({
     color: '#64748B',
     lineHeight: 18,
   },
-
-  // Bottom Navigation
   bottomNav: {
     paddingHorizontal: 24,
     justifyContent: 'center',
@@ -422,14 +409,14 @@ const styles = StyleSheet.create({
     width: 54,
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#6C4DFF',
+    backgroundColor: '#2563EB',
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#6C4DFF',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.38,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
-    elevation: 7,
+    elevation: 6,
   },
   arrowBtnPressed: {
     transform: [{ scale: 0.94 }],
@@ -442,12 +429,12 @@ const styles = StyleSheet.create({
     width: '100%',
     height: 54,
     borderRadius: 27,
-    backgroundColor: '#6C4DFF',
-    shadowColor: '#6C4DFF',
+    backgroundColor: '#2563EB',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.38,
+    shadowOpacity: 0.35,
     shadowRadius: 12,
-    elevation: 7,
+    elevation: 6,
   },
   getStartedBtnPressed: {
     transform: [{ scale: 0.98 }],
@@ -455,7 +442,7 @@ const styles = StyleSheet.create({
   },
   getStartedText: {
     fontSize: 16,
-    fontWeight: '700',
+    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },

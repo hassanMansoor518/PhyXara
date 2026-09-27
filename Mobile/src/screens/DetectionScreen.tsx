@@ -1,7 +1,7 @@
-import React from 'react';
-import { View, Image, StyleSheet } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
 import { router, useLocalSearchParams } from 'expo-router';
+import React from 'react';
+import { Image, StyleSheet, View } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { DetectionLoader } from '../components/DetectionLoader';
 
@@ -13,36 +13,36 @@ export const DetectionScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-navy-dark justify-between">
-      {/* Background preview image or dark gradient overlay */}
+    <SafeAreaView className="flex-1 bg-[#F8FAFC] justify-between">
+      {/* Background preview image or light overlay */}
       {params.imageUri && params.imageUri !== 'gallery_sample' ? (
         <Image
           source={{ uri: params.imageUri }}
           style={StyleSheet.absoluteFill}
-          blurRadius={12}
+          blurRadius={20}
           resizeMode="cover"
         />
       ) : null}
 
-      {/* Dark overlay backdrop */}
+      {/* Light translucent overlay backdrop */}
       <View
         style={[
           StyleSheet.absoluteFill,
-          { backgroundColor: 'rgba(8, 15, 45, 0.82)' },
+          { backgroundColor: 'rgba(248, 250, 252, 0.92)' },
         ]}
       />
 
       {/* Header */}
       <AppHeader
-        title="Detecting"
-        textColor="#FFFFFF"
+        title="AR Analysis"
+        textColor="#0F172A"
         onBack={() => router.replace('/scanner')}
       />
 
-      {/* Center Detection Loader with pulsating green check & progress */}
+      {/* Center Detection Loader */}
       <View className="flex-1 items-center justify-center">
         <DetectionLoader
-          detectedName="Electric Motor"
+          detectedName="Electric Motor (DC)"
           onComplete={handleComplete}
         />
       </View>

@@ -41,6 +41,7 @@ function InitialLayout() {
       'ai-tutor',
       'quiz',
       'profile',
+      'progress',
     ];
 
     const isProtectedRoute = protectedRoutes.includes(currentSegment);
@@ -76,6 +77,7 @@ function InitialLayout() {
       <Stack.Screen name="ai-tutor" options={{ headerShown: false }} />
       <Stack.Screen name="quiz" options={{ headerShown: false }} />
       <Stack.Screen name="profile" options={{ headerShown: false }} />
+      <Stack.Screen name="progress" options={{ headerShown: false }} />
     </Stack>
   );
 }

@@ -1,10 +1,10 @@
-import React, { useState, useRef } from 'react';
-import { View, Text, StyleSheet, Alert, Modal, Pressable } from 'react-native';
 import { CameraView, useCameraPermissions } from 'expo-camera';
 import { router } from 'expo-router';
-import { ScanOverlay } from '../components/ScanOverlay';
+import { Camera, Sparkles } from 'lucide-react-native';
+import React, { useRef, useState } from 'react';
+import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
-import { Info, Sparkles } from 'lucide-react-native';
+import { ScanOverlay } from '../components/ScanOverlay';
 
 export const ScannerScreen: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -34,8 +34,8 @@ export const ScannerScreen: React.FC = () => {
 
   const handleGallery = () => {
     Alert.alert(
-      'Select Diagram',
-      'Diagram loaded from gallery!',
+      'Sample Diagram Loaded',
+      'Electric Motor diagram from Sindh Board Physics Chapter 14 has been selected.',
       [
         {
           text: 'Analyze Diagram',
@@ -50,30 +50,30 @@ export const ScannerScreen: React.FC = () => {
     );
   };
 
-  // Permission handling
+  // Permission handling in Light Theme
   if (!permission) {
-    return <View className="flex-1 bg-black" />;
+    return <View className="flex-1 bg-white" />;
   }
 
   if (!permission.granted) {
     return (
-      <View className="flex-1 bg-navy-dark items-center justify-center px-8">
-        <View className="w-16 h-16 rounded-3xl bg-primary/20 items-center justify-center mb-4">
-          <Info size={32} color="#6C4DFF" />
+      <View className="flex-1 bg-[#F8FAFC] items-center justify-center px-8">
+        <View className="w-20 h-20 rounded-3xl bg-[#EFF6FF] items-center justify-center mb-5 border border-[#DBEAFE]">
+          <Camera size={36} color="#2563EB" />
         </View>
-        <Text className="text-xl font-bold text-white text-center mb-2">
+        <Text className="text-2xl font-black text-[#0F172A] text-center mb-2">
           Camera Access Needed
         </Text>
-        <Text className="text-sm text-white/70 text-center mb-8 leading-5">
-          Camera permission is required to scan physics diagrams from your textbook and convert them into 3D AR models.
+        <Text className="text-sm text-[#64748B] text-center mb-8 leading-6 max-w-[90%]">
+          Camera permission is required to scan physics diagrams from your textbook and convert them into interactive 3D AR models.
         </Text>
         <PrimaryButton
           title="Grant Permission"
           onPress={requestPermission}
-          className="w-full mb-3"
+          className="w-full mb-3 shadow-md"
         />
-        <Pressable onPress={() => router.back()} className="py-2">
-          <Text className="text-sm text-white/60 font-semibold">Cancel</Text>
+        <Pressable onPress={() => router.back()} className="py-2.5">
+          <Text className="text-sm text-[#64748B] font-bold">Go Back</Text>
         </Pressable>
       </View>
     );
@@ -103,24 +103,24 @@ export const ScannerScreen: React.FC = () => {
         />
       </CameraView>
 
-      {/* Tips Modal */}
+      {/* Light Theme Tips Modal */}
       <Modal
         visible={showTips}
         transparent
         animationType="fade"
         onRequestClose={() => setShowTips(false)}
       >
-        <View className="flex-1 bg-black/70 items-center justify-center px-6">
-          <View className="bg-white rounded-3xl p-6 w-full max-w-sm border border-border">
-            <View className="w-12 h-12 rounded-2xl bg-primary/10 items-center justify-center mb-3">
-              <Sparkles size={24} color="#6C4DFF" />
+        <View className="flex-1 bg-black/40 items-center justify-center px-6">
+          <View className="bg-white rounded-3xl p-6 w-full max-w-sm border border-[#E2E8F0] shadow-2xl">
+            <View className="w-12 h-12 rounded-2xl bg-[#EFF6FF] items-center justify-center mb-3 border border-[#DBEAFE]">
+              <Sparkles size={24} color="#2563EB" />
             </View>
-            <Text className="text-lg font-bold text-navy mb-2">Scanning Tips</Text>
-            <Text className="text-xs text-muted leading-5 mb-4">
+            <Text className="text-lg font-black text-[#0F172A] mb-2">Scanning Tips</Text>
+            <Text className="text-xs text-[#475569] leading-5 mb-5">
               • Ensure good lighting on the diagram page.{'\n'}
               • Keep your device parallel to the textbook.{'\n'}
-              • Center the diagram within the viewfinder frame.{'\n'}
-              • Any physics diagram will trigger the 3D Electric Motor simulation.
+              • Center the diagram within the blue viewfinder brackets.{'\n'}
+              • Any physics diagram will trigger the 3D model simulation.
             </Text>
             <PrimaryButton
               title="Got It"

@@ -75,76 +75,81 @@ export const LoginScreen: React.FC = () => {
   }, [startGoogleOAuth]);
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between">
+    <SafeAreaView className="flex-1 bg-[#FFFFFF] justify-between">
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 }}>
-        {/* Title */}
+        {/* Header */}
         <View className="mb-8">
-          <Text className="text-2xl font-extrabold text-navy">Welcome Back! 👋</Text>
-          <Text className="text-sm text-muted mt-1.5">Login to continue learning</Text>
+          <View className="w-12 h-12 rounded-2xl bg-[#EFF6FF] items-center justify-center mb-4 border border-[#DBEAFE]">
+            <Text className="text-xl font-black text-[#2563EB]">PX</Text>
+          </View>
+          <Text className="text-2xl font-black text-[#0F172A]">Welcome Back! 👋</Text>
+          <Text className="text-sm text-[#64748B] mt-1">
+            Log in to continue your Sindh Board Physics journey
+          </Text>
         </View>
 
         {/* Error Banner */}
         {errorMsg ? (
           <View className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-5">
-            <Text className="text-xs text-danger font-semibold">{errorMsg}</Text>
+            <Text className="text-xs text-[#DC2626] font-semibold">{errorMsg}</Text>
           </View>
         ) : null}
 
         {/* Input Fields */}
-        <View className="space-y-4">
+        <View className="gap-4">
           {/* Email Field */}
-          <View className="mb-4">
-            <Text className="text-xs font-bold text-navy mb-2">Email</Text>
-            <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-              <Mail size={18} color="#737A96" />
+          <View>
+            <Text className="text-xs font-bold text-[#0F172A] mb-2">Email</Text>
+            <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+              <Mail size={18} color="#64748B" />
               <TextInput
                 value={email}
                 onChangeText={setEmail}
-                placeholder="example@gmail.com"
-                placeholderTextColor="#737A96"
+                placeholder="student@gmail.com"
+                placeholderTextColor="#64748B"
                 keyboardType="email-address"
                 autoCapitalize="none"
-                className="flex-1 ml-3 text-sm text-navy py-2"
+                className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
               />
             </View>
           </View>
 
           {/* Password Field */}
-          <View className="mb-2">
-            <Text className="text-xs font-bold text-navy mb-2">Password</Text>
-            <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-              <Lock size={18} color="#737A96" />
+          <View>
+            <Text className="text-xs font-bold text-[#0F172A] mb-2">Password</Text>
+            <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+              <Lock size={18} color="#64748B" />
               <TextInput
                 value={password}
                 onChangeText={setPassword}
                 placeholder="••••••••"
-                placeholderTextColor="#737A96"
+                placeholderTextColor="#64748B"
                 secureTextEntry={!showPassword}
-                className="flex-1 ml-3 text-sm text-navy py-2"
+                className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
               />
               <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
                 {showPassword ? (
-                  <EyeOff size={18} color="#737A96" />
+                  <EyeOff size={18} color="#64748B" />
                 ) : (
-                  <Eye size={18} color="#737A96" />
+                  <Eye size={18} color="#64748B" />
                 )}
               </Pressable>
             </View>
           </View>
 
           {/* Forgot Password */}
-          <View className="items-end mb-6">
+          <View className="items-end mb-2">
             <Pressable
               onPress={() => router.push('/forgot-password')}
               hitSlop={8}
             >
-              <Text className="text-xs font-semibold text-primary">Forgot Password?</Text>
+              <Text className="text-xs font-bold text-[#2563EB]">Forgot Password?</Text>
             </Pressable>
           </View>
 
           {/* Login Button */}
           <PrimaryButton
-            title="Login"
+            title="Log In"
             onPress={handleLogin}
             isLoading={isLoading}
             disabled={isLoading}
@@ -152,34 +157,33 @@ export const LoginScreen: React.FC = () => {
           />
 
           {/* Divider */}
-          <View className="flex-row items-center my-6">
-            <View className="flex-1 h-[1px] bg-border" />
-            <Text className="text-xs text-muted px-4 font-medium">or continue with</Text>
-            <View className="flex-1 h-[1px] bg-border" />
+          <View className="flex-row items-center my-4">
+            <View className="flex-1 h-[1px] bg-[#E2E8F0]" />
+            <Text className="text-xs text-[#64748B] px-4 font-medium">or continue with</Text>
+            <View className="flex-1 h-[1px] bg-[#E2E8F0]" />
           </View>
 
           {/* Social Logins */}
-          <View className="flex-row mb-6">
-            {/* Google */}
+          <View className="flex-row">
             <Pressable
               onPress={handleGoogleLogin}
               disabled={isLoading}
-              className="flex-1 flex-row items-center justify-center bg-white rounded-2xl py-3.5 border border-border shadow-sm active:bg-gray-50"
+              className="flex-1 flex-row items-center justify-center bg-white rounded-2xl py-3.5 border border-[#E2E8F0] shadow-sm active:bg-gray-50"
             >
               <View className="w-5 h-5 rounded-full bg-red-500 items-center justify-center mr-2">
                 <Text className="text-white text-xs font-bold">G</Text>
               </View>
-              <Text className="text-xs font-bold text-navy">Google</Text>
+              <Text className="text-xs font-bold text-[#0F172A]">Google</Text>
             </Pressable>
           </View>
         </View>
       </ScrollView>
 
       {/* Sign Up Footer */}
-      <View className="flex-row items-center justify-center py-5 border-t border-border/40 bg-background">
-        <Text className="text-xs text-muted">Don't have an account? </Text>
+      <View className="flex-row items-center justify-center py-5 border-t border-[#E2E8F0] bg-white">
+        <Text className="text-xs text-[#64748B]">Don't have an account? </Text>
         <Pressable onPress={() => router.push('/register')} hitSlop={10}>
-          <Text className="text-xs font-bold text-primary">Sign Up</Text>
+          <Text className="text-xs font-bold text-[#2563EB]">Sign Up</Text>
         </Pressable>
       </View>
     </SafeAreaView>

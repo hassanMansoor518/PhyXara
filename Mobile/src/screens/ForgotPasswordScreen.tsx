@@ -87,7 +87,7 @@ export const ForgotPasswordScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between">
+    <SafeAreaView className="flex-1 bg-[#FFFFFF] justify-between">
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }}>
         {/* Back Button */}
         <Pressable
@@ -98,17 +98,17 @@ export const ForgotPasswordScreen: React.FC = () => {
               router.back();
             }
           }}
-          className="w-10 h-10 rounded-2xl bg-white border border-border items-center justify-center mb-6 shadow-sm"
+          className="w-10 h-10 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center mb-6 shadow-sm active:bg-gray-100"
         >
-          <ArrowLeft size={20} color="#101A43" />
+          <ArrowLeft size={20} color="#0F172A" />
         </Pressable>
 
         {/* Title */}
         <View className="mb-6">
-          <Text className="text-2xl font-extrabold text-navy">
+          <Text className="text-2xl font-black text-[#0F172A]">
             {step === 'request' ? 'Forgot Password 🔐' : 'Set New Password 🔑'}
           </Text>
-          <Text className="text-sm text-muted mt-1.5">
+          <Text className="text-sm text-[#64748B] mt-1.5">
             {step === 'request'
               ? 'Enter your email address and we will send you a reset code.'
               : `Enter the reset code sent to ${email} and your new password.`}
@@ -118,7 +118,7 @@ export const ForgotPasswordScreen: React.FC = () => {
         {/* Messages */}
         {errorMsg ? (
           <View className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-5">
-            <Text className="text-xs text-danger font-semibold">{errorMsg}</Text>
+            <Text className="text-xs text-[#DC2626] font-semibold">{errorMsg}</Text>
           </View>
         ) : null}
 
@@ -130,19 +130,19 @@ export const ForgotPasswordScreen: React.FC = () => {
 
         {step === 'request' ? (
           /* Request Reset Step */
-          <View className="space-y-4">
-            <View className="mb-6">
-              <Text className="text-xs font-bold text-navy mb-2">Email Address</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <Mail size={18} color="#737A96" />
+          <View className="gap-4">
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Email Address</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <Mail size={18} color="#64748B" />
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="name@example.com"
-                  placeholderTextColor="#737A96"
+                  placeholder="student@example.com"
+                  placeholderTextColor="#64748B"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
@@ -152,43 +152,43 @@ export const ForgotPasswordScreen: React.FC = () => {
               onPress={handleSendResetEmail}
               isLoading={isLoading}
               disabled={isLoading}
-              className="w-full shadow-md"
+              className="w-full shadow-md mt-2"
             />
           </View>
         ) : (
           /* Reset Password Step */
-          <View className="space-y-4">
+          <View className="gap-4">
             {/* Reset Code */}
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Reset Code</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <KeyRound size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Reset Code</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <KeyRound size={18} color="#64748B" />
                 <TextInput
                   value={code}
                   onChangeText={setCode}
                   placeholder="123456"
-                  placeholderTextColor="#737A96"
+                  placeholderTextColor="#64748B"
                   keyboardType="number-pad"
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
 
             {/* New Password */}
-            <View className="mb-6">
-              <Text className="text-xs font-bold text-navy mb-2">New Password</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <Lock size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">New Password</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <Lock size={18} color="#64748B" />
                 <TextInput
                   value={newPassword}
                   onChangeText={setNewPassword}
                   placeholder="At least 8 characters"
-                  placeholderTextColor="#737A96"
+                  placeholderTextColor="#64748B"
                   secureTextEntry={!showPassword}
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
-                  {showPassword ? <EyeOff size={18} color="#737A96" /> : <Eye size={18} color="#737A96" />}
+                  {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
                 </Pressable>
               </View>
             </View>
@@ -198,17 +198,17 @@ export const ForgotPasswordScreen: React.FC = () => {
               onPress={handleResetPassword}
               isLoading={isLoading}
               disabled={isLoading}
-              className="w-full shadow-md"
+              className="w-full shadow-md mt-2"
             />
           </View>
         )}
       </ScrollView>
 
       {/* Footer */}
-      <View className="flex-row items-center justify-center py-5 border-t border-border/40 bg-background">
-        <Text className="text-xs text-muted">Remember your password? </Text>
+      <View className="flex-row items-center justify-center py-5 border-t border-[#E2E8F0] bg-white">
+        <Text className="text-xs text-[#64748B]">Remember your password? </Text>
         <Pressable onPress={() => router.push('/login')} hitSlop={10}>
-          <Text className="text-xs font-bold text-primary">Log In</Text>
+          <Text className="text-xs font-bold text-[#2563EB]">Log In</Text>
         </Pressable>
       </View>
     </SafeAreaView>

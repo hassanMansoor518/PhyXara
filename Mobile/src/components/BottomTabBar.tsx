@@ -1,16 +1,20 @@
-import React from 'react';
-import { View, Text, Pressable, StyleSheet } from 'react-native';
-import { Home, BookOpen, ScanLine, Bot, User } from 'lucide-react-native';
 import { usePathname, router } from 'expo-router';
+import { Award, BookOpen, Home, ScanLine, User } from 'lucide-react-native';
+import React from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export const BottomTabBar: React.FC = () => {
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
 
-  const isHome = pathname === '/' || pathname === '/home' || pathname === '/(tabs)' || pathname === '/(tabs)/index';
-  const isLibrary = pathname.includes('library') || pathname.includes('explore');
-  const isAITutor = pathname.includes('ai-tutor') || pathname.includes('tutor');
+  const isHome =
+    pathname === '/' ||
+    pathname === '/home' ||
+    pathname === '/(tabs)' ||
+    pathname === '/(tabs)/index';
+  const isExplore = pathname.includes('library') || pathname.includes('explore') || pathname.includes('chapter');
+  const isProgress = pathname.includes('progress');
   const isProfile = pathname.includes('profile');
 
   const navigateTo = (path: string) => {
@@ -19,56 +23,56 @@ export const BottomTabBar: React.FC = () => {
 
   return (
     <View
-      className="bg-white border-t border-border flex-row items-center justify-around px-2 shadow-lg"
-      style={{ paddingBottom: Math.max(insets.bottom, 12), paddingTop: 8 }}
+      className="bg-white border-t border-[#E2E8F0] flex-row items-center justify-around px-2 shadow-lg"
+      style={{ paddingBottom: Math.max(insets.bottom, 10), paddingTop: 8 }}
     >
       {/* Home Tab */}
       <Pressable
         onPress={() => navigateTo('/(tabs)')}
         className="items-center justify-center flex-1 py-1"
       >
-        <Home size={22} color={isHome ? '#6C4DFF' : '#737A96'} />
+        <Home size={22} color={isHome ? '#2563EB' : '#64748B'} strokeWidth={isHome ? 2.5 : 2} />
         <Text
-          className={`text-[11px] mt-1 font-medium ${isHome ? 'text-primary font-bold' : 'text-muted'}`}
+          className={`text-[11px] mt-1 font-medium ${isHome ? 'text-[#2563EB] font-extrabold' : 'text-[#64748B]'}`}
         >
           Home
         </Text>
       </Pressable>
 
-      {/* Library Tab */}
+      {/* Explore Tab */}
       <Pressable
         onPress={() => navigateTo('/library')}
         className="items-center justify-center flex-1 py-1"
       >
-        <BookOpen size={22} color={isLibrary ? '#6C4DFF' : '#737A96'} />
+        <BookOpen size={22} color={isExplore ? '#2563EB' : '#64748B'} strokeWidth={isExplore ? 2.5 : 2} />
         <Text
-          className={`text-[11px] mt-1 font-medium ${isLibrary ? 'text-primary font-bold' : 'text-muted'}`}
+          className={`text-[11px] mt-1 font-medium ${isExplore ? 'text-[#2563EB] font-extrabold' : 'text-[#64748B]'}`}
         >
-          Library
+          Explore
         </Text>
       </Pressable>
 
-      {/* Elevated Scan Button */}
+      {/* Elevated Scan Button (Visually Emphasized) */}
       <View className="items-center justify-center -mt-6 flex-1">
         <Pressable
           onPress={() => navigateTo('/scanner')}
-          className="w-14 h-14 rounded-full bg-primary items-center justify-center shadow-lg active:scale-95 active:bg-primary-dark border-4 border-white"
+          className="w-14 h-14 rounded-full bg-[#2563EB] items-center justify-center shadow-lg active:scale-95 border-4 border-white"
           style={styles.scanButtonShadow}
         >
-          <ScanLine size={24} color="#FFFFFF" />
+          <ScanLine size={24} color="#FFFFFF" strokeWidth={2.5} />
         </Pressable>
       </View>
 
-      {/* AI Tutor Tab */}
+      {/* Progress Tab */}
       <Pressable
-        onPress={() => navigateTo('/ai-tutor')}
+        onPress={() => navigateTo('/progress')}
         className="items-center justify-center flex-1 py-1"
       >
-        <Bot size={22} color={isAITutor ? '#6C4DFF' : '#737A96'} />
+        <Award size={22} color={isProgress ? '#2563EB' : '#64748B'} strokeWidth={isProgress ? 2.5 : 2} />
         <Text
-          className={`text-[11px] mt-1 font-medium ${isAITutor ? 'text-primary font-bold' : 'text-muted'}`}
+          className={`text-[11px] mt-1 font-medium ${isProgress ? 'text-[#2563EB] font-extrabold' : 'text-[#64748B]'}`}
         >
-          AI Tutor
+          Progress
         </Text>
       </Pressable>
 
@@ -77,9 +81,9 @@ export const BottomTabBar: React.FC = () => {
         onPress={() => navigateTo('/profile')}
         className="items-center justify-center flex-1 py-1"
       >
-        <User size={22} color={isProfile ? '#6C4DFF' : '#737A96'} />
+        <User size={22} color={isProfile ? '#2563EB' : '#64748B'} strokeWidth={isProfile ? 2.5 : 2} />
         <Text
-          className={`text-[11px] mt-1 font-medium ${isProfile ? 'text-primary font-bold' : 'text-muted'}`}
+          className={`text-[11px] mt-1 font-medium ${isProfile ? 'text-[#2563EB] font-extrabold' : 'text-[#64748B]'}`}
         >
           Profile
         </Text>
@@ -90,9 +94,9 @@ export const BottomTabBar: React.FC = () => {
 
 const styles = StyleSheet.create({
   scanButtonShadow: {
-    shadowColor: '#6C4DFF',
+    shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.4,
+    shadowOpacity: 0.35,
     shadowRadius: 8,
     elevation: 8,
   },

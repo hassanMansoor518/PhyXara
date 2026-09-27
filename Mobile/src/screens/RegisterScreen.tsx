@@ -101,7 +101,7 @@ export const RegisterScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between">
+    <SafeAreaView className="flex-1 bg-[#FFFFFF] justify-between">
       <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 20, paddingBottom: 24 }}>
         {/* Back Button */}
         <Pressable
@@ -112,17 +112,17 @@ export const RegisterScreen: React.FC = () => {
               router.back();
             }
           }}
-          className="w-10 h-10 rounded-2xl bg-white border border-border items-center justify-center mb-6 shadow-sm"
+          className="w-10 h-10 rounded-2xl bg-[#F8FAFC] border border-[#E2E8F0] items-center justify-center mb-6 shadow-sm active:bg-gray-100"
         >
-          <ArrowLeft size={20} color="#101A43" />
+          <ArrowLeft size={20} color="#0F172A" />
         </Pressable>
 
         {/* Title */}
         <View className="mb-6">
-          <Text className="text-2xl font-extrabold text-navy">
+          <Text className="text-2xl font-black text-[#0F172A]">
             {pendingVerification ? 'Verify Your Email ✉️' : 'Create Account 🚀'}
           </Text>
-          <Text className="text-sm text-muted mt-1.5">
+          <Text className="text-sm text-[#64748B] mt-1.5">
             {pendingVerification
               ? `We sent a verification code to ${email}`
               : 'Sign up to start learning with PhyXara'}
@@ -132,24 +132,24 @@ export const RegisterScreen: React.FC = () => {
         {/* Error Banners */}
         {errorMsg ? (
           <View className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-5">
-            <Text className="text-xs text-danger font-semibold">{errorMsg}</Text>
+            <Text className="text-xs text-[#DC2626] font-semibold">{errorMsg}</Text>
           </View>
         ) : null}
 
         {pendingVerification ? (
           /* Code Verification Form */
-          <View className="space-y-4">
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Verification Code</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <KeyRound size={18} color="#737A96" />
+          <View className="gap-4">
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Verification Code</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <KeyRound size={18} color="#64748B" />
                 <TextInput
                   value={code}
                   onChangeText={setCode}
                   placeholder="123456"
-                  placeholderTextColor="#737A96"
+                  placeholderTextColor="#64748B"
                   keyboardType="number-pad"
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
@@ -164,81 +164,78 @@ export const RegisterScreen: React.FC = () => {
           </View>
         ) : (
           /* Registration Form */
-          <View className="space-y-4">
+          <View className="gap-4">
             {/* Full Name Field */}
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Full Name</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <User size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Full Name</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <User size={18} color="#64748B" />
                 <TextInput
                   value={name}
                   onChangeText={setName}
-                  placeholder="John Doe"
-                  placeholderTextColor="#737A96"
+                  placeholder="Hassan Ali"
+                  placeholderTextColor="#64748B"
                   autoCapitalize="words"
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
 
             {/* Email Field */}
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Email Address</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <Mail size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Email Address</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <Mail size={18} color="#64748B" />
                 <TextInput
                   value={email}
                   onChangeText={setEmail}
-                  placeholder="name@example.com"
-                  placeholderTextColor="#737A96"
+                  placeholder="student@example.com"
+                  placeholderTextColor="#64748B"
                   keyboardType="email-address"
                   autoCapitalize="none"
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
 
             {/* Password Field */}
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Password</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <Lock size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Password</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <Lock size={18} color="#64748B" />
                 <TextInput
                   value={password}
                   onChangeText={setPassword}
                   placeholder="At least 8 characters"
-                  placeholderTextColor="#737A96"
+                  placeholderTextColor="#64748B"
                   secureTextEntry={!showPassword}
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
                 <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
-                  {showPassword ? <EyeOff size={18} color="#737A96" /> : <Eye size={18} color="#737A96" />}
+                  {showPassword ? <EyeOff size={18} color="#64748B" /> : <Eye size={18} color="#64748B" />}
                 </Pressable>
               </View>
             </View>
 
             {/* Confirm Password Field */}
-            <View className="mb-4">
-              <Text className="text-xs font-bold text-navy mb-2">Confirm Password</Text>
-              <View className="flex-row items-center bg-white rounded-2xl px-4 py-1.5 border border-border shadow-sm">
-                <Lock size={18} color="#737A96" />
+            <View>
+              <Text className="text-xs font-bold text-[#0F172A] mb-2">Confirm Password</Text>
+              <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
+                <Lock size={18} color="#64748B" />
                 <TextInput
                   value={confirmPassword}
                   onChangeText={setConfirmPassword}
                   placeholder="Re-enter your password"
-                  placeholderTextColor="#737A96"
+                  placeholderTextColor="#64748B"
                   secureTextEntry={!showPassword}
-                  className="flex-1 ml-3 text-sm text-navy py-2"
+                  className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
                 />
               </View>
             </View>
 
-            {/* Clerk CAPTCHA Mount Point for Web / Bot Protection */}
-            <View nativeID="clerk-captcha" id="clerk-captcha" className="my-1 items-center justify-center min-h-[65px]" />
-
             {/* Register Button */}
             <PrimaryButton
-              title="Sign Up"
+              title="Create Account"
               onPress={handleSignUp}
               isLoading={isLoading}
               disabled={isLoading}
@@ -249,10 +246,10 @@ export const RegisterScreen: React.FC = () => {
       </ScrollView>
 
       {/* Footer */}
-      <View className="flex-row items-center justify-center py-5 border-t border-border/40 bg-background">
-        <Text className="text-xs text-muted">Already have an account? </Text>
+      <View className="flex-row items-center justify-center py-5 border-t border-[#E2E8F0] bg-white">
+        <Text className="text-xs text-[#64748B]">Already have an account? </Text>
         <Pressable onPress={() => router.push('/login')} hitSlop={10}>
-          <Text className="text-xs font-bold text-primary">Log In</Text>
+          <Text className="text-xs font-bold text-[#2563EB]">Log In</Text>
         </Pressable>
       </View>
     </SafeAreaView>

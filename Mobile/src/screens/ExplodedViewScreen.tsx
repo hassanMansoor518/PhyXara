@@ -55,10 +55,10 @@ export const ExplodedViewScreen: React.FC = () => {
   };
 
   return (
-    <SafeAreaView className="flex-1 bg-background justify-between" edges={['top', 'left', 'right']}>
+    <SafeAreaView className="flex-1 bg-[#F8FAFC] justify-between" edges={['top', 'left', 'right']}>
       {/* Header */}
       <AppHeader
-        title="3D View - Exploded"
+        title="3D Exploded View"
         rightIcon="star"
         isStarred={isStarred}
         onRightPress={() => setIsStarred(!isStarred)}
@@ -67,14 +67,14 @@ export const ExplodedViewScreen: React.FC = () => {
 
       {/* Subtitle badge */}
       <View className="items-center -mt-2 mb-1">
-        <View className="bg-primary/10 px-4 py-1.5 rounded-full border border-primary/20">
-          <Text className="text-xs font-bold text-primary">Electric Motor (Exploded)</Text>
+        <View className="bg-[#EFF6FF] px-4 py-1.5 rounded-full border border-[#DBEAFE]">
+          <Text className="text-xs font-bold text-[#2563EB]">Electric Motor Components</Text>
         </View>
       </View>
 
       {/* Main Exploded Viewport */}
       <View className="flex-1 px-5 justify-center items-center relative">
-        <View className="w-full h-80 bg-white rounded-3xl border border-border items-center justify-center relative overflow-hidden shadow-sm">
+        <View className="w-full h-80 bg-white rounded-3xl border border-[#E2E8F0] items-center justify-center relative overflow-hidden shadow-sm">
           <GestureDetector gesture={pinchGesture}>
             <Animated.View
               style={[animatedStyle, { width: '100%', height: '100%', alignItems: 'center', justifyContent: 'center' }]}
@@ -126,28 +126,28 @@ export const ExplodedViewScreen: React.FC = () => {
         onRequestClose={() => setSelectedPartKey(null)}
       >
         <View className="flex-1 bg-black/40 justify-end">
-          <View className="bg-white rounded-t-3xl p-6 border-t border-border shadow-2xl">
+          <View className="bg-white rounded-t-3xl p-6 border-t border-[#E2E8F0] shadow-2xl">
             <View className="flex-row items-center justify-between mb-3">
               <View className="flex-row items-center">
-                <View className="w-9 h-9 rounded-xl bg-primary-subtle items-center justify-center mr-2.5">
-                  <Sparkles size={18} color="#6C4DFF" />
+                <View className="w-9 h-9 rounded-2xl bg-[#EFF6FF] items-center justify-center mr-2.5 border border-[#DBEAFE]">
+                  <Sparkles size={18} color="#2563EB" />
                 </View>
-                <Text className="text-base font-extrabold text-navy">
+                <Text className="text-base font-extrabold text-[#0F172A]">
                   {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.title : ''}
                 </Text>
               </View>
               <Pressable
                 onPress={() => setSelectedPartKey(null)}
-                className="w-8 h-8 rounded-full bg-background items-center justify-center"
+                className="w-8 h-8 rounded-full bg-[#F8FAFC] items-center justify-center border border-[#E2E8F0]"
               >
-                <X size={16} color="#737A96" />
+                <X size={16} color="#64748B" />
               </Pressable>
             </View>
 
-            <Text className="text-xs font-semibold text-primary mb-1">
+            <Text className="text-xs font-semibold text-[#2563EB] mb-1">
               Role: {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.role : ''}
             </Text>
-            <Text className="text-xs text-muted leading-5 mb-4">
+            <Text className="text-xs text-[#475569] leading-5 mb-4">
               {selectedPartKey ? MOTOR_PARTS[selectedPartKey]?.description : ''}
             </Text>
 
@@ -156,9 +156,9 @@ export const ExplodedViewScreen: React.FC = () => {
                 setSelectedPartKey(null);
                 router.push('/ai-tutor');
               }}
-              className="h-12 rounded-2xl bg-primary items-center justify-center active:bg-primary-dark"
+              className="h-12 rounded-2xl bg-[#2563EB] items-center justify-center active:bg-[#1D4ED8] shadow-md"
             >
-              <Text className="text-xs font-bold text-white">Ask AI Tutor about this part</Text>
+              <Text className="text-xs font-bold text-white">Ask AI Tutor about this component</Text>
             </Pressable>
           </View>
         </View>

@@ -1,6 +1,6 @@
+import { Box, RotateCcw, RotateCw, Tag, ZoomIn } from 'lucide-react-native';
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { RotateCw, ZoomIn, Box, Tag, RotateCcw } from 'lucide-react-native';
+import { Pressable, Text, View } from 'react-native';
 
 interface MotorControlsProps {
   onRotate: () => void;
@@ -22,16 +22,16 @@ export const MotorControls: React.FC<MotorControlsProps> = ({
   onReset,
 }) => {
   return (
-    <View className="flex-row items-center justify-around bg-white rounded-3xl p-3 border border-border shadow-md mx-5 mb-4">
+    <View className="flex-row items-center justify-around bg-white rounded-3xl p-3 border border-[#E2E8F0] shadow-md mx-5 mb-4">
       {/* Rotate */}
       <Pressable
         onPress={onRotate}
         className="items-center justify-center flex-1 py-1 active:opacity-70"
       >
-        <View className="w-10 h-10 rounded-2xl bg-background items-center justify-center mb-1">
-          <RotateCw size={18} color="#6C4DFF" />
+        <View className="w-10 h-10 rounded-2xl bg-[#EFF6FF] items-center justify-center mb-1 border border-[#DBEAFE]">
+          <RotateCw size={18} color="#2563EB" />
         </View>
-        <Text className="text-[11px] font-semibold text-navy">Rotate</Text>
+        <Text className="text-[11px] font-bold text-[#0F172A]">Rotate</Text>
       </Pressable>
 
       {/* Zoom */}
@@ -39,10 +39,10 @@ export const MotorControls: React.FC<MotorControlsProps> = ({
         onPress={onZoom}
         className="items-center justify-center flex-1 py-1 active:opacity-70"
       >
-        <View className="w-10 h-10 rounded-2xl bg-background items-center justify-center mb-1">
-          <ZoomIn size={18} color="#6C4DFF" />
+        <View className="w-10 h-10 rounded-2xl bg-[#EFF6FF] items-center justify-center mb-1 border border-[#DBEAFE]">
+          <ZoomIn size={18} color="#2563EB" />
         </View>
-        <Text className="text-[11px] font-semibold text-navy">Zoom</Text>
+        <Text className="text-[11px] font-bold text-[#0F172A]">Zoom</Text>
       </Pressable>
 
       {/* Explode / Reset */}
@@ -52,16 +52,16 @@ export const MotorControls: React.FC<MotorControlsProps> = ({
       >
         <View
           className={`w-10 h-10 rounded-2xl items-center justify-center mb-1 ${
-            isExploded ? 'bg-primary' : 'bg-background'
+            isExploded ? 'bg-[#2563EB]' : 'bg-[#EFF6FF] border border-[#DBEAFE]'
           }`}
         >
           {isExploded ? (
             <RotateCcw size={18} color="#FFFFFF" />
           ) : (
-            <Box size={18} color="#6C4DFF" />
+            <Box size={18} color="#2563EB" />
           )}
         </View>
-        <Text className="text-[11px] font-semibold text-navy">
+        <Text className="text-[11px] font-bold text-[#0F172A]">
           {isExploded ? 'Reset' : 'Explode'}
         </Text>
       </Pressable>
@@ -73,12 +73,12 @@ export const MotorControls: React.FC<MotorControlsProps> = ({
       >
         <View
           className={`w-10 h-10 rounded-2xl items-center justify-center mb-1 ${
-            labelsActive ? 'bg-primary' : 'bg-background'
+            labelsActive ? 'bg-[#2563EB]' : 'bg-[#EFF6FF] border border-[#DBEAFE]'
           }`}
         >
-          <Tag size={18} color={labelsActive ? '#FFFFFF' : '#6C4DFF'} />
+          <Tag size={18} color={labelsActive ? '#FFFFFF' : '#2563EB'} />
         </View>
-        <Text className="text-[11px] font-semibold text-navy">Labels</Text>
+        <Text className="text-[11px] font-bold text-[#0F172A]">Labels</Text>
       </Pressable>
     </View>
   );
