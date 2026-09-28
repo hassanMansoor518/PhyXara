@@ -1,21 +1,44 @@
-import { usePathname, router } from 'expo-router';
+import { router, usePathname } from 'expo-router';
 import { Award, BookOpen, Home, ScanLine, User } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
-export const BottomTabBar: React.FC = () => {
-  const pathname = usePathname();
+export interface BottomTabBarProps {
+  activeTab?: 'home' | 'explore' | 'scan' | 'progress' | 'profile';
+}
+
+export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
   const insets = useSafeAreaInsets();
 
+  let pathname = '';
+  try {
+    pathname = usePathname();
+  } catch {
+    pathname = '';
+  }
+
   const isHome =
-    pathname === '/' ||
-    pathname === '/home' ||
-    pathname === '/(tabs)' ||
-    pathname === '/(tabs)/index';
-  const isExplore = pathname.includes('library') || pathname.includes('explore') || pathname.includes('chapter');
-  const isProgress = pathname.includes('progress');
-  const isProfile = pathname.includes('profile');
+    activeTab === 'home' ||
+    (!activeTab &&
+      (pathname === '/' ||
+        pathname === '/home' ||
+        pathname === '/(tabs)' ||
+        pathname === '/(tabs)/index'));
+
+  const isExplore =
+    activeTab === 'explore' ||
+    (!activeTab &&
+      (pathname.includes('library') ||
+        pathname.includes('explore') ||
+        pathname.includes('chapter') ||
+        pathname.includes('electricity')));
+
+  const isProgress =
+    activeTab === 'progress' || (!activeTab && pathname.includes('progress'));
+
+  const isProfile =
+    activeTab === 'profile' || (!activeTab && pathname.includes('profile'));
 
   const navigateTo = (path: string) => {
     router.push(path as any);

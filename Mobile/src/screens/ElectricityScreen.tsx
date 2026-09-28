@@ -327,7 +327,7 @@ export const ElectricityScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabBar />
+      <BottomTabBar activeTab="explore" />
     </SafeAreaView>
   );
 };

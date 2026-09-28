@@ -213,7 +213,7 @@ export const ProfileScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabBar />
+      <BottomTabBar activeTab="profile" />
     </SafeAreaView>
   );
 };

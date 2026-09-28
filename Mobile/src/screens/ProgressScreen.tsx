@@ -302,7 +302,7 @@ export const ProgressScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabBar />
+      <BottomTabBar activeTab="progress" />
     </SafeAreaView>
   );
 };

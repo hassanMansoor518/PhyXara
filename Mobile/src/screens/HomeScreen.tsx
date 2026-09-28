@@ -339,7 +339,7 @@ export const HomeScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
-      <BottomTabBar />
+      <BottomTabBar activeTab="home" />
     </SafeAreaView>
   );
 };
