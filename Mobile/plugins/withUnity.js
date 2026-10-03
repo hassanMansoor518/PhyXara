@@ -1,6 +1,8 @@
 // Local Expo config plugin: Android wiring for the exported Unity library that
 // @azesmway/react-native-unity does not cover (it handles settings.gradle, flatDir, strings, gradle.properties).
-const { withAndroidManifest, withAppBuildGradle, withGradleProperties, AndroidConfig } = require('@expo/config-plugins');
+const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDangerousMod, AndroidConfig } = require('@expo/config-plugins');
+const fs = require('fs');
+const path = require('path');
 
 const MIN_SDK = '26'; // highest of: RN 0.86 (24), ARCore (24), Unity 6 export (set in ExportAndroid.cs)
 
@@ -49,8 +51,25 @@ const withAbiAndPackaging = (config) =>
         `android {\n    // unity: packaging (Unity and Viro both ship ARCore/C++ runtime libs)\n    packagingOptions {\n        pickFirst '**/libc++_shared.so'\n        pickFirst '**/libarcore_sdk_c.so'\n        jniLibs { useLegacyPackaging = false }\n    }`
       );
     }
+    // Unity 6000.0 requires NDK r27c; use the same NDK for the app so only one is needed.
+    src = src.replace(/ndkVersion\s+rootProject\.ext\.ndkVersion/, 'ndkVersion "27.2.12479018"');
     mod.modResults.contents = src;
     return mod;
   });
 
-module.exports = (config) => withAbiAndPackaging(withMinSdk(withArManifest(config)));
+// @azesmway/react-native-unity 1.1.1 still calls jcenter(), which Gradle 9 removed. Drop it on every prebuild.
+const withLibraryGradle9Fix = (config) =>
+  withDangerousMod(config, [
+    'android',
+    (mod) => {
+      const file = path.join(mod.modRequest.projectRoot, 'node_modules', '@azesmway', 'react-native-unity', 'android', 'build.gradle');
+      if (fs.existsSync(file)) {
+        const src = fs.readFileSync(file, 'utf8');
+        const fixed = src.replace(/^\s*jcenter\(\)\s*$/gm, '');
+        if (fixed !== src) fs.writeFileSync(file, fixed);
+      }
+      return mod;
+    },
+  ]);
+
+module.exports = (config) => withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))));
