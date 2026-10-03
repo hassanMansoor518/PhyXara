@@ -1,5 +1,5 @@
-/* eslint-env node */
 #!/usr/bin/env node
+/* eslint-env node */
 /*
  * Copies the Unity Android export (AR_MODE/Builds/android/unityLibrary) into
  * Mobile/unity/builds/android/unityLibrary, the location @azesmway/react-native-unity's Expo plugin
