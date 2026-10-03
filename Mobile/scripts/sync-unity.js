@@ -33,6 +33,17 @@ if (fs.existsSync(manifest)) {
   if (stripped !== xml) fs.writeFileSync(manifest, stripped);
 }
 
+// unityLibrary depends on a nested XR manifest module that only declares UnityPlayerGameActivity. The RN host embeds the
+// player view and never launches that activity, and the module breaks React Native's root Gradle plugin, so drop it.
+const gradle = path.join(dest, 'build.gradle');
+if (fs.existsSync(gradle)) {
+  const g = fs.readFileSync(gradle, 'utf8');
+  const patched = g.split(/?
+/).filter((line) => !line.includes('xrmanifest.androidlib')).join('
+');
+  if (patched !== g) fs.writeFileSync(gradle, patched);
+}
+
 // Exports that reference ../shared (keepUnitySymbols etc.) need it next to unityLibrary.
 const shared = path.join(exportDir, 'shared');
 if (fs.existsSync(shared)) {

@@ -1,6 +1,6 @@
 // Local Expo config plugin: Android wiring for the exported Unity library that
 // @azesmway/react-native-unity does not cover (it handles settings.gradle, flatDir, strings, gradle.properties).
-const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDangerousMod, withProjectBuildGradle, withSettingsGradle, AndroidConfig } = require('@expo/config-plugins');
+const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDangerousMod, withProjectBuildGradle, AndroidConfig } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -85,16 +85,4 @@ const withRootNdk = (config) =>
     return mod;
   });
 
-// Unity's unityLibrary depends on a nested module (XR manifest) that its own settings.gradle includes.
-const withNestedUnityModules = (config) =>
-  withSettingsGradle(config, (mod) => {
-    const line = "include ':unityLibrary:xrmanifest.androidlib'";
-    if (!mod.modResults.contents.includes(line)) {
-      mod.modResults.contents +=
-        `\n${line}\n` +
-        "project(':unityLibrary:xrmanifest.androidlib').projectDir=new File('../unity/builds/android/unityLibrary/xrmanifest.androidlib')\n";
-    }
-    return mod;
-  });
-
-module.exports = (config) => withNestedUnityModules(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))))));
+module.exports = (config) => withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config)))));
