@@ -32,6 +32,7 @@ function InitialLayout() {
     const protectedRoutes = [
       '(tabs)',
       'scanner',
+      'unity',
       'detection',
       'motor-viewer',
       'exploded-view',
@@ -68,6 +69,7 @@ function InitialLayout() {
       <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="scanner" options={{ headerShown: false, animation: 'fade' }} />
+      <Stack.Screen name="unity" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="detection" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="motor-viewer" options={{ headerShown: false }} />
       <Stack.Screen name="exploded-view" options={{ headerShown: false }} />

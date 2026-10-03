@@ -42,3 +42,6 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Unity export copied in by scripts/sync-unity.js (large, regenerated)
+/unity/builds/

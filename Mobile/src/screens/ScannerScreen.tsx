@@ -1,18 +1,35 @@
 import { CameraView, useCameraPermissions } from 'expo-camera';
-import { router } from 'expo-router';
+import * as ImagePicker from 'expo-image-picker';
+import { router, useIsFocused } from 'expo-router';
 import { Camera, Sparkles } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { Alert, Modal, Pressable, StyleSheet, Text, View } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScanOverlay } from '../components/ScanOverlay';
+import { unityConfig } from '../unity/config';
+import { DiagramMatcherService } from '../unity/DiagramMatcher';
+import { UnityBridge } from '../unity/UnityBridge';
 
 export const ScannerScreen: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
   const [flashMode, setFlashMode] = useState<'on' | 'off'>('off');
   const [showTips, setShowTips] = useState(false);
   const cameraRef = useRef<any>(null);
+  // expo-camera must release the camera while Unity (which owns it in AR mode) is on top.
+  const isFocused = useIsFocused();
+
+  const openUnityAr = async () => {
+    const result = await UnityBridge.open('ar', unityConfig.defaultExperimentId);
+    if (!result.ok && result.reason === 'camera_denied') {
+      Alert.alert('Camera Access Needed', 'Camera permission is required to scan physics diagrams.');
+    }
+  };
 
   const handleCapture = async () => {
+    if (unityConfig.enabled) {
+      await openUnityAr();
+      return;
+    }
     try {
       let imageUri = '';
       if (cameraRef.current && cameraRef.current.takePictureAsync) {
@@ -32,7 +49,22 @@ export const ScannerScreen: React.FC = () => {
     }
   };
 
+  const handleUnityUpload = async () => {
+    const picked = await ImagePicker.launchImageLibraryAsync({ mediaTypes: ['images'], quality: 0.8 });
+    if (picked.canceled || !picked.assets[0]) return;
+    const match = await DiagramMatcherService.match(picked.assets[0].uri);
+    if (!match) {
+      Alert.alert('Diagram Not Recognized', 'We could not match this image to a known diagram. Try a clearer photo of the page.');
+      return;
+    }
+    await UnityBridge.open('preview', match.experimentId);
+  };
+
   const handleGallery = () => {
+    if (unityConfig.enabled) {
+      handleUnityUpload();
+      return;
+    }
     Alert.alert(
       'Sample Diagram Loaded',
       'Electric Motor diagram from Sindh Board Physics Chapter 14 has been selected.',
@@ -81,6 +113,7 @@ export const ScannerScreen: React.FC = () => {
 
   return (
     <View className="flex-1 bg-black">
+      {isFocused && (
       <CameraView
         ref={cameraRef}
         style={StyleSheet.absoluteFill}
@@ -102,6 +135,7 @@ export const ScannerScreen: React.FC = () => {
           onToggleFlash={() => setFlashMode((prev) => (prev === 'on' ? 'off' : 'on'))}
         />
       </CameraView>
+      )}
 
       {/* Light Theme Tips Modal */}
       <Modal
