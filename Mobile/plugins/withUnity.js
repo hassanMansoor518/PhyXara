@@ -1,6 +1,6 @@
 // Local Expo config plugin: Android wiring for the exported Unity library that
 // @azesmway/react-native-unity does not cover (it handles settings.gradle, flatDir, strings, gradle.properties).
-const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDangerousMod, AndroidConfig } = require('@expo/config-plugins');
+const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDangerousMod, withProjectBuildGradle, withSettingsGradle, AndroidConfig } = require('@expo/config-plugins');
 const fs = require('fs');
 const path = require('path');
 
@@ -72,4 +72,29 @@ const withLibraryGradle9Fix = (config) =>
     },
   ]);
 
-module.exports = (config) => withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))));
+// Expo's root plugin only sets ext.ndkVersion when it is absent, so every module (worklets, expo-modules, ...) uses r27c too.
+const withRootNdk = (config) =>
+  withProjectBuildGradle(config, (mod) => {
+    const src = mod.modResults.contents;
+    if (!src.includes('// unity: ndk')) {
+      mod.modResults.contents = src.replace(
+        'apply plugin: "expo-root-project"',
+        '// unity: ndk\next.ndkVersion = "27.2.12479018"\napply plugin: "expo-root-project"'
+      );
+    }
+    return mod;
+  });
+
+// Unity's unityLibrary depends on a nested module (XR manifest) that its own settings.gradle includes.
+const withNestedUnityModules = (config) =>
+  withSettingsGradle(config, (mod) => {
+    const line = "include ':unityLibrary:xrmanifest.androidlib'";
+    if (!mod.modResults.contents.includes(line)) {
+      mod.modResults.contents +=
+        `\n${line}\n` +
+        "project(':unityLibrary:xrmanifest.androidlib').projectDir=new File('../unity/builds/android/unityLibrary/xrmanifest.androidlib')\n";
+    }
+    return mod;
+  });
+
+module.exports = (config) => withNestedUnityModules(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))))));
