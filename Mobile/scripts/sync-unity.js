@@ -38,9 +38,10 @@ if (fs.existsSync(manifest)) {
 const gradle = path.join(dest, 'build.gradle');
 if (fs.existsSync(gradle)) {
   const g = fs.readFileSync(gradle, 'utf8');
-  const patched = g.split(/?
-/).filter((line) => !line.includes('xrmanifest.androidlib')).join('
-');
+  const patched = g
+    .split('\n')
+    .filter((line) => !line.includes('xrmanifest.androidlib'))
+    .join('\n');
   if (patched !== g) fs.writeFileSync(gradle, patched);
 }
 
