@@ -85,4 +85,27 @@ const withRootNdk = (config) =>
     return mod;
   });
 
-module.exports = (config) => withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config)))));
+// unityLibrary's build.gradle reads unity.* properties (NDK/SDK paths, abi, versions) that Unity writes into the
+// export's gradle.properties. Copy them at prebuild so they always match the latest export on this machine.
+// Also keep Gradle light: the IL2CPP + CMake steps are memory hungry and parallel runs exhaust the Windows paging file.
+const withUnityGradleProperties = (config) =>
+  withGradleProperties(config, (mod) => {
+    const exported = path.join(mod.modRequest.projectRoot, '..', 'AR_MODE', 'Builds', 'android', 'gradle.properties');
+    const wanted = new Map();
+    if (fs.existsSync(exported)) {
+      for (const line of fs.readFileSync(exported, 'utf8').split('\n')) {
+        const m = line.trim().match(/^(unity[A-Za-z.]*)=(.*)$/);
+        if (m && m[1] !== 'unityStreamingAssets') wanted.set(m[1], m[2]);
+      }
+    } else {
+      console.warn('[withUnity] AR_MODE/Builds/android/gradle.properties not found: export from Unity first');
+    }
+    wanted.set('org.gradle.parallel', 'false');
+    wanted.set('org.gradle.workers.max', '2');
+    wanted.set('org.gradle.jvmargs', '-Xmx3g -XX:MaxMetaspaceSize=512m');
+    mod.modResults = mod.modResults.filter((p) => !(p.type === 'property' && wanted.has(p.key)));
+    for (const [key, value] of wanted) mod.modResults.push({ type: 'property', key, value });
+    return mod;
+  });
+
+module.exports = (config) => withUnityGradleProperties(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))))));
