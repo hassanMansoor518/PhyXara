@@ -127,8 +127,8 @@ public class VernierCaliperController : MonoBehaviour, IExperimentController
     {
         animating = false;
         practical = true;
-        // random diameter between 6 and 45 mm, a multiple of the least count so the correct answer is exactly readable
-        targetWidthMm = Mathf.Round(UnityEngine.Random.Range(6f, 45f) / LeastCountMm) * LeastCountMm;
+        // random diameter between 6 and 30 mm, a multiple of the least count so the correct answer is exactly readable
+        targetWidthMm = Mathf.Round(UnityEngine.Random.Range(6f, 30f) / LeastCountMm) * LeastCountMm;
         SetWorkpiece(targetWidthMm);
         SetOpeningMm(60f);
         SetState("practical_started");
