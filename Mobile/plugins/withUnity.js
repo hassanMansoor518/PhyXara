@@ -29,6 +29,25 @@ const withArManifest = (config) =>
     return mod;
   });
 
+// unityLibrary (and the ARCore aars it bundles) declare allowBackup=false and ARCore "required". The app keeps
+// allowBackup=true and ARCore optional, so the app manifest has to override both. This mod must run after Viro's,
+// so withUnity is listed before @reactvision/react-viro in app.json (mods run in reverse registration order).
+const withManifestConflictFix = (config) =>
+  withAndroidManifest(config, (mod) => {
+    const manifest = mod.modResults;
+    manifest.manifest.$['xmlns:tools'] = 'http://schemas.android.com/tools';
+
+    const app = AndroidConfig.Manifest.getMainApplicationOrThrow(manifest);
+    const replace = new Set((app.$['tools:replace'] || '').split(',').filter(Boolean));
+    replace.add('android:allowBackup');
+    app.$['tools:replace'] = [...replace].join(',');
+
+    for (const meta of app['meta-data'] || []) {
+      if (meta.$['android:name'] === 'com.google.ar.core') meta.$['tools:replace'] = 'android:value';
+    }
+    return mod;
+  });
+
 const withMinSdk = (config) =>
   withGradleProperties(config, (mod) => {
     mod.modResults = mod.modResults.filter((p) => !(p.type === 'property' && p.key === 'android.minSdkVersion'));
@@ -108,4 +127,4 @@ const withUnityGradleProperties = (config) =>
     return mod;
   });
 
-module.exports = (config) => withUnityGradleProperties(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config))))));
+module.exports = (config) => withManifestConflictFix(withUnityGradleProperties(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config)))))));
