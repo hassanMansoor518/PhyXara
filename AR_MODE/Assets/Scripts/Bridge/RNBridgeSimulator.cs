@@ -13,10 +13,38 @@ namespace PhyXara.Bridge
         public string experimentId = "exp3_micrometer";
 
 #if UNITY_EDITOR || DEVELOPMENT_BUILD
+        string lastState = "-", lastReadout = "-";
+        RNBridge subscribed;
+
+        void OnDisable() { Unsubscribe(); }
+
+        void Unsubscribe()
+        {
+            if (subscribed != null) subscribed.Outbound -= OnOutbound;
+            subscribed = null;
+        }
+
+        void OnOutbound(string json)
+        {
+            // show the newest state / readout messages the way RN would receive them
+            if (json.Contains("\"type\":\"readout\"")) lastReadout = json;
+            else if (json.Contains("\"type\":\"state\"")) lastState = json;
+        }
+
         void OnGUI()
         {
             if (bridge == null) return;
-            GUILayout.BeginArea(new Rect(10, 10, 220, 400));
+            if (subscribed != bridge) { Unsubscribe(); subscribed = bridge; bridge.Outbound += OnOutbound; }
+            GUILayout.BeginArea(new Rect(10, 10, 240, 560));
+            // pick the experiment from the registry (every entry added later shows up here automatically)
+            if (bridge.registry != null)
+            {
+                GUILayout.Label("experiment: " + experimentId);
+                foreach (var e in bridge.registry.entries)
+                    if (e != null && GUILayout.Button((e.experimentId == experimentId ? "> " : "") + e.experimentId))
+                        experimentId = e.experimentId;
+                GUILayout.Space(6);
+            }
             if (GUILayout.Button("open preview")) Feed("{\"v\":1,\"type\":\"open\",\"mode\":\"preview\",\"experimentId\":\"" + experimentId + "\"}");
             if (GUILayout.Button("open ar")) Feed("{\"v\":1,\"type\":\"open\",\"mode\":\"ar\",\"experimentId\":\"" + experimentId + "\"}");
             if (GUILayout.Button("playAnimation")) Feed("{\"v\":1,\"type\":\"playAnimation\"}");
@@ -25,6 +53,9 @@ namespace PhyXara.Bridge
             if (GUILayout.Button("resetPractical")) Feed("{\"v\":1,\"type\":\"resetPractical\"}");
             if (GUILayout.Button("setLanguage ur")) Feed("{\"v\":1,\"type\":\"setLanguage\",\"lang\":\"ur\"}");
             if (GUILayout.Button("stop")) Feed("{\"v\":1,\"type\":\"stop\"}");
+            GUILayout.Space(6);
+            GUILayout.Label("state: " + lastState);
+            GUILayout.Label("readout: " + lastReadout);
             GUILayout.EndArea();
         }
 #endif
