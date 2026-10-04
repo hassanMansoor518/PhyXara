@@ -19,3 +19,11 @@ MonoBehaviour:
     referenceTexture: {fileID: 0}
     physicalWidthMeters: 0.15
     modelSizeMeters: 0.12
+    arRotationEuler: {x: 0, y: 0, z: 0}
+  - experimentId: exp_vernier_caliper
+    modelPrefab: {fileID: 2984515629825232433, guid: a88de5908561bd144ab7550750c08928, type: 3}
+    referenceImageName: exp_vernier_caliper
+    referenceTexture: {fileID: 0}
+    physicalWidthMeters: 0.15
+    modelSizeMeters: 0.15
+    arRotationEuler: {x: 90, y: 0, z: 0}

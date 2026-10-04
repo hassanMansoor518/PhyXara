@@ -237,9 +237,9 @@ public static class VernierCaliperBuilder
 
     static void MakeMaterials()
     {
-        steel = MakeMat("VernierSteel", new Color(0.70f, 0.72f, 0.75f), 0.9f, 0.55f);
-        plate = MakeMat("VernierPlate", new Color(0.82f, 0.84f, 0.86f), 0.85f, 0.65f);
-        dark = MakeMat("VernierDark", new Color(0.18f, 0.19f, 0.21f), 0.9f, 0.45f);
+        steel = MakeMat("VernierSteel", new Color(0.62f, 0.64f, 0.67f), 0.55f, 0.45f);
+        plate = MakeMat("VernierPlate", new Color(0.74f, 0.76f, 0.78f), 0.45f, 0.5f);
+        dark = MakeMat("VernierDark", new Color(0.16f, 0.17f, 0.19f), 0.6f, 0.4f);
         ink = MakeMat("VernierInk", new Color(0.03f, 0.03f, 0.03f), 0f, 0.1f);
     }
 
