@@ -127,4 +127,7 @@ const withUnityGradleProperties = (config) =>
     return mod;
   });
 
-module.exports = (config) => withManifestConflictFix(withUnityGradleProperties(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withArManifest(config)))))));
+// Mods run in reverse registration order: withArManifest (outermost) adds the ARCore entries first,
+// then withManifestConflictFix (registered earlier) annotates them.
+module.exports = (config) =>
+  withArManifest(withUnityGradleProperties(withRootNdk(withLibraryGradle9Fix(withAbiAndPackaging(withMinSdk(withManifestConflictFix(config)))))));
