@@ -124,6 +124,24 @@ namespace PhyXara.Bridge
             controller.ReadoutChanged += OnControllerReadout;
         }
 
+        // AR only: swap the spawned model when a different registered image is found
+        void ReplaceModel(ExperimentEntry next)
+        {
+            if (controller != null)
+            {
+                controller.StateChanged -= OnControllerState;
+                controller.ReadoutChanged -= OnControllerReadout;
+                controller = null;
+            }
+            if (model != null) Destroy(model);
+            model = null;
+            entry = next;
+            CurrentExperimentId = next.experimentId;
+            SpawnModel(next);
+            if (model != null) model.SetActive(false);   // shown once positioned on the image
+            tracked = false;
+        }
+
         void EnterAR()
         {
             tracked = false;
@@ -180,8 +198,13 @@ namespace PhyXara.Bridge
 
         void HandleImage(ARTrackedImage img)
         {
-            if (model == null || entry == null) return;
-            if (img.referenceImage.name != entry.referenceImageName) return;
+            if (entry == null || registry == null) return;
+
+            // the printed page decides which model appears: any image from the registry switches to its experiment
+            var seen = registry.FindByImage(img.referenceImage.name);
+            if (seen == null || seen.modelPrefab == null) return;
+            if (seen != entry && img.trackingState == TrackingState.Tracking) ReplaceModel(seen);
+            if (model == null || seen != entry) return;
 
             var isTracking = img.trackingState == TrackingState.Tracking;
             if (isTracking)

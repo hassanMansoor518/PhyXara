@@ -28,12 +28,23 @@ namespace PhyXara.Bridge
         {
             target = t;
             baseSize = size;
-            distance = size * 2.5f;
+            distance = FitDistance(size);
             pinchPrev = 0f;
             Place();
         }
 
         public void End() { target = null; }
+
+        // Camera distance at which the model's longest side fits the screen width with a small margin,
+        // whatever the aspect ratio (a wide model such as the caliper would be cut off on a portrait phone).
+        float FitDistance(float size)
+        {
+            if (cam == null) return size * 2.5f;
+            var vHalf = cam.fieldOfView * 0.5f * Mathf.Deg2Rad;
+            var hHalf = Mathf.Atan(Mathf.Tan(vHalf) * Mathf.Max(0.1f, cam.aspect));
+            var fitWidth = size * 1.15f * 0.5f / Mathf.Tan(Mathf.Min(hHalf, vHalf));
+            return Mathf.Max(size * 1.6f, fitWidth);
+        }
 
         void Update()
         {

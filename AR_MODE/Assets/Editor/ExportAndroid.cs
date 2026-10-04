@@ -24,6 +24,13 @@ public static class ExportAndroid
     [MenuItem("PhyXara/Export Android (development)")]
     public static void ExportDevMenu() { Run(true); }
 
+    // -executeMethod ExportAndroid.ExportWithVernier: sets the caliper tracking image, then exports
+    public static void ExportWithVernier()
+    {
+        VernierCaliperBuilder.PrepareReferenceImage();
+        Export();
+    }
+
     // -executeMethod ExportAndroid.Export  (add -dev for a development build)
     public static void Export()
     {

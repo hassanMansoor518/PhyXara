@@ -5,15 +5,18 @@
   "scripts": {
     "start": "expo start",
     "reset-project": "node ./scripts/reset-project.js",
-    "android": "expo start --android",
-    "ios": "expo start --ios",
+    "android": "expo run:android",
+    "ios": "expo run:ios",
     "web": "expo start --web",
     "lint": "expo lint"
   },
   "dependencies": {
+    "@azesmway/react-native-unity": "^1.1.1",
     "@clerk/expo": "^4.6.1",
     "@expo/vector-icons": "^15.0.3",
     "@react-native-async-storage/async-storage": "2.2.0",
+    "@reactvision/react-viro": "^3.0.2",
+    "@reactvision/viro-web-renderer": "^1.0.1",
     "expo": "^57.0.16",
     "expo-auth-session": "^57.0.10",
     "expo-camera": "~57.0.4",
@@ -21,6 +24,7 @@
     "expo-font": "~57.0.1",
     "expo-haptics": "~57.0.1",
     "expo-image": "~57.0.3",
+    "expo-image-picker": "~57.0.20",
     "expo-linear-gradient": "~57.0.1",
     "expo-linking": "~57.0.7",
     "expo-router": "~57.0.16",

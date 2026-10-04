@@ -86,14 +86,12 @@ export const ElectricityScreen: React.FC = () => {
         <View className="flex-row bg-[#EFF6FF] p-1 rounded-2xl border border-[#E2E8F0] mb-5">
           <Pressable
             onPress={() => setActiveTab('learn')}
-            className={`flex-1 py-2 rounded-xl items-center justify-center ${
-              activeTab === 'learn' ? 'bg-[#2563EB] shadow-sm' : ''
-            }`}
+            className={`flex-1 py-2 rounded-xl items-center justify-center ${activeTab === 'learn' ? 'bg-[#2563EB] shadow-sm' : ''
+              }`}
           >
             <Text
-              className={`text-xs font-extrabold ${
-                activeTab === 'learn' ? 'text-white' : 'text-[#475569]'
-              }`}
+              className={`text-xs font-extrabold ${activeTab === 'learn' ? 'text-white' : 'text-[#475569]'
+                }`}
             >
               Learn
             </Text>
@@ -101,14 +99,12 @@ export const ElectricityScreen: React.FC = () => {
 
           <Pressable
             onPress={() => setActiveTab('ar')}
-            className={`flex-1 py-2 rounded-xl items-center justify-center ${
-              activeTab === 'ar' ? 'bg-[#2563EB] shadow-sm' : ''
-            }`}
+            className={`flex-1 py-2 rounded-xl items-center justify-center ${activeTab === 'ar' ? 'bg-[#2563EB] shadow-sm' : ''
+              }`}
           >
             <Text
-              className={`text-xs font-extrabold ${
-                activeTab === 'ar' ? 'text-white' : 'text-[#475569]'
-              }`}
+              className={`text-xs font-extrabold ${activeTab === 'ar' ? 'text-white' : 'text-[#475569]'
+                }`}
             >
               Explore in AR
             </Text>
@@ -116,14 +112,12 @@ export const ElectricityScreen: React.FC = () => {
 
           <Pressable
             onPress={() => setActiveTab('practice')}
-            className={`flex-1 py-2 rounded-xl items-center justify-center ${
-              activeTab === 'practice' ? 'bg-[#2563EB] shadow-sm' : ''
-            }`}
+            className={`flex-1 py-2 rounded-xl items-center justify-center ${activeTab === 'practice' ? 'bg-[#2563EB] shadow-sm' : ''
+              }`}
           >
             <Text
-              className={`text-xs font-extrabold ${
-                activeTab === 'practice' ? 'text-white' : 'text-[#475569]'
-              }`}
+              className={`text-xs font-extrabold ${activeTab === 'practice' ? 'text-white' : 'text-[#475569]'
+                }`}
             >
               Practice
             </Text>

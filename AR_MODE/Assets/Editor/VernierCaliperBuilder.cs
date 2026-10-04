@@ -443,6 +443,33 @@ public static class VernierCaliperBuilder
         EditorUtility.SetDirty(reg);
     }
 
+    /// <summary>
+    /// Imports the caliper photo as the AR tracking image for exp_vernier_caliper and refreshes the reference image library.
+    /// Show that picture full screen on a monitor (about 25 cm wide) and point the phone at it.
+    /// </summary>
+    public static void PrepareReferenceImage()
+    {
+        const string texPath = "Assets/Experiments/ReferenceImages/vernier-caliper.png";
+        var importer = (TextureImporter)AssetImporter.GetAtPath(texPath);
+        importer.textureType = TextureImporterType.Default;
+        importer.isReadable = true;
+        importer.mipmapEnabled = false;
+        importer.npotScale = TextureImporterNPOTScale.None;
+        importer.textureCompression = TextureImporterCompression.Uncompressed;
+        importer.maxTextureSize = 2048;
+        importer.SaveAndReimport();
+
+        var reg = AssetDatabase.LoadAssetAtPath<ExperimentRegistry>(RegistryPath);
+        var entry = reg.Find(ExperimentId);
+        entry.referenceTexture = AssetDatabase.LoadAssetAtPath<Texture2D>(texPath);
+        entry.referenceImageName = ExperimentId;
+        entry.physicalWidthMeters = 0.25f;
+        EditorUtility.SetDirty(reg);
+        AssetDatabase.SaveAssets();
+        PhyXaraSetup.SyncLibrary();
+        Debug.Log("[VernierCaliperBuilder] reference image ready: " + texPath);
+    }
+
     // ------------------------------------------------------------------ preview renders so the result can be checked
 
     [MenuItem("PhyXara/Build Vernier Caliper + Preview PNG")]
