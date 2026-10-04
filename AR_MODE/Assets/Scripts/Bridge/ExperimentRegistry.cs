@@ -21,6 +21,9 @@ namespace PhyXara.Bridge
 
         [Tooltip("Longest side of the model in AR, metres (about 12 cm on the page).")]
         public float modelSizeMeters = 0.12f;
+
+        [Tooltip("Extra rotation (euler degrees) applied in AR so the model lies the right way on the page. 0 = model Y axis is the page normal.")]
+        public Vector3 arRotationEuler = Vector3.zero;
     }
 
     [CreateAssetMenu(menuName = "PhyXara/Experiment Registry", fileName = "ExperimentRegistry")]

@@ -13,6 +13,9 @@ namespace PhyXara.Bridge
         public float zoomSpeed = 0.002f;     // fraction of distance per pixel of pinch
         public float minDistanceFactor = 1.2f, maxDistanceFactor = 6f;
 
+        /// <summary>Set by experiment-specific drag handlers (e.g. the caliper slider) so one-finger drag does not also rotate the model.</summary>
+        public static bool InputBlocked;
+
         Transform target;
         float baseSize = 0.12f;
         float distance;
@@ -35,6 +38,7 @@ namespace PhyXara.Bridge
         void Update()
         {
             if (target == null) return;
+            if (InputBlocked) { pinchPrev = 0f; Place(); return; }
 
             var touches = ETouch.activeTouches;
             if (touches.Count == 1)

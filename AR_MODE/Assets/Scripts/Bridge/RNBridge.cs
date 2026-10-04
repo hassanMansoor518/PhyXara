@@ -187,7 +187,7 @@ namespace PhyXara.Bridge
             if (isTracking)
             {
                 // anchor on the page; image transform has +Y out of the paper, model sits flat on it
-                model.transform.SetPositionAndRotation(img.transform.position, img.transform.rotation);
+                model.transform.SetPositionAndRotation(img.transform.position, img.transform.rotation * Quaternion.Euler(entry.arRotationEuler));
                 if (!model.activeSelf) model.SetActive(true);
             }
             if (isTracking == tracked) return;
