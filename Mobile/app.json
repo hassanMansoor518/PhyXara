@@ -9,7 +9,17 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Allow $(PRODUCT_NAME) to access your photos",
+        "NSPhotoLibraryAddUsageDescription": "Allow $(PRODUCT_NAME) to save photos",
+        "NSCameraUsageDescription": "Allow $(PRODUCT_NAME) to use your camera",
+        "NSMicrophoneUsageDescription": "Allow $(PRODUCT_NAME) to use your microphone",
+        "RVApiKey": "rv_live_f9624c71eba981f819ea29c9f54d61a6d2879e0a9604caf1e526d43b017e6108",
+        "RVProjectId": "4cc232dd-6f0a-4764-815f-0fa9b5a05607",
+        "NSLocationWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location for AR experiences",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "Allow $(PRODUCT_NAME) to use your location for AR experiences"
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -19,7 +29,8 @@
         "monochromeImage": "./assets/images/android-icon-monochrome.png"
       },
       "edgeToEdgeEnabled": true,
-      "predictiveBackGestureEnabled": false
+      "predictiveBackGestureEnabled": false,
+      "package": "com.hassanmansoor.PhyXara"
     },
     "web": {
       "output": "static",
@@ -43,7 +54,9 @@
       "expo-font",
       "expo-image",
       "expo-status-bar",
-      "expo-web-browser"
+      "expo-web-browser",
+      "@azesmway/react-native-unity",
+      "./plugins/withUnity"
     ],
     "experiments": {
       "typedRoutes": true,

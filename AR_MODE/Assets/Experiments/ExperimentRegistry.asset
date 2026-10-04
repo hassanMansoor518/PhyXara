@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 33ab23af7414b14499749e2de1310807, type: 3}
+  m_Name: ExperimentRegistry
+  m_EditorClassIdentifier: 
+  entries:
+  - experimentId: exp3_micrometer
+    modelPrefab: {fileID: 3251906921209299496, guid: 7d0e52463b0b87543b5b79b8b1ae2622, type: 3}
+    referenceImageName: exp3_micrometer
+    referenceTexture: {fileID: 0}
+    physicalWidthMeters: 0.15
+    modelSizeMeters: 0.12
+    arRotationEuler: {x: 0, y: 0, z: 0}
+  - experimentId: exp_vernier_caliper
+    modelPrefab: {fileID: 2984515629825232433, guid: a88de5908561bd144ab7550750c08928, type: 3}
+    referenceImageName: exp_vernier_caliper
+    referenceTexture: {fileID: 0}
+    physicalWidthMeters: 0.15
+    modelSizeMeters: 0.15
+    arRotationEuler: {x: 90, y: 0, z: 0}
