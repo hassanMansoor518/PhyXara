@@ -1,0 +1,37 @@
+# Node & Package Managers
+node_modules/
+.npm
+.yarn
+
+# Expo & Metro
+.expo/
+dist/
+web-build/
+
+# Unity
+[Ll]ibrary/
+[Tt]emp/
+[Oo]bj/
+[Bb]uild/
+[Bb]uilds/
+[Ll]ogs/
+[Uu]ser[Ss]ettings/
+.vs/
+.idea/
+*.csproj
+*.sln
+*.unitypackage
+
+# Mobile Builds
+/Mobile/android/
+/Mobile/ios/
+/Mobile/unity/builds/
+
+# Logs & Binaries
+*.log
+export.log
+*.tmp
+*.apk
+*.aab
+*.zip
+*.tar.gz

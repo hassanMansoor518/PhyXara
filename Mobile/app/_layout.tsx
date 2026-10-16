@@ -1,8 +1,8 @@
 import '../global.css';
-import { ClerkLoaded, ClerkProvider, useAuth } from '@clerk/expo';
+import { ClerkProvider, useAuth } from '@clerk/expo';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
-import React, { useEffect } from 'react';
+import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 import SplashScreen from '../src/screens/SplashScreen';
@@ -20,10 +20,23 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
+// Clerk loads over the network (no resource cache is configured). <ClerkLoaded> rendered nothing until that
+// finished, so a slow or unreachable network left a blank screen forever. Show the splash meanwhile and give
+// up waiting after this long: the user is then treated as signed out and lands on the login flow.
+const CLERK_LOAD_TIMEOUT_MS = 8000;
+
 function InitialLayout() {
-  const { isLoaded, isSignedIn } = useAuth();
+  const { isLoaded: clerkLoaded, isSignedIn } = useAuth();
+  const [clerkTimedOut, setClerkTimedOut] = useState(false);
+  const isLoaded = clerkLoaded || clerkTimedOut;
   const segments = useSegments();
   const router = useRouter();
+
+  useEffect(() => {
+    if (clerkLoaded) return;
+    const timer = setTimeout(() => setClerkTimedOut(true), CLERK_LOAD_TIMEOUT_MS);
+    return () => clearTimeout(timer);
+  }, [clerkLoaded]);
 
   useEffect(() => {
     if (!isLoaded) return;
@@ -35,6 +48,7 @@ function InitialLayout() {
       'unity',
       'detection',
       'motor-viewer',
+      'diagram-detail',
       'exploded-view',
       'animation',
       'library',
@@ -56,7 +70,7 @@ function InitialLayout() {
   }, [isLoaded, isSignedIn, segments]);
 
   if (!isLoaded) {
-    return <SplashScreen />;
+    return <SplashScreen autoNavigate={false} />;
   }
 
   return (
@@ -72,6 +86,7 @@ function InitialLayout() {
       <Stack.Screen name="unity" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
       <Stack.Screen name="detection" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="motor-viewer" options={{ headerShown: false }} />
+      <Stack.Screen name="diagram-detail" options={{ headerShown: false }} />
       <Stack.Screen name="exploded-view" options={{ headerShown: false }} />
       <Stack.Screen name="animation" options={{ headerShown: false }} />
       <Stack.Screen name="library" options={{ headerShown: false }} />
@@ -88,10 +103,8 @@ export default function RootLayout() {
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey || ''} tokenCache={tokenCache}>
-        <ClerkLoaded>
-          <InitialLayout />
-          <StatusBar style="auto" />
-        </ClerkLoaded>
+        <InitialLayout />
+        <StatusBar style="auto" />
       </ClerkProvider>
     </GestureHandlerRootView>
   );

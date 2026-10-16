@@ -1,0 +1,34 @@
+# Ignore Unity Project Files & Caches
+AR_MODE/
+**/AR_MODE/
+unity/
+**/unity/
+**/Library/
+**/Temp/
+**/Obj/
+**/Logs/
+**/Builds/
+**/.vs/
+**/.idea/
+
+# Ignore Logs, Caches, & Binaries
+*.log
+export.log
+*.tmp
+*.apk
+*.aab
+*.zip
+*.tar.gz
+
+# Node Modules & Caches
+**/node_modules/
+**/.expo/
+**/.gradle/
+**/.vscode/
+
+# Native Build Folders
+**/android/app/build/
+**/android/app/.cxx/
+**/android/.gradle/
+**/android/build/
+**/ios/build/

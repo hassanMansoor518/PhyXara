@@ -21,9 +21,20 @@ if (!fs.existsSync(path.join(src, 'build.gradle'))) {
   process.exit(1);
 }
 
+// Keep unityLibrary/build across syncs: it holds Gradle's task outputs and the IL2CPP object cache. Deleting it made
+// every sync force a full IL2CPP C++ recompile (about 15-25 minutes on a 4-core laptop). Gradle still re-runs a task
+// whenever that task's inputs (the freshly copied export) changed, so a new Unity export is still picked up.
+const keepBuild = path.join(path.dirname(dest), '.unityLibrary-build-keep');
+const destBuild = path.join(dest, 'build');
+fs.rmSync(keepBuild, { recursive: true, force: true });
+if (fs.existsSync(destBuild)) fs.renameSync(destBuild, keepBuild);
 fs.rmSync(dest, { recursive: true, force: true });
 fs.mkdirSync(path.dirname(dest), { recursive: true });
 fs.cpSync(src, dest, { recursive: true });
+if (fs.existsSync(keepBuild)) {
+  fs.rmSync(destBuild, { recursive: true, force: true }); // an export never ships a build/ of its own that we want
+  fs.renameSync(keepBuild, destBuild);
+}
 
 // The library docs: drop the launcher <intent-filter> from the library manifest, the RN app is the only launcher.
 const manifest = path.join(dest, 'src', 'main', 'AndroidManifest.xml');

@@ -1,0 +1,35 @@
+# Node Modules & Caches
+node_modules/
+.expo/
+.gradle/
+.idea/
+.vscode/
+
+# Heavy Build Folders
+android/app/build/
+android/app/.cxx/
+android/.gradle/
+android/build/
+ios/build/
+
+# Heavy 3D Models & Assets in AR_MODE
+AR_MODE/
+**/AR_MODE/
+
+# Unity Temporary Files & Build Exports
+unity/
+**/unity/
+**/Library/
+**/Temp/
+**/Obj/
+**/Logs/
+**/Builds/
+
+# Logs & Binaries
+*.log
+*.tmp
+*.apk
+*.aab
+*.zip
+*.tar.gz
+export.log
