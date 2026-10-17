@@ -12,15 +12,15 @@ android/.gradle/
 android/build/
 ios/build/
 
-# Unity native build export (large, regenerated from AR_MODE)
-unity/
-/unity/
-/unity/builds/
+# Unity intermediate build artifacts & caches
+unity/builds/android/unityLibrary/build/
+unity/builds/android/unityLibrary/.cxx/
+unity/builds/android/unityLibrary/.gradle/
+unity/builds/android/unityLibrary/symbols/
 **/Library/
 **/Temp/
 **/Obj/
 **/Logs/
-**/Builds/
 
 # Ensure src/unity and local model assets are included
 !src/unity/

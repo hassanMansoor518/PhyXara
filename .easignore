@@ -1,12 +1,14 @@
 # Ignore Root Unity Project (5 GB) & Caches
 /AR_MODE/
 /unity/
-/Mobile/unity/
+**/unityLibrary/build/
+**/unityLibrary/.cxx/
+**/unityLibrary/.gradle/
+**/unityLibrary/symbols/
 **/Library/
 **/Temp/
 **/Obj/
 **/Logs/
-**/Builds/
 **/.vs/
 **/.idea/
 
