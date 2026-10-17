@@ -62,4 +62,10 @@ if (fs.existsSync(shared)) {
   fs.cpSync(shared, path.join(path.dirname(dest), 'shared'), { recursive: true });
 }
 
+// Copy gradle.properties so withUnity plugin can read unity.* properties in any build directory
+const gradleProps = path.join(exportDir, 'gradle.properties');
+if (fs.existsSync(gradleProps)) {
+  fs.copyFileSync(gradleProps, path.join(path.dirname(dest), 'gradle.properties'));
+}
+
 console.log(`Synced ${src}\n    -> ${dest}\nNext: npx expo prebuild --platform android --clean && cd android && gradlew assembleDebug`);

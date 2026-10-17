@@ -1,6 +1,7 @@
 const { getDefaultConfig } = require("expo/metro-config");
 const { withNativeWind } = require("nativewind/metro");
 const path = require("path");
+const fs = require("fs");
 
 const projectRoot = __dirname;
 const workspaceRoot = path.resolve(projectRoot, "..");
@@ -18,12 +19,16 @@ config.resolver.sourceExts = (config.resolver.sourceExts || []).filter(
   (ext) => !["glb", "gltf", "bin"].includes(ext)
 );
 
-// 3. Watch Folders: Allow Metro to watch and bundle 3D models located in AR_MODE
+// 3. Watch Folders: Allow Metro to watch external 3D models if present
+const extraWatchFolders = [
+  path.resolve(workspaceRoot, "AR_MODE"),
+  arModelsDir,
+].filter((dir) => fs.existsSync(dir));
+
 config.watchFolders = Array.from(
   new Set([
     ...(config.watchFolders || []),
-    path.resolve(workspaceRoot, "AR_MODE"),
-    arModelsDir,
+    ...extraWatchFolders,
   ])
 );
 

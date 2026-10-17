@@ -12,18 +12,21 @@ android/.gradle/
 android/build/
 ios/build/
 
-# Heavy 3D Models & Assets in AR_MODE
-AR_MODE/
-**/AR_MODE/
-
-# Unity Temporary Files & Build Exports
+# Unity native build export (large, regenerated from AR_MODE)
 unity/
-**/unity/
+/unity/
+/unity/builds/
 **/Library/
 **/Temp/
 **/Obj/
 **/Logs/
 **/Builds/
+
+# Ensure src/unity and local model assets are included
+!src/unity/
+!src/unity/**
+!AR_MODE/
+!AR_MODE/**
 
 # Logs & Binaries
 *.log

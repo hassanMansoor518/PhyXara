@@ -1,8 +1,7 @@
-# Ignore Unity Project Files & Caches
-AR_MODE/
-**/AR_MODE/
-unity/
-**/unity/
+# Ignore Root Unity Project (5 GB) & Caches
+/AR_MODE/
+/unity/
+/Mobile/unity/
 **/Library/
 **/Temp/
 **/Obj/
@@ -10,6 +9,12 @@ unity/
 **/Builds/
 **/.vs/
 **/.idea/
+
+# Explicitly ensure app code and assets are never ignored
+!Mobile/src/unity/
+!**/src/unity/**
+!Mobile/AR_MODE/
+!**/Mobile/AR_MODE/**
 
 # Ignore Logs, Caches, & Binaries
 *.log

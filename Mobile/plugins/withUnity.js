@@ -109,9 +109,14 @@ const withRootNdk = (config) =>
 // Also keep Gradle light: the IL2CPP + CMake steps are memory hungry and parallel runs exhaust the Windows paging file.
 const withUnityGradleProperties = (config) =>
   withGradleProperties(config, (mod) => {
-    const exported = path.join(mod.modRequest.projectRoot, '..', 'AR_MODE', 'Builds', 'android', 'gradle.properties');
+    const candidates = [
+      path.join(mod.modRequest.projectRoot, 'unity', 'builds', 'android', 'gradle.properties'),
+      path.join(mod.modRequest.projectRoot, '..', 'AR_MODE', 'Builds', 'android', 'gradle.properties'),
+      'E:/hassan/hassan uni work/semester 8/PhyXara/AR_MODE/Builds/android/gradle.properties',
+    ];
+    const exported = candidates.find((p) => p && fs.existsSync(p));
     const wanted = new Map();
-    if (fs.existsSync(exported)) {
+    if (exported) {
       for (const line of fs.readFileSync(exported, 'utf8').split('\n')) {
         const m = line.trim().match(/^(unity[A-Za-z.]*)=(.*)$/);
         if (m && m[1] !== 'unityStreamingAssets') wanted.set(m[1], m[2]);
