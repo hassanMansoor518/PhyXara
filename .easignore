@@ -38,4 +38,5 @@ export.log
 **/android/app/.cxx/
 **/android/.gradle/
 **/android/build/
+**/local.properties
 **/ios/build/

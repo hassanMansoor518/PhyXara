@@ -10,6 +10,8 @@ android/app/build/
 android/app/.cxx/
 android/.gradle/
 android/build/
+android/local.properties
+**/local.properties
 ios/build/
 
 # Unity intermediate build artifacts & caches
