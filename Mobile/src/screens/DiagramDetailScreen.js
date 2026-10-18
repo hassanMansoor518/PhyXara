@@ -43,12 +43,9 @@ import { scannerService, PHYSICS_DIAGRAM_CATALOG } from '../services/scannerServ
 const DEFAULT_MOTOR_MODEL = require('../../AR_MODE/Assets/Model/electric_motor.glb');
 const DEFAULT_MICROMETER_MODEL = require('../../AR_MODE/Assets/Model/micrometer_screw_gauge_v2.glb');
 
-const MODEL_SOURCES: Record<string, any> = {
+const MODEL_SOURCES = {
   'electric-motor': DEFAULT_MOTOR_MODEL,
   'micrometer': DEFAULT_MICROMETER_MODEL,
-  'vernier': DEFAULT_MICROMETER_MODEL,
-  'transformer': DEFAULT_MOTOR_MODEL,
-  'generator': DEFAULT_MOTOR_MODEL,
 };
 
 /**
@@ -60,15 +57,12 @@ const MODEL_SOURCES: Record<string, any> = {
  * 1. 3D Model View:
  *    - Displays the scanned diagram's corresponding 3D model directly inside the app.
  *    - Allows rotation, zooming in, zooming out, reset, and inspection.
- *    - Works completely without ARCore or Google Play Services for AR.
- *    - Fully optimized for low-end Android devices.
- *    - Never redirects to Google Play Store.
+ *    - If no 3D model exists for the recognized diagram, displays "No matching 3D model is available for this image."
+ *    - Never displays random or unrelated 3D models.
  *
  * 2. AR View:
- *    - Launched only when the user explicitly taps "AR View".
+ *    - Launched only when the user explicitly taps "AR View" and a 3D model is verified.
  *    - Checks ARCore hardware compatibility beforehand.
- *    - If unsupported, displays a friendly in-app modal with button to return to 3D Model View.
- *    - If supported, launches camera-based Unity AR.
  */
 export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) => {
   const searchParams = useLocalSearchParams?.() || {};
@@ -82,13 +76,31 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
   }, [rawTopicId, params.scanId]);
 
   const diagram = useMemo(() => {
+    if (!diagramData) {
+      return {
+        id: 'unrecognized',
+        title: 'Unrecognized Image',
+        board: 'Curriculum Scanner',
+        chapter: 'Physics Syllabus',
+        has3DModel: false,
+        modelSource: null,
+        description: 'Unable to recognize this image. Please upload a clearer image and try again.',
+        formula: '',
+        components: [],
+        specifications: [],
+      };
+    }
+
     const id = diagramData.diagramId;
+    const isModelVerified = (id === 'electric-motor' || id === 'micrometer') && diagramData.has3DModel;
+
     return {
       ...diagramData,
       id,
+      has3DModel: isModelVerified,
       description: diagramData.principle || diagramData.description || '',
-      experimentId: id === 'micrometer' ? 'exp3_micrometer' : id === 'vernier' ? 'exp1_vernier' : 'electric_motor',
-      modelSource: MODEL_SOURCES[id] || DEFAULT_MOTOR_MODEL,
+      experimentId: id === 'micrometer' ? 'exp3_micrometer' : id === 'electric-motor' ? 'electric_motor' : null,
+      modelSource: isModelVerified ? MODEL_SOURCES[id] : null,
     };
   }, [diagramData]);
 
@@ -191,6 +203,15 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
       }
 
       if (mode === 'AR') {
+        if (!diagram.has3DModel) {
+          Alert.alert(
+            '3D Model Unavailable for AR',
+            'No matching 3D model is available for this image. AR mode requires a verified 3D model.',
+            [{ text: 'Continue in 3D View', onPress: () => setActiveMode('3D') }]
+          );
+          return;
+        }
+
         // Step 1: Re-verify hardware compatibility
         const checkResult = await checkARSupport();
         if (!checkResult.isSupported) {
@@ -405,14 +426,16 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
         )}
       </View>
 
-      {/* Main 3D Viewport with Fault-Tolerant Standard Viewer */}
+      {/* Main 3D Viewport with Verified Model Matching */}
       <View style={styles.viewportContainer}>
         {isScreenFocused && activeMode === '3D' ? (
           <ThreeDViewer
             modelPath={diagram.modelSource}
             diagramId={diagram.id}
+            has3DModel={diagram.has3DModel}
             autoRotate={autoRotate}
             showControlsHint={true}
+            onScanAnother={() => router.replace('/scanner')}
             style={styles.viewer}
           />
         ) : (
@@ -440,20 +463,18 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
               <Text style={styles.tagText}>{diagram.chapter}</Text>
             </View>
 
-            {/* Hardware badge with toggle to test low-end mode vs ARCore */}
-            <Pressable
-              onPress={handleToggleDebugDevice}
-              style={styles.hardwareBadge}
-            >
-              <Cpu
-                size={12}
-                color={arSupported ? '#10B981' : '#F59E0B'}
-                style={{ marginRight: 4 }}
-              />
-              <Text style={styles.hardwareBadgeText}>
-                {arSupported ? 'ARCore Certified' : 'Low-RAM Mode'}
-              </Text>
-            </Pressable>
+            {/* Model verification status badge */}
+            {diagram.has3DModel ? (
+              <View style={[styles.hardwareBadge, { backgroundColor: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.3)' }]}>
+                <Box size={12} color="#10B981" style={{ marginRight: 4 }} />
+                <Text style={[styles.hardwareBadgeText, { color: '#10B981' }]}>3D Model Matched</Text>
+              </View>
+            ) : (
+              <View style={[styles.hardwareBadge, { backgroundColor: 'rgba(245, 158, 11, 0.12)', borderColor: 'rgba(245, 158, 11, 0.3)' }]}>
+                <AlertCircle size={12} color="#F59E0B" style={{ marginRight: 4 }} />
+                <Text style={[styles.hardwareBadgeText, { color: '#F59E0B' }]}>No 3D Model</Text>
+              </View>
+            )}
           </View>
 
           <Text style={styles.sheetDescription}>{diagram.description}</Text>

@@ -22,7 +22,7 @@ export class MockMatcher implements DiagramMatcher {
  * { "experimentId": string, "confidence": number }. See src/unity/README.md.
  */
 export class RemoteMatcher implements DiagramMatcher {
-  constructor(private readonly url: string) {}
+  constructor(private readonly url: string) { }
 
   async match(imageUri: string): Promise<MatchResult | null> {
     if (!this.url) {

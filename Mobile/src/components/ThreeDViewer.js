@@ -13,17 +13,14 @@ import Animated, {
   useSharedValue,
   withSpring,
 } from 'react-native-reanimated';
+import { Layers, Camera, AlertCircle } from 'lucide-react-native';
 
 // Educational Interactive Illustrations for Standard 3D View (works on 100% of Android devices)
 import { ElectricMotorFrontSvg } from './illustrations/ElectricMotorFrontSvg';
 import { MicrometerViewerSvg } from './illustrations/MicrometerViewerSvg';
-import { VernierViewerSvg } from './illustrations/VernierViewerSvg';
-import { TransformerViewerSvg } from './illustrations/TransformerViewerSvg';
-import { GeneratorViewerSvg } from './illustrations/GeneratorViewerSvg';
-import { PhysicsModelIllustration } from './illustrations/PhysicsModelIllustration';
 
 let Canvas = null;
-let useFrame = () => {};
+let useFrame = () => { };
 let OrbitControls = null;
 let useGLTF = null;
 let Center = null;
@@ -33,7 +30,7 @@ try {
   require('react-native-get-random-values');
   const fiber = require('@react-three/fiber/native');
   Canvas = fiber.Canvas;
-  useFrame = fiber.useFrame || (() => {});
+  useFrame = fiber.useFrame || (() => { });
   const drei = require('@react-three/drei/native');
   OrbitControls = drei.OrbitControls;
   useGLTF = drei.useGLTF;
@@ -118,14 +115,15 @@ function ModelMesh({
  *
  * Guarantees:
  * 1. Zero infinite loading screens.
- * 2. Instant responsive rendering across 100% of Android devices.
- * 3. Drag-to-rotate, pinch-to-zoom, on-screen zoom buttons, auto-rotation, and view reset.
- * 4. Automatic diagram-specific model rendering (Micrometer, DC Motor, Vernier, Transformer, etc.).
+ * 2. Strict model matching: only displays a 3D model when a verified matching asset exists.
+ * 3. Shows "No matching 3D model is available for this image." when no 3D asset exists.
+ * 4. Drag-to-rotate, pinch-to-zoom, on-screen zoom buttons, auto-rotation, and view reset.
  * 5. Complete independence from ARCore or Google Play Services.
  */
 export const ThreeDViewer = ({
   modelPath,
   diagramId = 'electric-motor',
+  has3DModel = true,
   scale: initialScale = 1,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
@@ -134,6 +132,7 @@ export const ThreeDViewer = ({
   style,
   onError,
   onLoad,
+  onScanAnother,
 }) => {
   // WebGL loading state with strict safety timeout
   const [loadingWebGL, setLoadingWebGL] = useState(isFiberSupported);
@@ -237,28 +236,50 @@ export const ThreeDViewer = ({
     return null;
   }, [modelPath]);
 
-  // Diagram-Specific Interactive Visual Resolver
-  const renderDiagramVisual = () => {
-    const key = (diagramId || '').toLowerCase();
+  // Strict Model Verification: Check if a genuine 3D model exists for this diagram
+  const key = (diagramId || '').toLowerCase();
+  const isModelMatched = has3DModel && (key.includes('motor') || key.includes('micrometer') || key.includes('screw'));
 
+  // 1. If NO MATCHING 3D MODEL is available for this recognized diagram
+  if (!isModelMatched || !modelPath) {
+    return (
+      <View style={[styles.container, styles.noModelContainer, style]}>
+        <View style={styles.noModelCard}>
+          <View style={styles.noModelIconBadge}>
+            <Layers size={30} color="#F59E0B" />
+          </View>
+          <Text style={styles.noModelTitle}>
+            No matching 3D model is available for this image.
+          </Text>
+          <Text style={styles.noModelSubtitle}>
+            This physics diagram was recognized and its properties are listed below, but no verified 3D asset is available for this topic.
+          </Text>
+          {onScanAnother ? (
+            <Pressable
+              onPress={onScanAnother}
+              style={({ pressed }) => [
+                styles.scanAnotherButton,
+                pressed && { opacity: 0.8 },
+              ]}
+            >
+              <Camera size={14} color="#FFFFFF" style={{ marginRight: 6 }} />
+              <Text style={styles.scanAnotherButtonText}>Scan Another Image</Text>
+            </Pressable>
+          ) : null}
+        </View>
+      </View>
+    );
+  }
+
+  // 2. Render verified 3D diagram visual
+  const renderDiagramVisual = () => {
     if (key.includes('micrometer') || key.includes('screw') || key.includes('exp3')) {
       return <MicrometerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
-    }
-    if (key.includes('vernier') || key.includes('caliper') || key.includes('exp1')) {
-      return <VernierViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
-    }
-    if (key.includes('transformer') || key.includes('step_up')) {
-      return <TransformerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
-    }
-    if (key.includes('generator') || key.includes('dynamo')) {
-      return <GeneratorViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
     }
     if (key.includes('motor') || key.includes('electric')) {
       return <ElectricMotorFrontSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
     }
-
-    // Default Physics Model Visual
-    return <PhysicsModelIllustration width={280} height={220} />;
+    return null;
   };
 
   return (
@@ -339,7 +360,7 @@ export const ThreeDViewer = ({
         </Pressable>
       </View>
 
-      {/* Loading Overlay (Auto-dismissed within 1.2s to prevent infinite spinner) */}
+      {/* Loading Overlay (Auto-dismissed within 400ms to prevent infinite spinner) */}
       {loadingWebGL && (
         <View style={styles.loadingOverlay} pointerEvents="none">
           <View style={styles.loaderBadge}>
@@ -481,6 +502,64 @@ const styles = StyleSheet.create({
     color: '#38BDF8',
     fontSize: 11,
     fontWeight: '600',
+  },
+  noModelContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    padding: 20,
+  },
+  noModelCard: {
+    backgroundColor: '#0F172A',
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.25)',
+    padding: 20,
+    alignItems: 'center',
+    maxWidth: 320,
+  },
+  noModelIconBadge: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
+    borderWidth: 1,
+    borderColor: 'rgba(245, 158, 11, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  noModelTitle: {
+    color: '#F8FAFC',
+    fontSize: 15,
+    fontWeight: '700',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 20,
+  },
+  noModelSubtitle: {
+    color: '#94A3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+    marginBottom: 16,
+  },
+  scanAnotherButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2563EB',
+    paddingVertical: 10,
+    paddingHorizontal: 18,
+    borderRadius: 16,
+    shadowColor: '#2563EB',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  scanAnotherButtonText: {
+    color: '#FFFFFF',
+    fontSize: 12,
+    fontWeight: '700',
   },
 });
 

@@ -21,10 +21,12 @@ export interface TargetDiagramOption {
 
 export const TARGET_DIAGRAMS: TargetDiagramOption[] = [
   { id: 'auto', name: '🎯 Auto Detect' },
-  { id: 'micrometer', name: '🔬 Micrometer' },
-  { id: 'vernier', name: '📐 Vernier Caliper' },
-  { id: 'electric-motor', name: '⚡ DC Motor' },
+  { id: 'electric-motor', name: '⚡ DC Motor (3D)' },
+  { id: 'micrometer', name: '🔬 Micrometer (3D)' },
+  { id: 'ac-motor', name: '⚡ AC Motor' },
+  { id: 'circuit', name: '🔌 Circuit Diagram' },
   { id: 'transformer', name: '🔄 Transformer' },
+  { id: 'vernier', name: '📐 Vernier Caliper' },
   { id: 'generator', name: '⚡ AC Generator' },
 ];
 

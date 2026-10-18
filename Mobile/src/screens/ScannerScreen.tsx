@@ -8,12 +8,14 @@ import {
   CheckCircle2,
   AlertTriangle,
   Clock,
+  Layers,
   X,
 } from 'lucide-react-native';
 import React, { useRef, useState } from 'react';
 import { Modal, Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { ScanOverlay } from '../components/ScanOverlay';
+import { scannerService } from '../services/scannerService';
 
 export const ScannerScreen: React.FC = () => {
   const [permission, requestPermission] = useCameraPermissions();
@@ -28,8 +30,20 @@ export const ScannerScreen: React.FC = () => {
     try {
       let imageUri = '';
       if (cameraRef.current && cameraRef.current.takePictureAsync) {
-        const photo = await cameraRef.current.takePictureAsync({ quality: 0.8 });
-        imageUri = photo?.uri || '';
+        const photo = await cameraRef.current.takePictureAsync({
+          quality: 0.8,
+          base64: true,
+        });
+        if (photo) {
+          imageUri = photo.uri || '';
+          scannerService.setActiveImage({
+            uri: photo.uri,
+            width: photo.width,
+            height: photo.height,
+            base64: photo.base64 || undefined,
+            mimeType: 'image/jpeg',
+          });
+        }
       }
 
       const scanId = `scan_${Date.now()}`;
@@ -60,6 +74,7 @@ export const ScannerScreen: React.FC = () => {
       const picked = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ['images'],
         quality: 0.8,
+        base64: true,
       });
 
       if (picked.canceled || !picked.assets[0]) {
@@ -68,7 +83,16 @@ export const ScannerScreen: React.FC = () => {
         return;
       }
 
-      const imageUri = picked.assets[0].uri;
+      const asset = picked.assets[0];
+      scannerService.setActiveImage({
+        uri: asset.uri,
+        width: asset.width,
+        height: asset.height,
+        base64: asset.base64 || undefined,
+        mimeType: asset.mimeType || 'image/jpeg',
+      });
+
+      const imageUri = asset.uri;
       const scanId = `scan_${Date.now()}`;
       router.push({
         pathname: '/detection',
@@ -85,6 +109,7 @@ export const ScannerScreen: React.FC = () => {
 
   const triggerScenario = (imageUri: string, topicId?: string) => {
     setShowScenarios(false);
+    scannerService.clearActiveImage();
     const scanId = `scan_${Date.now()}`;
     router.push({
       pathname: '/detection',
@@ -213,126 +238,163 @@ export const ScannerScreen: React.FC = () => {
             </Text>
 
             <ScrollView showsVerticalScrollIndicator={false}>
-              {/* Category 1: Curriculum Physics Diagrams */}
-              <Text className="text-[11px] font-black tracking-wider text-[#94A3B8] uppercase mb-2">
-                Curriculum Diagrams (Success Flow)
+              {/* Category 1: Diagrams with Verified 3D Model */}
+              <Text className="text-[11px] font-black tracking-wider text-[#16A34A] uppercase mb-2">
+                Verified 3D Models Available
               </Text>
 
-              {/* 1. Micrometer Screw Gauge */}
-              <Pressable
-                onPress={() => triggerScenario('sample_micrometer', 'micrometer')}
-                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#EFF6FF]"
-              >
-                <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">
-                    🔬 Micrometer Screw Gauge
-                  </Text>
-                  <Text className="text-[11px] text-[#64748B]">
-                    Chapter 1: Measurement • Least count 0.01mm
-                  </Text>
-                </View>
-                <CheckCircle2 size={18} color="#16A34A" />
-              </Pressable>
-
-              {/* 2. Vernier Caliper */}
-              <Pressable
-                onPress={() => triggerScenario('sample_vernier', 'vernier')}
-                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#EFF6FF]"
-              >
-                <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">
-                    📐 Vernier Caliper
-                  </Text>
-                  <Text className="text-[11px] text-[#64748B]">
-                    Chapter 1: Measurement • Least count 0.1mm
-                  </Text>
-                </View>
-                <CheckCircle2 size={18} color="#16A34A" />
-              </Pressable>
-
-              {/* 3. DC Electric Motor */}
+              {/* 1. DC Electric Motor */}
               <Pressable
                 onPress={() => triggerScenario('sample_motor', 'electric-motor')}
-                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#EFF6FF]"
+                className="p-3.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#DCFCE7]"
               >
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">
+                  <Text className="text-sm font-bold text-[#15803D]">
                     ⚡ DC Electric Motor
                   </Text>
-                  <Text className="text-[11px] text-[#64748B]">
-                    Chapter 15: Electromagnetism • Split-ring commutator
+                  <Text className="text-[11px] text-[#166534]">
+                    Chapter 15 • Verified 3D model available
                   </Text>
                 </View>
                 <CheckCircle2 size={18} color="#16A34A" />
               </Pressable>
 
-              {/* 4. Step-up Transformer */}
+              {/* 2. Micrometer Screw Gauge */}
+              <Pressable
+                onPress={() => triggerScenario('sample_micrometer', 'micrometer')}
+                className="p-3.5 bg-[#F0FDF4] border border-[#BBF7D0] rounded-2xl mb-4 flex-row items-center justify-between active:bg-[#DCFCE7]"
+              >
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-[#15803D]">
+                    🔬 Micrometer Screw Gauge
+                  </Text>
+                  <Text className="text-[11px] text-[#166534]">
+                    Chapter 1 • Verified 3D model available
+                  </Text>
+                </View>
+                <CheckCircle2 size={18} color="#16A34A" />
+              </Pressable>
+
+              {/* Category 2: Recognized Diagrams (No 3D Model Available) */}
+              <Text className="text-[11px] font-black tracking-wider text-[#D97706] uppercase mb-2">
+                Recognized (No 3D Model Available)
+              </Text>
+
+              {/* 3. AC Induction Motor */}
+              <Pressable
+                onPress={() => triggerScenario('sample_ac_motor', 'ac-motor')}
+                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#FEF3C7]"
+              >
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-[#B45309]">
+                    ⚡ AC Induction Motor
+                  </Text>
+                  <Text className="text-[11px] text-[#92400E]">
+                    Chapter 15 • Shows: "No matching 3D model available"
+                  </Text>
+                </View>
+                <Layers size={18} color="#D97706" />
+              </Pressable>
+
+              {/* 4. Electrical Circuit */}
+              <Pressable
+                onPress={() => triggerScenario('sample_circuit', 'circuit')}
+                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#FEF3C7]"
+              >
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-[#B45309]">
+                    🔌 Electrical Circuit (Ohm’s Law)
+                  </Text>
+                  <Text className="text-[11px] text-[#92400E]">
+                    Chapter 14 • Shows: "No matching 3D model available"
+                  </Text>
+                </View>
+                <Layers size={18} color="#D97706" />
+              </Pressable>
+
+              {/* 5. Step-up Transformer */}
               <Pressable
                 onPress={() => triggerScenario('sample_transformer', 'transformer')}
-                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#EFF6FF]"
+                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#FEF3C7]"
               >
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">
+                  <Text className="text-sm font-bold text-[#B45309]">
                     🔄 Step-up Transformer
                   </Text>
-                  <Text className="text-[11px] text-[#64748B]">
-                    Chapter 15: Electromagnetism • Mutual induction
+                  <Text className="text-[11px] text-[#92400E]">
+                    Chapter 15 • Shows: "No matching 3D model available"
                   </Text>
                 </View>
-                <CheckCircle2 size={18} color="#16A34A" />
+                <Layers size={18} color="#D97706" />
               </Pressable>
 
-              {/* 5. AC Generator */}
+              {/* 6. Vernier Caliper */}
               <Pressable
-                onPress={() => triggerScenario('sample_generator', 'generator')}
-                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-4 flex-row items-center justify-between active:bg-[#EFF6FF]"
+                onPress={() => triggerScenario('sample_vernier', 'vernier')}
+                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-[#FEF3C7]"
               >
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">
-                    ⚡ AC Generator (Dynamo)
+                  <Text className="text-sm font-bold text-[#B45309]">
+                    📐 Vernier Caliper
                   </Text>
-                  <Text className="text-[11px] text-[#64748B]">
-                    Chapter 15: Electromagnetism • Faraday Law of induction
+                  <Text className="text-[11px] text-[#92400E]">
+                    Chapter 1 • Shows: "No matching 3D model available"
                   </Text>
                 </View>
-                <CheckCircle2 size={18} color="#16A34A" />
+                <Layers size={18} color="#D97706" />
               </Pressable>
 
-              {/* Category 2: Error & Timeout Handling */}
+              {/* 7. Mechanical Spur Gear */}
+              <Pressable
+                onPress={() => triggerScenario('sample_gear', 'mechanical-gear')}
+                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-4 flex-row items-center justify-between active:bg-[#FEF3C7]"
+              >
+                <View className="flex-1">
+                  <Text className="text-sm font-bold text-[#B45309]">
+                    ⚙️ Mechanical Gear Transmission
+                  </Text>
+                  <Text className="text-[11px] text-[#92400E]">
+                    Chapter 4 • Shows: "No matching 3D model available"
+                  </Text>
+                </View>
+                <Layers size={18} color="#D97706" />
+              </Pressable>
+
+              {/* Category 3: Error & Timeout Handling */}
               <Text className="text-[11px] font-black tracking-wider text-[#94A3B8] uppercase mb-2">
                 Resilience & Error Handling Scenarios
               </Text>
 
-              {/* 6. Unrecognized / Poor Light Scan */}
+              {/* 8. Unrecognized Non-Physics Image */}
               <Pressable
-                onPress={() => triggerScenario('test_fail')}
+                onPress={() => triggerScenario('sample_unrelated')}
                 className="p-3.5 bg-[#FEF2F2] border border-[#FECACA] rounded-2xl mb-2.5 flex-row items-center justify-between active:bg-red-100"
               >
                 <View className="flex-1">
                   <Text className="text-sm font-bold text-[#DC2626]">
-                    ⚠️ Unrecognized Diagram / Low Light
+                    ⚠️ Unrecognized / Non-Diagram Image
                   </Text>
                   <Text className="text-[11px] text-[#B91C1C]">
-                    Tests error state, user message, and Retry Scan button
+                    Shows: "Unable to recognize this image. Please upload a clearer image..."
                   </Text>
                 </View>
                 <AlertTriangle size={18} color="#DC2626" />
               </Pressable>
 
-              {/* 7. Network / Scanner Timeout */}
+              {/* 9. Network / Scanner Timeout */}
               <Pressable
-                onPress={() => triggerScenario('test_timeout')}
-                className="p-3.5 bg-[#FFFBEB] border border-[#FDE68A] rounded-2xl mb-4 flex-row items-center justify-between active:bg-amber-100"
+                onPress={() => triggerScenario('sample_timeout')}
+                className="p-3.5 bg-[#F8FAFC] border border-[#E2E8F0] rounded-2xl mb-4 flex-row items-center justify-between active:bg-gray-100"
               >
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#D97706]">
+                  <Text className="text-sm font-bold text-[#475569]">
                     ⏱️ Network / Processing Timeout
                   </Text>
-                  <Text className="text-[11px] text-[#B45309]">
+                  <Text className="text-[11px] text-[#64748B]">
                     Tests timeout protection, loading dismiss, and Retry option
                   </Text>
                 </View>
-                <Clock size={18} color="#D97706" />
+                <Clock size={18} color="#475569" />
               </Pressable>
             </ScrollView>
           </View>

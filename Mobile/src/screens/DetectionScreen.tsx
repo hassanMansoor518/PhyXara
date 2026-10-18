@@ -74,6 +74,7 @@ export const DetectionScreen: React.FC = () => {
       params: {
         topicId: detectedData.diagramId,
         diagramId: detectedData.diagramId,
+        has3DModel: String(detectedData.has3DModel),
         imageUri: params.imageUri || '',
         scanId: activeScanRef.current,
       },
@@ -125,6 +126,7 @@ export const DetectionScreen: React.FC = () => {
           status={status}
           detectedName={detectedData?.name}
           confidence={detectedData?.confidence}
+          has3DModel={detectedData?.has3DModel}
           errorMessage={errorMessage}
           progress={progress}
           onComplete={handleComplete}

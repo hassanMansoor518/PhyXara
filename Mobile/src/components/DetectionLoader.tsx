@@ -1,4 +1,4 @@
-import { Check, Sparkles, AlertCircle, RotateCcw, Scan, ArrowLeft } from 'lucide-react-native';
+import { Check, Sparkles, AlertCircle, RotateCcw, Scan, ArrowLeft, Box } from 'lucide-react-native';
 import React, { useEffect } from 'react';
 import { StyleSheet, Text, View, Pressable, ActivityIndicator } from 'react-native';
 import Animated, {
@@ -14,6 +14,7 @@ export interface DetectionLoaderProps {
   status: 'scanning' | 'success' | 'error';
   detectedName?: string;
   confidence?: number;
+  has3DModel?: boolean;
   errorMessage?: string;
   progress?: number;
   onComplete?: () => void;
@@ -25,6 +26,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
   status = 'scanning',
   detectedName,
   confidence,
+  has3DModel = false,
   errorMessage,
   progress = 0,
   onComplete,
@@ -59,7 +61,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
     if (status === 'success' && onComplete) {
       const timer = setTimeout(() => {
         onComplete();
-      }, 750);
+      }, 850);
       return () => clearTimeout(timer);
     }
   }, [status, onComplete]);
@@ -95,7 +97,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
             <View className="flex-row items-center justify-between mb-2">
               <View className="flex-row items-center">
                 <ActivityIndicator size="small" color="#2563EB" style={{ marginRight: 8 }} />
-                <Text className="text-xs font-bold text-[#64748B]">Processing visual vectors...</Text>
+                <Text className="text-xs font-bold text-[#64748B]">Matching 3D model registry...</Text>
               </View>
               <Text className="text-xs font-black text-[#2563EB]">{Math.round(progress)}%</Text>
             </View>
@@ -127,7 +129,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
           </Text>
 
           {/* Actual Detected Diagram Name Badge */}
-          <View className="bg-[#EFF6FF] border border-[#BFDBFE] px-4 py-2 rounded-full mb-6 flex-row items-center">
+          <View className="bg-[#EFF6FF] border border-[#BFDBFE] px-4 py-2 rounded-full mb-3 flex-row items-center">
             <Sparkles size={16} color="#2563EB" />
             <Text className="text-sm font-extrabold text-[#2563EB] ml-2">
               {detectedName || 'Physics Diagram'}
@@ -139,16 +141,34 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
             ) : null}
           </View>
 
+          {/* 3D Model Verification Pill */}
+          <View className="mb-5 flex-row items-center">
+            {has3DModel ? (
+              <View className="flex-row items-center bg-[#F0FDF4] border border-[#BBF7D0] px-3 py-1 rounded-full">
+                <Box size={13} color="#16A34A" style={{ marginRight: 5 }} />
+                <Text className="text-[11px] font-bold text-[#16A34A]">
+                  Verified 3D Model Matched
+                </Text>
+              </View>
+            ) : (
+              <View className="flex-row items-center bg-[#FFFBEB] border border-[#FDE68A] px-3 py-1 rounded-full">
+                <Text className="text-[11px] font-bold text-[#D97706]">
+                  Diagram Analyzed • No 3D Model Available
+                </Text>
+              </View>
+            )}
+          </View>
+
           {/* Progress Card Container */}
           <View className="w-full bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm">
             <Text className="text-xs font-semibold text-[#64748B] text-center">
-              Loading 3D workspace...
+              {has3DModel ? 'Loading 3D workspace...' : 'Preparing educational analysis...'}
             </Text>
           </View>
         </>
       )}
 
-      {/* 3. ERROR / TIMEOUT STATE */}
+      {/* 3. ERROR / UNRECOGNIZED / TIMEOUT STATE */}
       {status === 'error' && (
         <>
           {/* Amber/Red Alert Badge */}
@@ -165,7 +185,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
 
           <View className="bg-white rounded-2xl p-4 border border-[#E2E8F0] mb-6 w-full shadow-sm">
             <Text className="text-xs text-[#64748B] text-center leading-relaxed">
-              {errorMessage || 'Could not recognize the diagram with sufficient confidence. Please ensure proper lighting and camera focus.'}
+              {errorMessage || 'Unable to recognize this image. Please upload a clearer image and try again.'}
             </Text>
           </View>
 
@@ -187,7 +207,7 @@ export const DetectionLoader: React.FC<DetectionLoaderProps> = ({
                 className="w-full bg-white border border-[#E2E8F0] py-3 rounded-2xl flex-row items-center justify-center active:bg-gray-50"
               >
                 <ArrowLeft size={16} color="#64748B" style={{ marginRight: 8 }} />
-                <Text className="text-xs font-bold text-[#64748B]">Scan Another Diagram</Text>
+                <Text className="text-xs font-bold text-[#64748B]">Scan Another Image</Text>
               </Pressable>
             )}
           </View>
@@ -201,23 +221,20 @@ const styles = StyleSheet.create({
   scanGlow: {
     shadowColor: '#2563EB',
     shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.3,
+    shadowOpacity: 0.25,
     shadowRadius: 12,
-    elevation: 8,
   },
   successGlow: {
     shadowColor: '#16A34A',
-    shadowOffset: { width: 0, height: 8 },
+    shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.35,
-    shadowRadius: 16,
-    elevation: 8,
+    shadowRadius: 14,
   },
   errorGlow: {
     shadowColor: '#DC2626',
     shadowOffset: { width: 0, height: 6 },
     shadowOpacity: 0.25,
     shadowRadius: 12,
-    elevation: 8,
   },
 });
 
