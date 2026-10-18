@@ -18,6 +18,12 @@ import { Layers, Camera, AlertCircle } from 'lucide-react-native';
 // Educational Interactive Illustrations for Standard 3D View (works on 100% of Android devices)
 import { ElectricMotorFrontSvg } from './illustrations/ElectricMotorFrontSvg';
 import { MicrometerViewerSvg } from './illustrations/MicrometerViewerSvg';
+import { TransformerViewerSvg } from './illustrations/TransformerViewerSvg';
+import { AcMotorViewerSvg } from './illustrations/AcMotorViewerSvg';
+import { GeneratorViewerSvg } from './illustrations/GeneratorViewerSvg';
+import { VernierViewerSvg } from './illustrations/VernierViewerSvg';
+import { CircuitViewerSvg } from './illustrations/CircuitViewerSvg';
+import { MechanicalGearViewerSvg } from './illustrations/MechanicalGearViewerSvg';
 
 let Canvas = null;
 let useFrame = () => { };
@@ -236,9 +242,18 @@ export const ThreeDViewer = ({
     return null;
   }, [modelPath]);
 
-  // Strict Model Verification: Check if a genuine 3D model exists for this diagram
+  // Model Verification: Check if a 3D model is supported for this diagram
   const key = (diagramId || '').toLowerCase();
-  const isModelMatched = has3DModel && (key.includes('motor') || key.includes('micrometer') || key.includes('screw'));
+  const isModelMatched =
+    has3DModel &&
+    (key.includes('motor') ||
+      key.includes('micrometer') ||
+      key.includes('screw') ||
+      key.includes('transformer') ||
+      key.includes('generator') ||
+      key.includes('vernier') ||
+      key.includes('circuit') ||
+      key.includes('gear'));
 
   // 1. If NO MATCHING 3D MODEL is available for this recognized diagram
   if (!isModelMatched || !modelPath) {
@@ -276,10 +291,26 @@ export const ThreeDViewer = ({
     if (key.includes('micrometer') || key.includes('screw') || key.includes('exp3')) {
       return <MicrometerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
     }
-    if (key.includes('motor') || key.includes('electric')) {
-      return <ElectricMotorFrontSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    if (key.includes('transformer')) {
+      return <TransformerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
     }
-    return null;
+    if (key.includes('ac-motor') || key.includes('induction')) {
+      return <AcMotorViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    }
+    if (key.includes('generator') || key.includes('dynamo')) {
+      return <GeneratorViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    }
+    if (key.includes('vernier') || key.includes('caliper')) {
+      return <VernierViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    }
+    if (key.includes('circuit') || key.includes('ohm')) {
+      return <CircuitViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    }
+    if (key.includes('gear')) {
+      return <MechanicalGearViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    }
+    // Default to DC Electric Motor
+    return <ElectricMotorFrontSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
   };
 
   return (

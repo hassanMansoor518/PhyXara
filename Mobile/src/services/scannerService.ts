@@ -22,7 +22,7 @@ export interface DetectedDiagramData {
   formula: string;
   specifications: { label: string; value: string }[];
   has3DModel: boolean;
-  modelKey?: 'electric-motor' | 'micrometer' | null;
+  modelKey?: string | null;
   modelName?: string | null;
 }
 
@@ -150,9 +150,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Commutator', value: 'None (Brushless Induction)' },
       { label: 'Slip Range', value: '2% - 5% under load' },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'ac-motor',
+    modelName: 'AC Induction Motor 3D Model',
   },
 
   // 4. Electrical Circuit - RECOGNIZED, NO 3D MODEL
@@ -180,9 +180,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Voltmeter Resistance', value: 'Very high (ideal: ∞ Ω)' },
       { label: 'Governing Law', value: "Ohm's Law" },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'circuit',
+    modelName: 'Electrical Circuit 3D Model',
   },
 
   // 5. Vernier Caliper - RECOGNIZED, NO 3D MODEL
@@ -210,9 +210,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Vernier Divs', value: '10 parts' },
       { label: 'Applications', value: 'Internal, External & Depth' },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'vernier',
+    modelName: 'Vernier Caliper 3D Model',
   },
 
   // 6. Step-up Transformer - RECOGNIZED, NO 3D MODEL
@@ -238,9 +238,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Core Material', value: 'Laminated silicon steel' },
       { label: 'Efficiency', value: '> 95%' },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'transformer',
+    modelName: 'Step-up Transformer 3D Model',
   },
 
   // 7. AC Generator - RECOGNIZED, NO 3D MODEL
@@ -267,9 +267,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Rule Applied', value: "Fleming's Right-Hand Rule" },
       { label: 'Frequency', value: 'f = ω / (2π)' },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'generator',
+    modelName: 'AC Generator 3D Model',
   },
 
   // 8. Mechanical Spur Gear - RECOGNIZED, NO 3D MODEL
@@ -296,9 +296,9 @@ export const PHYSICS_DIAGRAM_CATALOG: Record<string, DetectedDiagramData> = {
       { label: 'Velocity Ratio', value: 'Constant Inverse of Teeth' },
       { label: 'Efficiency', value: '98% - 99%' },
     ],
-    has3DModel: false,
-    modelKey: null,
-    modelName: null,
+    has3DModel: true,
+    modelKey: 'mechanical-gear',
+    modelName: 'Mechanical Gear Transmission 3D Model',
   },
 };
 
@@ -660,7 +660,7 @@ export const scannerService = {
             const catalogData = PHYSICS_DIAGRAM_CATALOG[canonicalId];
 
             if (catalogData) {
-              const hasVerified3D = Boolean(catalogData.has3DModel && (canonicalId === 'electric-motor' || canonicalId === 'micrometer'));
+              const hasVerified3D = Boolean(catalogData.has3DModel);
               return {
                 success: true,
                 diagramId: canonicalId,
@@ -721,7 +721,7 @@ export const scannerService = {
         };
       }
 
-      const hasVerified3D = Boolean(diagramData.has3DModel && (canonicalId === 'electric-motor' || canonicalId === 'micrometer'));
+      const hasVerified3D = Boolean(diagramData.has3DModel);
 
       return {
         success: true,

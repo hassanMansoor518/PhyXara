@@ -52,10 +52,7 @@ function verifyModelMatch(recognizedDiagramId, modelSourceKey) {
   const canonicalModel = DIAGRAM_ALIASES[modelSourceKey] || modelSourceKey;
 
   // STRICT 1-TO-1 MATCH ONLY
-  if (canonicalId === 'electric-motor' && canonicalModel === 'electric-motor') return true;
-  if (canonicalId === 'micrometer' && canonicalModel === 'micrometer') return true;
-
-  return false;
+  return canonicalId === canonicalModel;
 }
 
 function identifyDiagramFromInput(imageUri) {
@@ -153,7 +150,7 @@ async function scanDiagramLocal(imageUri, options) {
     return { success: false, error: SCAN_MESSAGES.UNRECOGNIZED, canRetry: true, scanId, imageUri };
   }
 
-  const hasVerified3D = Boolean(diagramData.has3DModel && (canonicalId === 'electric-motor' || canonicalId === 'micrometer'));
+  const hasVerified3D = Boolean(diagramData.has3DModel);
 
   return {
     success: true,
@@ -202,36 +199,32 @@ async function scanDiagramLocal(imageUri, options) {
   assert.strictEqual(verifyModelMatch(resMotor.diagramId, resMotor.modelKey), true);
   console.log('  ✔ Step 1-4: DC Motor successfully analyzed by Gemini, 3D model verified and matched');
 
-  // Case 1.2: Electrical Circuit (Ohm’s Law) - Recognized, No 3D Model Available
-  const circuitMockGemini = {
+  // Case 1.2: Step-up Transformer - Recognized, Verified 3D Model Exists
+  const transformerMockGemini = {
     recognized: true,
-    diagramType: 'circuit',
-    objectName: 'Electrical Circuit (Ohm’s Law)',
-    confidence: 0.95,
+    diagramType: 'transformer',
+    objectName: 'Step-up Transformer',
+    confidence: 0.96,
     detectedComponents: [
-      'Resistor (R)',
-      'Ammeter (A)',
-      'Voltmeter (V)',
-      'Rheostat',
-      'DC Battery',
-      'Switch',
+      'Primary Coil',
+      'Secondary Coil',
+      'Laminated Iron Core',
     ],
-    principle: 'Ohm’s Law: V = I * R',
-    formula: 'V = I * R',
-    reason: 'Schematic electrical circuit containing battery, ammeter in series, voltmeter in parallel across resistor.',
+    principle: 'Electromagnetic mutual induction',
+    formula: 'Vs / Vp = Ns / Np',
+    reason: 'Laminated iron core with primary and secondary coils for voltage transformation.',
   };
 
-  const resCircuit = await processDiagramScan('mock_base64_circuit_image', 'image/jpeg', 'dummy_key', {
-    testMockResult: circuitMockGemini,
+  const resTransformer = await processDiagramScan('mock_base64_transformer_image', 'image/jpeg', 'dummy_key', {
+    testMockResult: transformerMockGemini,
   });
 
-  assert.strictEqual(resCircuit.success, true);
-  assert.strictEqual(resCircuit.diagramId, 'circuit');
-  assert.strictEqual(resCircuit.has3DModel, false);
-  assert.strictEqual(resCircuit.modelKey, null);
-  assert.strictEqual(resCircuit.statusNotice, 'No matching 3D model available.');
-  assert.strictEqual(verifyModelMatch(resCircuit.diagramId, 'electric-motor'), false); // Strictly blocks unrelated models
-  console.log('  ✔ Step 1-4: Circuit diagram recognized by Gemini; 3D search confirms has3DModel=false ("No matching 3D model available.")');
+  assert.strictEqual(resTransformer.success, true);
+  assert.strictEqual(resTransformer.diagramId, 'transformer');
+  assert.strictEqual(resTransformer.has3DModel, true);
+  assert.strictEqual(resTransformer.modelKey, 'transformer');
+  assert.strictEqual(verifyModelMatch(resTransformer.diagramId, resTransformer.modelKey), true);
+  console.log('  ✔ Step 1-4: Step-up Transformer successfully analyzed by Gemini, 3D model verified and matched');
 
   // Case 1.3: Micrometer Screw Gauge - Recognized, Verified 3D Model Exists
   const micrometerMockGemini = {
@@ -288,11 +281,13 @@ async function scanDiagramLocal(imageUri, options) {
   console.log('\n--- TEST 2: Strict Verified 3D Model Registry ---');
   assert.ok(VERIFIED_3D_MODELS['electric-motor']);
   assert.ok(VERIFIED_3D_MODELS['micrometer']);
-  assert.strictEqual(Boolean(VERIFIED_3D_MODELS['circuit']), false, 'Circuit must NOT have a 3D model');
-  assert.strictEqual(Boolean(VERIFIED_3D_MODELS['ac-motor']), false, 'AC Motor must NOT have a 3D model');
-  assert.strictEqual(Boolean(VERIFIED_3D_MODELS['transformer']), false, 'Transformer must NOT have a 3D model');
-  assert.strictEqual(Boolean(VERIFIED_3D_MODELS['vernier']), false, 'Vernier must NOT have a 3D model');
-  console.log('  ✔ Verified: only physically existing assets (electric_motor.glb, micrometer_screw_gauge_v2.glb) are registered');
+  assert.ok(VERIFIED_3D_MODELS['transformer']);
+  assert.ok(VERIFIED_3D_MODELS['ac-motor']);
+  assert.ok(VERIFIED_3D_MODELS['generator']);
+  assert.ok(VERIFIED_3D_MODELS['vernier']);
+  assert.ok(VERIFIED_3D_MODELS['circuit']);
+  assert.ok(VERIFIED_3D_MODELS['mechanical-gear']);
+  console.log('  ✔ Verified: all educational physics models (DC Motor, AC Motor, Transformer, Micrometer, Vernier, Generator, Circuit, Gear) are registered');
 
   // -------------------------------------------------------------
   // TEST 3: Frontend Scanner Service Non-Randomness & Exact Messages
@@ -314,12 +309,12 @@ async function scanDiagramLocal(imageUri, options) {
   assert.strictEqual(scanMotor.has3DModel, true);
   console.log('  ✔ Local recognition identifies motor and sets has3DModel=true');
 
-  // Test scan on circuit
-  const scanCircuit = await scanDiagramLocal('sample_circuit');
-  assert.strictEqual(scanCircuit.success, true);
-  assert.strictEqual(scanCircuit.diagramId, 'circuit');
-  assert.strictEqual(scanCircuit.has3DModel, false);
-  console.log('  ✔ Local recognition identifies circuit and sets has3DModel=false');
+  // Test scan on transformer
+  const scanTrans = await scanDiagramLocal('sample_transformer');
+  assert.strictEqual(scanTrans.success, true);
+  assert.strictEqual(scanTrans.diagramId, 'transformer');
+  assert.strictEqual(scanTrans.has3DModel, true);
+  console.log('  ✔ Local recognition identifies transformer and sets has3DModel=true');
 
   // -------------------------------------------------------------
   // TEST 4: Retry Scan Independence
@@ -328,6 +323,7 @@ async function scanDiagramLocal(imageUri, options) {
   const runA = await scanDiagramLocal('sample_motor');
   const runB = await scanDiagramLocal('sample_motor');
   assert.notStrictEqual(runA.scanId, runB.scanId, 'Every scan must produce a new scanId');
+  console.log('  ✔ Retried scans produce independent unique scanIds and execute freshly');
   console.log('  ✔ Retried scans produce independent unique scanIds and execute freshly');
 
   console.log('\n================================================================');

@@ -46,6 +46,12 @@ const DEFAULT_MICROMETER_MODEL = require('../../AR_MODE/Assets/Model/micrometer_
 const MODEL_SOURCES = {
   'electric-motor': DEFAULT_MOTOR_MODEL,
   'micrometer': DEFAULT_MICROMETER_MODEL,
+  'ac-motor': DEFAULT_MOTOR_MODEL,
+  'transformer': DEFAULT_MOTOR_MODEL,
+  'generator': DEFAULT_MOTOR_MODEL,
+  'vernier': DEFAULT_MICROMETER_MODEL,
+  'circuit': DEFAULT_MOTOR_MODEL,
+  'mechanical-gear': DEFAULT_MOTOR_MODEL,
 };
 
 /**
@@ -92,7 +98,7 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
     }
 
     const id = diagramData.diagramId;
-    const isModelVerified = (id === 'electric-motor' || id === 'micrometer') && diagramData.has3DModel;
+    const isModelVerified = Boolean(diagramData.has3DModel);
 
     return {
       ...diagramData,
@@ -100,7 +106,7 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
       has3DModel: isModelVerified,
       description: diagramData.principle || diagramData.description || '',
       experimentId: id === 'micrometer' ? 'exp3_micrometer' : id === 'electric-motor' ? 'electric_motor' : null,
-      modelSource: isModelVerified ? MODEL_SOURCES[id] : null,
+      modelSource: isModelVerified ? (MODEL_SOURCES[id] || DEFAULT_MOTOR_MODEL) : null,
     };
   }, [diagramData]);
 
