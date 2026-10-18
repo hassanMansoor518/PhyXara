@@ -11,11 +11,15 @@ import {
   UnityMode,
 } from './types';
 
+import { checkARSupport } from '../utils/arChecker';
+
 const UNITY_OBJECT = 'RNBridge';
 const UNITY_METHOD = 'OnMessage';
 export const UNITY_ROUTE = '/unity';
 
-export type OpenResult = { ok: true } | { ok: false; reason: 'camera_denied' | 'busy' };
+export type OpenResult =
+  | { ok: true }
+  | { ok: false; reason: 'camera_denied' | 'busy' | 'ar_unsupported' };
 
 /**
  * Typed wrapper around the Unity view. A single Unity player lives in the process (Unity as a
@@ -36,6 +40,11 @@ class UnityBridgeImpl {
     if (this.opening) return { ok: false, reason: 'busy' };
 
     if (mode === 'ar') {
+      const arSupport = await checkARSupport();
+      if (!arSupport.isSupported) {
+        return { ok: false, reason: 'ar_unsupported' };
+      }
+
       // The scanner's expo-camera view must be unmounted (it is, once it loses focus) before Unity starts.
       const permission = await Camera.getCameraPermissionsAsync();
       const granted = permission.granted || (await Camera.requestCameraPermissionsAsync()).granted;

@@ -1,4 +1,10 @@
-import { Platform, NativeModules } from 'react-native';
+import { Platform } from 'react-native';
+
+/**
+ * Standard friendly message required when ARCore is unavailable on a device.
+ */
+export const AR_UNSUPPORTED_FRIENDLY_MESSAGE =
+  'AR is not supported on this device. You can still explore the 3D model in Standard View.';
 
 /**
  * Cached AR support result to prevent redundant hardware queries
@@ -10,8 +16,8 @@ let manualOverride = null; // null | boolean (used for testing both low-end and 
  * Inspects device specifications to determine if native AR (ARCore / ARKit) is supported.
  *
  * Requirements for AR:
- * - iOS: ARKit requires A9 chip or later and iOS 11.0+. (Practically all modern iOS devices).
- * - Android: ARCore requires Android 7.0+ (API 24+), physical camera with ARCore certification,
+ * - iOS: ARKit requires A9 chip or later and iOS 12.0+.
+ * - Android: ARCore requires Android 8.0+ (API 26+), physical camera with ARCore certification,
  *   and sufficient RAM (>3GB recommended). Budget phones lacking ARCore services will crash Unity AR.
  *
  * @param {boolean} forceRefresh - If true, re-runs hardware evaluation rather than returning cached result.
@@ -23,7 +29,7 @@ export async function checkARSupport(forceRefresh = false) {
       isSupported: manualOverride,
       reason: manualOverride
         ? 'AR manually enabled via debug override.'
-        : 'AR manually disabled (simulating low-end budget device).',
+        : AR_UNSUPPORTED_FRIENDLY_MESSAGE,
       isLowEnd: !manualOverride,
       details: { override: true },
     };
@@ -41,12 +47,16 @@ export async function checkARSupport(forceRefresh = false) {
     const isSimulator =
       (Platform.constants && Platform.constants.isTesting) ||
       (isIOS && Platform.constants?.systemName === 'iOS' && Platform.constants?.interfaceIdiom === 'simulator') ||
-      (isAndroid && (Platform.constants?.Model?.includes('sdk') || Platform.constants?.Model?.includes('google_sdk')));
+      (isAndroid && (
+        Platform.constants?.Model?.includes('sdk') ||
+        Platform.constants?.Model?.includes('google_sdk') ||
+        Platform.constants?.Model?.includes('Emulator')
+      ));
 
     if (isSimulator) {
       cachedARSupport = {
         isSupported: false,
-        reason: 'AR is unavailable on virtual simulators/emulators.',
+        reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
         isLowEnd: false,
         details: { platform: Platform.OS, isSimulator: true },
       };
@@ -68,7 +78,7 @@ export async function checkARSupport(forceRefresh = false) {
 
       cachedARSupport = {
         isSupported: false,
-        reason: 'iOS version below 12.0 does not support stable ARKit.',
+        reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
         isLowEnd: true,
         details: { platform: 'ios', version: iosVersion },
       };
@@ -81,24 +91,16 @@ export async function checkARSupport(forceRefresh = false) {
         ? Platform.Version
         : parseInt(Platform.Version, 10);
 
-      // ARCore strictly requires Android 7.0 (API Level 24) or higher
-      if (isNaN(apiLevel) || apiLevel < 24) {
+      // ARCore strictly requires Android 8.0 (API Level 26) or higher for stable Unity 6 ARFoundation
+      if (isNaN(apiLevel) || apiLevel < 26) {
         cachedARSupport = {
           isSupported: false,
-          reason: 'Android API level 24 (7.0 Nougat) or higher is required for ARCore.',
+          reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
           isLowEnd: true,
-          details: { platform: 'android', apiLevel },
+          details: { platform: 'android', apiLevel, failure: 'api_below_26' },
         };
         return cachedARSupport;
       }
-
-      // Check for presence of ARCore / Google Play Services for AR
-      // NativeModules or package availability check
-      const hasARCoreModule = !!(
-        NativeModules.ARCore ||
-        NativeModules.RNUnity ||
-        NativeModules.ViroARModule
-      );
 
       // Inspect known low-end / budget indicators
       const model = (Platform.constants?.Model || '').toLowerCase();
@@ -109,14 +111,16 @@ export async function checkARSupport(forceRefresh = false) {
         model.includes('go') ||
         model.includes('lite') ||
         brand.includes('itel') ||
-        brand.includes('tecno') && apiLevel <= 29;
+        brand.includes('infinix') ||
+        brand.includes('tecno') ||
+        (brand.includes('realme') && apiLevel <= 29);
 
       if (isKnownBudgetChipset) {
         cachedARSupport = {
           isSupported: false,
-          reason: 'Device hardware is optimized for 3D Interactive Mode (ARCore unsupported or unstable).',
+          reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
           isLowEnd: true,
-          details: { platform: 'android', apiLevel, model, brand },
+          details: { platform: 'android', apiLevel, model, brand, failure: 'budget_hardware' },
         };
         return cachedARSupport;
       }
@@ -126,7 +130,7 @@ export async function checkARSupport(forceRefresh = false) {
         isSupported: true,
         reason: 'Google ARCore hardware capabilities verified.',
         isLowEnd: false,
-        details: { platform: 'android', apiLevel, hasARCoreModule },
+        details: { platform: 'android', apiLevel, brand, model },
       };
       return cachedARSupport;
     }
@@ -134,7 +138,7 @@ export async function checkARSupport(forceRefresh = false) {
     // Fallback for Web or unsupported platforms
     cachedARSupport = {
       isSupported: false,
-      reason: 'Platform does not support native AR.',
+      reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
       isLowEnd: false,
       details: { platform: Platform.OS },
     };
@@ -143,7 +147,7 @@ export async function checkARSupport(forceRefresh = false) {
     console.warn('[arChecker] Error evaluating AR support, falling back to 3D mode:', error);
     cachedARSupport = {
       isSupported: false,
-      reason: 'Error checking hardware capabilities. Defaulting to safe 3D mode.',
+      reason: AR_UNSUPPORTED_FRIENDLY_MESSAGE,
       isLowEnd: true,
       details: { error: String(error) },
     };
@@ -167,7 +171,7 @@ export function isARSupportedSync() {
     const apiLevel = typeof Platform.Version === 'number'
       ? Platform.Version
       : parseInt(Platform.Version, 10);
-    return !isNaN(apiLevel) && apiLevel >= 26;
+    return !isNaN(apiLevel) && apiLevel >= 28;
   }
   return false;
 }
@@ -186,4 +190,6 @@ export default {
   checkARSupport,
   isARSupportedSync,
   setARSupportOverride,
+  AR_UNSUPPORTED_FRIENDLY_MESSAGE,
 };
+

@@ -1,9 +1,32 @@
-import { ArrowLeft, Image as GalleryIcon, HelpCircle, Zap, ZapOff } from 'lucide-react-native';
+import {
+  ArrowLeft,
+  Image as GalleryIcon,
+  HelpCircle,
+  Zap,
+  ZapOff,
+  Sparkles,
+  Sliders,
+} from 'lucide-react-native';
 import React from 'react';
-import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { Pressable, StyleSheet, Text, View, ScrollView } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export type ScannerStatus = 'READY' | 'SCANNING' | 'DETECTED' | 'FAILED' | 'LOADING';
+
+export interface TargetDiagramOption {
+  id: string;
+  name: string;
+  icon?: string;
+}
+
+export const TARGET_DIAGRAMS: TargetDiagramOption[] = [
+  { id: 'auto', name: '🎯 Auto Detect' },
+  { id: 'micrometer', name: '🔬 Micrometer' },
+  { id: 'vernier', name: '📐 Vernier Caliper' },
+  { id: 'electric-motor', name: '⚡ DC Motor' },
+  { id: 'transformer', name: '🔄 Transformer' },
+  { id: 'generator', name: '⚡ AC Generator' },
+];
 
 interface ScanOverlayProps {
   onBack: () => void;
@@ -13,6 +36,9 @@ interface ScanOverlayProps {
   flashMode: 'on' | 'off';
   onToggleFlash: () => void;
   status?: ScannerStatus;
+  selectedTarget?: string;
+  onSelectTarget?: (targetId: string) => void;
+  onOpenScenarios?: () => void;
 }
 
 export const ScanOverlay: React.FC<ScanOverlayProps> = ({
@@ -23,6 +49,9 @@ export const ScanOverlay: React.FC<ScanOverlayProps> = ({
   flashMode,
   onToggleFlash,
   status = 'READY',
+  selectedTarget = 'auto',
+  onSelectTarget,
+  onOpenScenarios,
 }) => {
   const insets = useSafeAreaInsets();
 
@@ -36,6 +65,7 @@ export const ScanOverlay: React.FC<ScanOverlayProps> = ({
         <Pressable
           onPress={onBack}
           className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0]"
+          hitSlop={8}
         >
           <ArrowLeft size={20} color="#0F172A" />
         </Pressable>
@@ -63,27 +93,77 @@ export const ScanOverlay: React.FC<ScanOverlayProps> = ({
           </Text>
         </View>
 
-        <Pressable
-          onPress={onToggleFlash}
-          className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0]"
-        >
-          {flashMode === 'on' ? (
-            <Zap size={19} color="#F59E0B" fill="#F59E0B" />
-          ) : (
-            <ZapOff size={19} color="#64748B" />
+        <View className="flex-row items-center gap-2">
+          {onOpenScenarios && (
+            <Pressable
+              onPress={onOpenScenarios}
+              className="px-3 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0] flex-row"
+              hitSlop={8}
+            >
+              <Sliders size={16} color="#2563EB" style={{ marginRight: 4 }} />
+              <Text className="text-[11px] font-bold text-[#2563EB]">Scenarios</Text>
+            </Pressable>
           )}
-        </Pressable>
+
+          <Pressable
+            onPress={onToggleFlash}
+            className="w-11 h-11 rounded-full bg-white items-center justify-center shadow-md active:bg-gray-100 border border-[#E2E8F0]"
+            hitSlop={8}
+          >
+            {flashMode === 'on' ? (
+              <Zap size={19} color="#F59E0B" fill="#F59E0B" />
+            ) : (
+              <ZapOff size={19} color="#64748B" />
+            )}
+          </Pressable>
+        </View>
+      </View>
+
+      {/* Target Diagram Selector Carousel */}
+      <View className="z-10 mt-3 px-4">
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={{ paddingHorizontal: 4, gap: 8 }}
+        >
+          {TARGET_DIAGRAMS.map((item) => {
+            const isSelected = selectedTarget === item.id;
+            return (
+              <Pressable
+                key={item.id}
+                onPress={() => onSelectTarget && onSelectTarget(item.id)}
+                className={`px-3.5 py-1.5 rounded-full border shadow-sm flex-row items-center ${
+                  isSelected
+                    ? 'bg-[#2563EB] border-[#1D4ED8]'
+                    : 'bg-white/90 border-[#E2E8F0] active:bg-white'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-bold ${
+                    isSelected ? 'text-white' : 'text-[#334155]'
+                  }`}
+                >
+                  {item.name}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </ScrollView>
       </View>
 
       {/* Center Viewfinder & Instructions */}
       <View className="flex-1 items-center justify-center px-8">
         {/* Floating Instruction Card */}
-        <View className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl mb-6 border border-[#E2E8F0] shadow-md items-center">
+        <View className="bg-white/95 backdrop-blur-md px-5 py-2.5 rounded-2xl mb-4 border border-[#E2E8F0] shadow-md items-center">
           <Text className="text-xs font-extrabold text-[#0F172A] text-center">
-            Point your camera at a Physics diagram
+            {selectedTarget === 'auto'
+              ? 'Point camera at any Physics textbook diagram'
+              : `Scanning for ${
+                  TARGET_DIAGRAMS.find((t) => t.id === selectedTarget)?.name || 'Diagram'
+                }`}
           </Text>
           <Text className="text-[11px] font-medium text-[#64748B] text-center mt-0.5">
-            Keep the diagram inside the frame
+            Keep the diagram centered inside the blue brackets
           </Text>
         </View>
 
@@ -130,7 +210,9 @@ export const ScanOverlay: React.FC<ScanOverlayProps> = ({
             onPress={onCapture}
             className="w-18 h-18 rounded-full bg-[#EFF6FF] items-center justify-center border-4 border-[#2563EB] active:scale-95 shadow-lg p-1"
           >
-            <View className="w-14 h-14 rounded-full bg-[#2563EB] items-center justify-center shadow-md" />
+            <View className="w-14 h-14 rounded-full bg-[#2563EB] items-center justify-center shadow-md">
+              <Sparkles size={20} color="#FFFFFF" />
+            </View>
           </Pressable>
 
           {/* Tips / Help Button */}

@@ -45,6 +45,15 @@ const withManifestConflictFix = (config) =>
     for (const meta of app['meta-data'] || []) {
       if (meta.$['android:name'] === 'com.google.ar.core') meta.$['tools:replace'] = 'android:value';
     }
+
+    const root = manifest.manifest;
+    root['uses-feature'] = root['uses-feature'] || [];
+    for (const feat of root['uses-feature']) {
+      if (feat.$['android:name'] === 'android.hardware.camera.ar' || feat.$['android:name'] === 'com.google.ar.core.depth') {
+        feat.$['android:required'] = 'false';
+        feat.$['tools:replace'] = 'android:required';
+      }
+    }
     return mod;
   });
 
