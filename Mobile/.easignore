@@ -19,6 +19,7 @@ unity/builds/android/unityLibrary/build/
 unity/builds/android/unityLibrary/.cxx/
 unity/builds/android/unityLibrary/.gradle/
 unity/builds/android/unityLibrary/symbols/
+unity/builds/android/unityLibrary/src/main/Il2CppOutputProject/
 **/Library/
 **/Temp/
 **/Obj/
