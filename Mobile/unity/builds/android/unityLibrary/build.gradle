@@ -113,6 +113,9 @@ android {
         def staticLibs = [
             'arm64' : [  ]
         ]
+        onlyIf {
+            archs.any { arch, abi -> !file(getIl2CppOutputPath(workingDir, abi)).exists() }
+        }
         inputs.files fileTree(dir: 'src/main/Il2CppOutputProject', include: ['**/*'])
         inputs.files fileTree(dir: 'src/main/jniStaticLibs', include: ['**/*'])
         archs.each { arch, abi ->
@@ -192,6 +195,10 @@ def buildIl2CppImpl(String workingDir, String configuration, String architecture
     }
 
     def command = "${workingDir}/src/main/Il2CppOutputProject/IL2CPP/build/deploy/il2cpp${executableExtension}";
+    if (!file(command).exists()) {
+        println "[unityLibrary] Warning: il2cpp executable not found at ${command}. Skipping execution."
+        return
+    }
     def resolvedSdk = project.hasProperty("unity.androidSdkPath") ? getProperty("unity.androidSdkPath") : getSdkPath()
     def resolvedNdk = project.hasProperty("unity.androidNdkPath") ? getProperty("unity.androidNdkPath") : getNdkPath()
     execCommand(workingDir, [command, *commandLineArgs], [
