@@ -86,13 +86,17 @@ const server = http.createServer(async (req, res) => {
 
   // 1. Health check endpoint
   if (url === '/api/health' && req.method === 'GET') {
+    // Dynamically report configured models from geminiService
+    const { _testing } = require('./geminiService');
+    const modelList = _testing?.getModelList ? _testing.getModelList() : ['unknown'];
     res.writeHead(200, { 'Content-Type': 'application/json' });
     res.end(
       JSON.stringify({
         status: 'ok',
         service: 'PhyXara Gemini AI Recognition Server',
         hasGeminiKey: Boolean(process.env.GEMINI_API_KEY),
-        supportedVisionModel: 'gemini-3.8-flash',
+        configuredModels: modelList,
+        primaryModel: modelList[0] || 'none',
       })
     );
     return;
@@ -239,13 +243,32 @@ const server = http.createServer(async (req, res) => {
       res.writeHead(200, { 'Content-Type': 'application/json' });
       res.end(JSON.stringify(result));
     } catch (err) {
-      console.error('[Server Error]', err);
-      res.writeHead(200, { 'Content-Type': 'application/json' });
+      console.error('[Server Error]', err.message);
+
+      // Determine appropriate HTTP status and user-friendly message
+      let userMessage = 'An error occurred during diagram analysis. Please try again.';
+      let httpStatus = 200; // Default to 200 for backwards compatibility with the mobile app
+      let retryable = true;
+
+      if (err.category === 'AUTH_ERROR') {
+        userMessage = 'Server configuration error. Please contact support.';
+        retryable = false;
+      } else if (err.category === 'BAD_REQUEST') {
+        userMessage = 'The image could not be processed. Please try a different image.';
+        retryable = false;
+      } else if (err.attemptLog) {
+        // All models exhausted
+        userMessage = 'All AI models are currently busy. Please wait a moment and try again.';
+        retryable = true;
+      }
+
+      res.writeHead(httpStatus, { 'Content-Type': 'application/json' });
       res.end(
         JSON.stringify({
           success: false,
           recognized: false,
-          error: err.message || 'An error occurred during Gemini diagram analysis.',
+          error: userMessage,
+          retryable,
         })
       );
     }
