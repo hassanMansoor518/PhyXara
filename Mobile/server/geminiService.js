@@ -293,9 +293,9 @@ function getModelList() {
 
   // If no fallbacks configured, provide sensible defaults.
   // These are currently available vision-capable Gemini models verified via ListModels API.
-  // Updated Oct 2026: gemini-2.0-flash and gemini-1.5-* are deprecated/removed.
+  // Updated Oct 2026: gemini-2.5-flash/pro are deprecated. Use 3.x-series models.
   if (fallbacks.length === 0) {
-    const defaults = ['gemini-3.5-flash', 'gemini-2.5-flash', 'gemini-2.5-pro'];
+    const defaults = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
     // Deduplicate: don't include default if it's already the primary
     return [primary, ...defaults.filter(m => m !== primary)];
   }
