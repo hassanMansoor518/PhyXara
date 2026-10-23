@@ -283,7 +283,7 @@ const CIRCUIT_BREAKER_COOLDOWN_MS = 60000;  // 60s cooldown when circuit is open
 function getModelList() {
   const primary = process.env.GEMINI_PRIMARY_MODEL
     || process.env.GEMINI_VISION_MODEL
-    || 'gemini-3.8-flash';
+    || 'gemini-3.5-flash'; // Updated Oct 2026: gemini-3.5-flash confirmed working
 
   const fallbacksRaw = process.env.GEMINI_FALLBACK_MODELS || '';
   const fallbacks = fallbacksRaw
@@ -292,10 +292,10 @@ function getModelList() {
     .filter(m => m.length > 0);
 
   // If no fallbacks configured, provide sensible defaults.
-  // These are currently available vision-capable Gemini models verified via ListModels API.
-  // Updated Oct 2026: gemini-2.5-flash/pro are deprecated. Use 3.x-series models.
+  // Verified via ListModels API Oct 2026. gemini-2.5-flash/lite are deprecated (404).
+  // gemini-3.8-flash is available but frequently 503 under load — keep as last resort.
   if (fallbacks.length === 0) {
-    const defaults = ['gemini-3.5-flash', 'gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.5-flash-lite', 'gemini-3.1-flash-lite'];
+    const defaults = ['gemini-3.7-flash', 'gemini-3.6-flash', 'gemini-3.8-flash', 'gemini-3.1-flash-lite', 'gemini-3.5-flash-lite'];
     // Deduplicate: don't include default if it's already the primary
     return [primary, ...defaults.filter(m => m !== primary)];
   }
@@ -685,11 +685,12 @@ Task:
             break;
           }
 
-          // Transient errors (503, 500, 502, 504) — retry with backoff
+          // Transient errors (503, 500, 502, 504) — retry once then switch model.
+          // 503 often means the model is overloaded; burning all retries on it is wasteful.
           if (category === ERROR_CATEGORY.TRANSIENT) {
-            if (attempt < retryConfig.maxRetries) {
+            if (attempt === 0) {
               const delay = calculateBackoffDelay(attempt, retryConfig.baseDelayMs, retryConfig.maxDelayMs, retryAfter);
-              logInfo('analyzeImage', `Transient error, retrying after backoff`, {
+              logInfo('analyzeImage', `Transient error (${httpStatus}), retrying once then switching model`, {
                 model,
                 attempt,
                 httpStatus,
@@ -698,8 +699,9 @@ Task:
               await sleep(delay);
               continue;
             }
+            // Second failure on same model — cut losses and try next
             lastError = new Error(
-              `Model "${model}" returned HTTP ${httpStatus} after ${attempt + 1} attempts.`
+              `Model "${model}" returned HTTP ${httpStatus} twice, switching to fallback.`
             );
             break;
           }

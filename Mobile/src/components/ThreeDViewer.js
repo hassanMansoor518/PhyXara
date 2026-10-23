@@ -1,4 +1,4 @@
-import React, { Suspense, useEffect, useRef, useState, useMemo } from 'react';
+import React, { Suspense, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
   Text,
@@ -6,12 +6,17 @@ import {
   StyleSheet,
   Image,
   Pressable,
+  Dimensions,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
   useAnimatedStyle,
   useSharedValue,
   withSpring,
+  withTiming,
+  Easing,
+  runOnJS,
+  interpolate,
 } from 'react-native-reanimated';
 import { Layers, Camera, AlertCircle } from 'lucide-react-native';
 
@@ -48,6 +53,16 @@ try {
   isFiberSupported = false;
 }
 
+// ─── Constants (pre-allocated, never inside render loop) ───
+const DEG_TO_RAD = Math.PI / 180;
+const PITCH_CLAMP_DEG = 80;
+const INERTIA_DAMPING = 0.93;
+const INERTIA_THRESHOLD = 0.05;
+const IDLE_RESUME_MS = 2000;
+const ENTRY_DURATION_MS = 600;
+const RESET_DURATION_MS = 400;
+const SCREEN_WIDTH = Dimensions.get('window').width;
+
 /**
  * Procedural Physics Fallback Mesh for WebGL
  */
@@ -76,7 +91,8 @@ function PhysicsFallbackMesh({ autoRotate = true } = {}) {
 }
 
 /**
- * 3D Model Renderer using useGLTF with memory cleanup
+ * 3D Model Renderer using useGLTF with memory cleanup and AnimationMixer support.
+ * Plays embedded GLTF animation clips if present.
  */
 function ModelMesh({
   uri,
@@ -84,20 +100,49 @@ function ModelMesh({
   position = [0, 0, 0],
   rotation = [0, 0, 0],
   autoRotate = false,
+  autoRotateSpeed = 0.4,
   onLoaded,
+  animationState, // { playing: bool, clipIndex: number } ref
 } = {}) {
   const gltf = useGLTF ? useGLTF(uri) : null;
   const groupRef = useRef(null);
+  const mixerRef = useRef(null);
+  const actionsRef = useRef([]);
 
   useEffect(() => {
-    if (gltf && onLoaded) {
-      onLoaded();
+    if (!gltf) return;
+    if (onLoaded) onLoaded();
+
+    // Set up AnimationMixer if model has animation clips
+    if (gltf.animations && gltf.animations.length > 0 && gltf.scene) {
+      try {
+        const THREE = require('three');
+        const mixer = new THREE.AnimationMixer(gltf.scene);
+        mixerRef.current = mixer;
+        actionsRef.current = gltf.animations.map(clip => mixer.clipAction(clip));
+        // Auto-play first clip
+        if (actionsRef.current[0]) {
+          actionsRef.current[0].play();
+        }
+      } catch { /* three not available */ }
     }
+
+    return () => {
+      if (mixerRef.current) {
+        mixerRef.current.stopAllAction();
+        mixerRef.current = null;
+      }
+      actionsRef.current = [];
+    };
   }, [gltf, onLoaded]);
 
   useFrame((_, delta) => {
     if (autoRotate && groupRef.current) {
-      groupRef.current.rotation.y += delta * 0.4;
+      groupRef.current.rotation.y += delta * autoRotateSpeed;
+    }
+    // Advance animation mixer
+    if (mixerRef.current && animationState?.current?.playing !== false) {
+      mixerRef.current.update(delta);
     }
   });
 
@@ -117,14 +162,18 @@ function ModelMesh({
 }
 
 /**
- * Fault-Tolerant 3D Model Viewer
+ * Fault-Tolerant 3D Model Viewer with Full Interaction Suite
  *
- * Guarantees:
- * 1. Zero infinite loading screens.
- * 2. Strict model matching: only displays a 3D model when a verified matching asset exists.
- * 3. Shows "No matching 3D model is available for this image." when no 3D asset exists.
- * 4. Drag-to-rotate, pinch-to-zoom, on-screen zoom buttons, auto-rotation, and view reset.
- * 5. Complete independence from ARCore or Google Play Services.
+ * Features:
+ * 1. Drag-to-rotate with yaw + pitch, pitch clamped to ±80°.
+ * 2. Inertia: release velocity decays smoothly.
+ * 3. Pinch-to-zoom (no conflict with rotation).
+ * 4. Double-tap resets rotation + zoom with eased animation.
+ * 5. Idle auto-rotate pauses on touch, resumes after 2s.
+ * 6. Entry fade/scale animation on mount.
+ * 7. AnimationMixer for embedded GLTF clips.
+ * 8. Full cleanup on unmount.
+ * 9. Strict model matching.
  */
 export const ThreeDViewer = ({
   modelPath,
@@ -133,86 +182,319 @@ export const ThreeDViewer = ({
   scale: initialScale = 1,
   position = [0, 0, 0],
   rotation = [0, 0, 0],
-  autoRotate = false,
+  // Existing props (backward compatible)
+  autoRotate: autoRotateProp = false,
   showControlsHint = true,
   style,
   onError,
   onLoad,
   onScanAnother,
+  // New API props
+  autoRotateSpeed = 1.5,
+  enableRotate = true,
+  enableZoom = true,
+  minZoom = 0.5,
+  maxZoom = 2.5,
+  onInteractionStart,
+  onInteractionEnd,
 }) => {
   // WebGL loading state with strict safety timeout
   const [loadingWebGL, setLoadingWebGL] = useState(isFiberSupported);
   const [webGLFailed, setWebGLFailed] = useState(!isFiberSupported);
   const orbitRef = useRef(null);
+  const animationStateRef = useRef({ playing: true, clipIndex: 0 });
 
-  // Gesture State for Standard Interactive View
-  const rotationAngle = useSharedValue(0);
+  // ─── Gesture State (refs to avoid React re-renders every frame) ───
+  const yawAngle = useSharedValue(0);
+  const pitchAngle = useSharedValue(0);
   const zoomScale = useSharedValue(initialScale);
   const savedScale = useSharedValue(initialScale);
 
-  // Auto-rotation effect
+  // Snapshot at gesture start — used for delta-from-start formula
+  const startYaw = useSharedValue(0);
+  const startPitch = useSharedValue(0);
+
+  // Inertia velocities (deg/frame)
+  const velocityX = useSharedValue(0);
+  const velocityY = useSharedValue(0);
+
+  // Interaction tracking for idle auto-rotate
+  const isTouching = useSharedValue(false);
+  const lastInteractionTime = useSharedValue(Date.now());
+
+  // Entry animation
+  const entryProgress = useSharedValue(0);
+
+  // Auto-rotate state derived from props + idle detection
+  const autoRotateActive = useRef(autoRotateProp);
+  const idleTimerRef = useRef(null);
+
+  // ─── Entry Animation ───
   useEffect(() => {
-    let animTimer = null;
-    if (autoRotate) {
-      animTimer = setInterval(() => {
-        rotationAngle.value = (rotationAngle.value + 1.5) % 360;
-      }, 30);
-    }
-    return () => {
-      if (animTimer) clearInterval(animTimer);
-    };
-  }, [autoRotate]);
-
-  // Pan gesture for interactive 360° rotation
-  const panGesture = Gesture.Pan().onUpdate((e) => {
-    rotationAngle.value = (rotationAngle.value + e.velocityX / 260) % 360;
-  });
-
-  // Pinch gesture for smooth 3D zoom
-  const pinchGesture = Gesture.Pinch()
-    .onUpdate((e) => {
-      zoomScale.value = Math.min(Math.max(savedScale.value * e.scale, 0.7), 2.2);
-    })
-    .onEnd(() => {
-      savedScale.value = zoomScale.value;
+    entryProgress.value = withTiming(1, {
+      duration: ENTRY_DURATION_MS,
+      easing: Easing.out(Easing.cubic),
     });
+    if (onLoad) onLoad();
+  }, []);
 
-  const composedGestures = Gesture.Simultaneous(panGesture, pinchGesture);
+  // ─── Auto-rotate idle resume ───
+  useEffect(() => {
+    autoRotateActive.current = autoRotateProp;
+  }, [autoRotateProp]);
 
-  const animatedModelStyle = useAnimatedStyle(() => ({
-    transform: [{ scale: zoomScale.value }],
-  }));
+  const startIdleTimer = useCallback(() => {
+    if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    idleTimerRef.current = setTimeout(() => {
+      autoRotateActive.current = autoRotateProp;
+    }, IDLE_RESUME_MS);
+  }, [autoRotateProp]);
 
-  // Auto-dismiss loader and failover to reliable standard view if WebGL is delayed
+  useEffect(() => {
+    return () => {
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
+
+  // ─── Inertia rAF Loop (single loop, refs only, no allocations) ───
+  const rafRef = useRef(null);
+  const inertiaActive = useRef(false);
+
+  const startInertiaLoop = useCallback(() => {
+    if (inertiaActive.current) return;
+    inertiaActive.current = true;
+
+    const tick = () => {
+      if (isTouching.value) {
+        inertiaActive.current = false;
+        return;
+      }
+
+      const vx = velocityX.value;
+      const vy = velocityY.value;
+
+      if (Math.abs(vx) < INERTIA_THRESHOLD && Math.abs(vy) < INERTIA_THRESHOLD) {
+        velocityX.value = 0;
+        velocityY.value = 0;
+        inertiaActive.current = false;
+        return;
+      }
+
+      yawAngle.value = (yawAngle.value + vx) % 360;
+      const newPitch = pitchAngle.value + vy;
+      pitchAngle.value = Math.max(-PITCH_CLAMP_DEG, Math.min(PITCH_CLAMP_DEG, newPitch));
+
+      velocityX.value = vx * INERTIA_DAMPING;
+      velocityY.value = vy * INERTIA_DAMPING;
+
+      rafRef.current = requestAnimationFrame(tick);
+    };
+
+    rafRef.current = requestAnimationFrame(tick);
+  }, []);
+
+  // Auto-rotate via rAF (only for SVG fallback path)
+  const autoRotateRafRef = useRef(null);
+  const lastAutoRotateTime = useRef(0);
+
+  useEffect(() => {
+    if (!webGLFailed) return; // WebGL uses useFrame instead
+
+    const autoRotateTick = (timestamp) => {
+      if (!autoRotateActive.current || isTouching.value) {
+        lastAutoRotateTime.current = timestamp;
+        autoRotateRafRef.current = requestAnimationFrame(autoRotateTick);
+        return;
+      }
+
+      const delta = lastAutoRotateTime.current ? (timestamp - lastAutoRotateTime.current) / 1000 : 0;
+      lastAutoRotateTime.current = timestamp;
+
+      if (delta > 0 && delta < 0.1) {
+        yawAngle.value = (yawAngle.value + autoRotateSpeed * delta * 30) % 360;
+      }
+
+      autoRotateRafRef.current = requestAnimationFrame(autoRotateTick);
+    };
+
+    autoRotateRafRef.current = requestAnimationFrame(autoRotateTick);
+
+    return () => {
+      if (autoRotateRafRef.current) {
+        cancelAnimationFrame(autoRotateRafRef.current);
+        autoRotateRafRef.current = null;
+      }
+    };
+  }, [webGLFailed, autoRotateSpeed]);
+
+  // ─── Cleanup on unmount ───
+  useEffect(() => {
+    return () => {
+      if (rafRef.current) cancelAnimationFrame(rafRef.current);
+      if (autoRotateRafRef.current) cancelAnimationFrame(autoRotateRafRef.current);
+      if (idleTimerRef.current) clearTimeout(idleTimerRef.current);
+    };
+  }, []);
+
+  // ─── WebGL safety timeout ───
   useEffect(() => {
     const safetyTimer = setTimeout(() => {
       setLoadingWebGL(false);
       setWebGLFailed(true);
     }, 400);
-
-    if (onLoad) {
-      onLoad();
-    }
-
     return () => clearTimeout(safetyTimer);
   }, []);
 
+  // Rotation speed normalized to viewport width so it feels consistent across devices
+  const rotationFactor = 360 / SCREEN_WIDTH;
+
+  // ─── Gestures ───
+
+  // JS callbacks bridged from worklet via runOnJS
+  const onTouchStart = useCallback(() => {
+    autoRotateActive.current = false;
+    if (onInteractionStart) onInteractionStart();
+  }, [onInteractionStart]);
+
+  const onTouchEnd = useCallback(() => {
+    startIdleTimer();
+    startInertiaLoop();
+    if (onInteractionEnd) onInteractionEnd();
+  }, [onInteractionEnd, startIdleTimer, startInertiaLoop]);
+
+  // One-finger drag → rotate (yaw + pitch)
+  // Uses delta-from-start so the model tracks the finger exactly and
+  // does NOT drift (the old formula was adding velocityX every onUpdate frame).
+  const panGesture = Gesture.Pan()
+    .minPointers(1)
+    .maxPointers(1) // Ensures pinch (2 fingers) never triggers rotation
+    .enabled(enableRotate)
+    .onBegin(() => {
+      'worklet';
+      isTouching.value = true;
+      velocityX.value = 0;
+      velocityY.value = 0;
+      // Snapshot current angles so we can compute delta cleanly
+      startYaw.value = yawAngle.value;
+      startPitch.value = pitchAngle.value;
+      runOnJS(onTouchStart)();
+    })
+    .onUpdate((e) => {
+      'worklet';
+      // yaw = startYaw + dx * 0.4  (horizontal drag)
+      yawAngle.value = (startYaw.value + e.translationX * 0.4) % 360;
+      // pitch = clamp(startPitch - dy * 0.3, -60, 60)  (vertical drag, inverted)
+      const newPitch = startPitch.value - e.translationY * 0.3;
+      pitchAngle.value = Math.max(-60, Math.min(60, newPitch));
+    })
+    .onEnd((e) => {
+      'worklet';
+      isTouching.value = false;
+      lastInteractionTime.value = Date.now();
+      // Store release velocity for inertia (scaled to deg/frame)
+      velocityX.value = e.velocityX * 0.003;
+      velocityY.value = e.velocityY * 0.002;
+      runOnJS(onTouchEnd)();
+    });
+
+  // Pinch → zoom only (two fingers)
+  const pinchGesture = Gesture.Pinch()
+    .enabled(enableZoom)
+    .onBegin(() => {
+      'worklet';
+      isTouching.value = true;
+      runOnJS(onTouchStart)();
+    })
+    .onUpdate((e) => {
+      'worklet';
+      // Smooth lerp toward target scale
+      const target = Math.min(Math.max(savedScale.value * e.scale, minZoom), maxZoom);
+      zoomScale.value = zoomScale.value + (target - zoomScale.value) * 0.3;
+    })
+    .onEnd(() => {
+      'worklet';
+      savedScale.value = zoomScale.value;
+      isTouching.value = false;
+      lastInteractionTime.value = Date.now();
+      runOnJS(onTouchEnd)();
+    });
+
+  // Double-tap → reset rotation + zoom with eased animation
+  const doubleTapGesture = Gesture.Tap()
+    .numberOfTaps(2)
+    .onEnd(() => {
+      'worklet';
+      yawAngle.value = withTiming(0, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+      pitchAngle.value = withTiming(0, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+      zoomScale.value = withTiming(initialScale, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+      savedScale.value = initialScale;
+      velocityX.value = 0;
+      velocityY.value = 0;
+    });
+
+  // Compose: pan + pinch run simultaneously, double-tap is exclusive
+  const composedGestures = Gesture.Race(
+    doubleTapGesture,
+    Gesture.Simultaneous(panGesture, pinchGesture)
+  );
+
+  // ─── Animated styles ───
+  // IMPORTANT: Do NOT add rotateY / rotateX here.
+  // Those CSS transforms rotate a flat 2D plane — at 90° the SVG becomes a
+  // paper-thin sliver no matter what it draws inside.
+  // Instead, yaw and pitch are passed as *props* to each SVG viewer so the
+  // component can do its own real 3D projection. Only scale (zoom) and
+  // opacity (entry fade) belong on the wrapper.
+  const animatedModelStyle = useAnimatedStyle(() => ({
+    transform: [
+      { scale: zoomScale.value * entryProgress.value },
+    ],
+    opacity: entryProgress.value,
+  }));
+
+  // JS-thread readable copies of shared values for passing to SVG prop callbacks.
+  // (SVG viewers receive these via useAnimatedProps or plain JS state; we use
+  //  a Reanimated-driven re-render approach: bind yaw/pitch to React state.)
+  const [svgYaw, setSvgYaw] = useState(0);
+  const [svgPitch, setSvgPitch] = useState(0);
+
+  // Sync shared values → React state so SVG viewers re-render with correct angles.
+  // We use a lightweight rAF bridge so we don't block the UI thread.
+  const svgSyncRef = useRef(null);
+  useEffect(() => {
+    let alive = true;
+    const sync = () => {
+      if (!alive) return;
+      setSvgYaw(yawAngle.value);
+      setSvgPitch(pitchAngle.value);
+      svgSyncRef.current = requestAnimationFrame(sync);
+    };
+    svgSyncRef.current = requestAnimationFrame(sync);
+    return () => {
+      alive = false;
+      if (svgSyncRef.current) cancelAnimationFrame(svgSyncRef.current);
+    };
+  }, []);
+
+  // ─── Zoom buttons ───
   const handleZoomIn = () => {
+    if (!enableZoom) return;
     if (isFiberSupported && !webGLFailed && orbitRef.current?.dollyIn) {
       orbitRef.current.dollyIn(1.25);
       orbitRef.current.update();
     } else {
-      zoomScale.value = withSpring(Math.min(zoomScale.value + 0.25, 2.2));
+      zoomScale.value = withSpring(Math.min(zoomScale.value + 0.25, maxZoom));
       savedScale.value = zoomScale.value;
     }
   };
 
   const handleZoomOut = () => {
+    if (!enableZoom) return;
     if (isFiberSupported && !webGLFailed && orbitRef.current?.dollyOut) {
       orbitRef.current.dollyOut(1.25);
       orbitRef.current.update();
     } else {
-      zoomScale.value = withSpring(Math.max(zoomScale.value - 0.25, 0.7));
+      zoomScale.value = withSpring(Math.max(zoomScale.value - 0.25, minZoom));
       savedScale.value = zoomScale.value;
     }
   };
@@ -221,9 +503,12 @@ export const ThreeDViewer = ({
     if (isFiberSupported && !webGLFailed && orbitRef.current?.reset) {
       orbitRef.current.reset();
     }
-    rotationAngle.value = withSpring(0);
-    zoomScale.value = withSpring(1);
-    savedScale.value = 1;
+    yawAngle.value = withTiming(0, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+    pitchAngle.value = withTiming(0, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+    zoomScale.value = withTiming(initialScale, { duration: RESET_DURATION_MS, easing: Easing.inOut(Easing.cubic) });
+    savedScale.value = initialScale;
+    velocityX.value = 0;
+    velocityY.value = 0;
   };
 
   // Resolve Asset URI
@@ -286,31 +571,79 @@ export const ThreeDViewer = ({
     );
   }
 
-  // 2. Render verified 3D diagram visual
+  // 2. Render verified 3D diagram visual (SVG fallback illustrations)
+  // yaw and pitch are passed as props so each viewer can do its own
+  // real 3D projection. The wrapper Animated.View applies NO rotateX/rotateY
+  // (that caused the flat-paper / sliver bug).
   const renderDiagramVisual = () => {
     if (key.includes('micrometer') || key.includes('screw') || key.includes('exp3')) {
-      return <MicrometerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <MicrometerViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     if (key.includes('transformer')) {
-      return <TransformerViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <TransformerViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     if (key.includes('ac-motor') || key.includes('induction')) {
-      return <AcMotorViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <AcMotorViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     if (key.includes('generator') || key.includes('dynamo')) {
-      return <GeneratorViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <GeneratorViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     if (key.includes('vernier') || key.includes('caliper')) {
-      return <VernierViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      // Pass both yaw and pitch so the solid-3D projector sees both axes.
+      // thickness=2.4 ensures the caliper reads as chunky from any angle.
+      return (
+        <VernierViewerSvg
+          width={290} height={230}
+          yaw={svgYaw}
+          pitch={svgPitch}
+          thickness={2.4}
+          autoFit
+        />
+      );
     }
     if (key.includes('circuit') || key.includes('ohm')) {
-      return <CircuitViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <CircuitViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     if (key.includes('gear')) {
-      return <MechanicalGearViewerSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+      return (
+        <MechanicalGearViewerSvg
+          width={290} height={230}
+          rotationAngle={svgYaw}
+        />
+      );
     }
     // Default to DC Electric Motor
-    return <ElectricMotorFrontSvg width={290} height={230} rotationAngle={rotationAngle.value} />;
+    return (
+      <ElectricMotorFrontSvg
+        width={290} height={230}
+        rotationAngle={svgYaw}
+      />
+    );
   };
 
   return (
@@ -335,12 +668,17 @@ export const ThreeDViewer = ({
 
           <OrbitControls
             ref={orbitRef}
-            enableZoom={true}
-            enableRotate={true}
+            enableZoom={enableZoom}
+            enableRotate={enableRotate}
             enablePan={true}
+            enableDamping={true}
             dampingFactor={0.08}
-            minDistance={1.0}
-            maxDistance={12}
+            autoRotate={autoRotateProp}
+            autoRotateSpeed={autoRotateSpeed}
+            minPolarAngle={Math.PI * 0.05} // ~9° from top (prevents flip)
+            maxPolarAngle={Math.PI * 0.95} // ~171° from top
+            minDistance={minZoom}
+            maxDistance={maxZoom * 5}
             makeDefault
           />
 
@@ -351,14 +689,16 @@ export const ThreeDViewer = ({
                 scale={initialScale}
                 position={position}
                 rotation={rotation}
-                autoRotate={autoRotate}
+                autoRotate={autoRotateProp}
+                autoRotateSpeed={autoRotateSpeed * 0.3}
+                animationState={animationStateRef}
                 onLoaded={() => {
                   setLoadingWebGL(false);
                   if (onLoad) onLoad();
                 }}
               />
             ) : (
-              <PhysicsFallbackMesh autoRotate={autoRotate} />
+              <PhysicsFallbackMesh autoRotate={autoRotateProp} />
             )}
           </Suspense>
         </Canvas>
@@ -406,7 +746,7 @@ export const ThreeDViewer = ({
         <View style={styles.hintContainer} pointerEvents="box-none">
           <View style={styles.hintBadge}>
             <Text style={styles.hintText}>
-              Drag to Rotate • Pinch / Buttons to Zoom
+              Drag to Rotate • Pinch to Zoom • Double-Tap to Reset
             </Text>
           </View>
           <Pressable

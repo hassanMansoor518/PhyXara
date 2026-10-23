@@ -607,9 +607,14 @@ export const scannerService = {
       const backendUrl =
         unityConfig.matchUrl && unityConfig.matchUrl.startsWith('http')
           ? unityConfig.matchUrl
-          : 'http://localhost:5001/api/recognize-diagram';
+          : '';
 
       try {
+        if (!backendUrl) {
+          console.warn('[ScannerService] No backend URL configured (EXPO_PUBLIC_DIAGRAM_MATCH_URL), skipping server recognition');
+          throw new Error('No backend URL configured');
+        }
+
         let resolvedBase64 = activeAsset?.base64 || '';
         let resolvedMime = activeAsset?.mimeType || 'image/jpeg';
 
@@ -680,8 +685,9 @@ export const scannerService = {
             }
           }
         }
-      } catch (backendErr) {
+      } catch (backendErr: any) {
         // Backend not reachable, proceed to local image identification
+        console.warn('[ScannerService] Backend not reachable, falling back to local identification:', backendErr?.message || backendErr);
       }
 
       // 2. Intelligent Computer Vision Processing (When backend is offline / local evaluation)
