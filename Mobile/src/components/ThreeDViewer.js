@@ -7,6 +7,7 @@ import {
   Image,
   Pressable,
   Dimensions,
+  ScrollView,
 } from 'react-native';
 import { Gesture, GestureDetector } from 'react-native-gesture-handler';
 import Animated, {
@@ -19,6 +20,7 @@ import Animated, {
   interpolate,
 } from 'react-native-reanimated';
 import { Layers, Camera, AlertCircle } from 'lucide-react-native';
+import { ANIMATION_REGISTRY, interpolateSteps } from './animationRegistry';
 
 // Educational Interactive Illustrations for Standard 3D View (works on 100% of Android devices)
 import { ElectricMotorFrontSvg } from './illustrations/ElectricMotorFrontSvg';
@@ -197,6 +199,9 @@ export const ThreeDViewer = ({
   maxZoom = 2.5,
   onInteractionStart,
   onInteractionEnd,
+  // Animation mode: when true the animation panel is shown in-place
+  animationMode = false,
+  onAnimationModeExit,
 }) => {
   // WebGL loading state with strict safety timeout
   const [loadingWebGL, setLoadingWebGL] = useState(isFiberSupported);
@@ -453,20 +458,29 @@ export const ThreeDViewer = ({
   }));
 
   // JS-thread readable copies of shared values for passing to SVG prop callbacks.
-  // (SVG viewers receive these via useAnimatedProps or plain JS state; we use
-  //  a Reanimated-driven re-render approach: bind yaw/pitch to React state.)
   const [svgYaw, setSvgYaw] = useState(0);
   const [svgPitch, setSvgPitch] = useState(0);
 
   // Sync shared values → React state so SVG viewers re-render with correct angles.
-  // We use a lightweight rAF bridge so we don't block the UI thread.
+  // IMPORTANT: only call setState when the value actually changed.
+  // Calling setState unconditionally every rAF frame causes React to schedule
+  // a re-render on every frame → which fires the effect again → infinite loop.
   const svgSyncRef = useRef(null);
+  const prevYawRef = useRef(0);
+  const prevPitchRef = useRef(0);
   useEffect(() => {
     let alive = true;
     const sync = () => {
       if (!alive) return;
-      setSvgYaw(yawAngle.value);
-      setSvgPitch(pitchAngle.value);
+      const y = yawAngle.value;
+      const p = pitchAngle.value;
+      // Only call setState when something actually changed
+      if (y !== prevYawRef.current || p !== prevPitchRef.current) {
+        prevYawRef.current = y;
+        prevPitchRef.current = p;
+        setSvgYaw(y);
+        setSvgPitch(p);
+      }
       svgSyncRef.current = requestAnimationFrame(sync);
     };
     svgSyncRef.current = requestAnimationFrame(sync);
@@ -474,6 +488,218 @@ export const ThreeDViewer = ({
       alive = false;
       if (svgSyncRef.current) cancelAnimationFrame(svgSyncRef.current);
     };
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+
+  // ─── Animation system ───────────────────────────────────────────────────
+  // Look up the registry entry for this diagram.
+  const animEntry = useMemo(() => {
+    const k = (diagramId || '').toLowerCase();
+    // Match the same keys used in ANIMATION_REGISTRY
+    for (const [id, entry] of Object.entries(ANIMATION_REGISTRY)) {
+      if (k.includes(id)) return entry;
+    }
+    return null;
+  }, [diagramId]);
+
+  const [animPlaying, setAnimPlaying] = useState(false);
+  const [animProgress, setAnimProgress] = useState(0); // 0..1
+  const [animSpeed, setAnimSpeed] = useState(1);       // 0.5 | 1 | 2
+  // animPose holds the full interpolated pose for the current frame.
+  // Computed directly inside the rAF tick so slide updates every frame.
+  const [animPose, setAnimPose] = useState({
+    slide: 0, yawTarget: -24, pitchTarget: 10, zoomTarget: 1,
+    caption: '', formula: null, label: '', stepIndex: 0,
+  });
+  // Keep a ref to animEntry so the rAF closure always reads the latest value
+  // without being re-created every time animEntry changes.
+  const animEntryRef = useRef(null);
+  animEntryRef.current = animEntry;
+  const animSpeedRef = useRef(1);
+  animSpeedRef.current = animSpeed;
+
+  // Track previous animationMode so we can reset on entry
+  const prevAnimMode = useRef(false);
+  useEffect(() => {
+    if (animationMode && !prevAnimMode.current) {
+      // Entering animation mode: reset to beginning
+      setAnimProgress(0);
+      setAnimPlaying(false);
+      setAnimPose({ slide: 0, yawTarget: -24, pitchTarget: 10, zoomTarget: 1, caption: '', formula: null, label: '', stepIndex: 0 });
+    }
+    if (!animationMode && prevAnimMode.current) {
+      setAnimPlaying(false);
+    }
+    prevAnimMode.current = animationMode;
+  }, [animationMode]);
+
+  // ─ rAF tick ─ computes the full pose in the same frame as the time advance.
+  // Using two separate effects (one for progress, one for pose) caused a
+  // one-render lag that made the jaw appear frozen on web.
+  const animTickRef = useRef(null);
+  const animLastTs = useRef(0);
+  const animProgressRef = useRef(0); // mirror of animProgress, readable inside rAF without closure stale
+
+  useEffect(() => {
+    if (!animationMode || !animPlaying || !animEntryRef.current?.available) {
+      if (animTickRef.current) {
+        cancelAnimationFrame(animTickRef.current);
+        animTickRef.current = null;
+      }
+      return;
+    }
+
+    const entry = animEntryRef.current;
+    const totalMs = entry.totalMs;
+    animLastTs.current = 0;
+
+    const tick = (ts) => {
+      if (!animLastTs.current) animLastTs.current = ts;
+      const dtMs = (ts - animLastTs.current) * animSpeedRef.current;
+      animLastTs.current = ts;
+
+      const next = Math.min(1, animProgressRef.current + dtMs / totalMs);
+      animProgressRef.current = next;
+
+      // Compute full pose here, in the same rAF callback, no second effect
+      const pose = interpolateSteps(entry.steps, next);
+
+      // Batch-update both progress and pose in one React commit
+      setAnimProgress(next);
+      setAnimPose({
+        slide: pose.slide ?? 0,
+        yawTarget: pose.yawTarget ?? -24,
+        pitchTarget: pose.pitchTarget ?? 10,
+        zoomTarget: pose.zoomTarget ?? 1,
+        caption: pose.caption ?? '',
+        formula: pose.formula ?? null,
+        label: pose.label ?? '',
+        stepIndex: pose.stepIndex ?? 0,
+      });
+
+      // Smooth camera — only when user is not dragging
+      if (!isTouching.value) {
+        const camEase = { duration: 600, easing: Easing.inOut(Easing.cubic) };
+        if (pose.yawTarget != null) yawAngle.value = withTiming(pose.yawTarget, camEase);
+        if (pose.pitchTarget != null) pitchAngle.value = withTiming(pose.pitchTarget, camEase);
+        if (pose.zoomTarget != null) {
+          zoomScale.value = withTiming(pose.zoomTarget, camEase);
+          savedScale.value = pose.zoomTarget;
+        }
+      }
+
+      if (next >= 1) {
+        setAnimPlaying(false);
+        return; // don't schedule another frame
+      }
+      animTickRef.current = requestAnimationFrame(tick);
+    };
+
+    animTickRef.current = requestAnimationFrame(tick);
+    return () => {
+      if (animTickRef.current) cancelAnimationFrame(animTickRef.current);
+      animTickRef.current = null;
+    };
+  }, [animationMode, animPlaying]); // speed is read via ref, entry via ref
+
+  // When scrubbing / stepping (not playing), update pose immediately without a tick loop.
+  useEffect(() => {
+    if (animPlaying) return; // tick handles it while playing
+    if (!animEntryRef.current?.available) return;
+    const pose = interpolateSteps(animEntryRef.current.steps, animProgress);
+    if (!pose || !Object.keys(pose).length) return;
+    setAnimPose({
+      slide: pose.slide ?? 0,
+      yawTarget: pose.yawTarget ?? -24,
+      pitchTarget: pose.pitchTarget ?? 10,
+      zoomTarget: pose.zoomTarget ?? 1,
+      caption: pose.caption ?? '',
+      formula: pose.formula ?? null,
+      label: pose.label ?? '',
+      stepIndex: pose.stepIndex ?? 0,
+    });
+    // Animate camera to the step target when scrubbing
+    if (!isTouching.value) {
+      const camEase = { duration: 600, easing: Easing.inOut(Easing.cubic) };
+      if (pose.yawTarget != null) yawAngle.value = withTiming(pose.yawTarget, camEase);
+      if (pose.pitchTarget != null) pitchAngle.value = withTiming(pose.pitchTarget, camEase);
+      if (pose.zoomTarget != null) { zoomScale.value = withTiming(pose.zoomTarget, camEase); savedScale.value = pose.zoomTarget; }
+    }
+  }, [animProgress, animPlaying]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Clean up on unmount
+  useEffect(() => {
+    return () => {
+      if (animTickRef.current) cancelAnimationFrame(animTickRef.current);
+    };
+  }, []);
+
+  // Animation control helpers
+  const handleAnimPlayPause = useCallback(() => {
+    if (animProgress >= 1) {
+      animProgressRef.current = 0;
+      setAnimProgress(0);
+      setAnimPlaying(true);
+    } else {
+      setAnimPlaying((p) => !p);
+    }
+  }, [animProgress]);
+
+  const handleAnimReplay = useCallback(() => {
+    animProgressRef.current = 0;
+    setAnimProgress(0);
+    setAnimPlaying(true);
+  }, []);
+
+  const handleAnimStepForward = useCallback(() => {
+    if (!animEntryRef.current?.steps?.length) return;
+    setAnimPlaying(false);
+    const entry = animEntryRef.current;
+    const totalMs = entry.totalMs;
+    let cumMs = 0;
+    for (let i = 0; i < entry.steps.length; i++) {
+      cumMs += entry.steps[i].durationMs;
+      const stepEndProg = cumMs / totalMs;
+      if (stepEndProg > animProgressRef.current + 0.001) {
+        animProgressRef.current = Math.min(stepEndProg, 1);
+        setAnimProgress(animProgressRef.current);
+        return;
+      }
+    }
+    animProgressRef.current = 1;
+    setAnimProgress(1);
+  }, []);
+
+  const handleAnimStepBack = useCallback(() => {
+    if (!animEntryRef.current?.steps?.length) return;
+    setAnimPlaying(false);
+    const entry = animEntryRef.current;
+    const totalMs = entry.totalMs;
+    let cumMs = 0;
+    let prevBoundary = 0;
+    for (let i = 0; i < entry.steps.length; i++) {
+      const stepEndProg = (cumMs + entry.steps[i].durationMs) / totalMs;
+      if (stepEndProg >= animProgressRef.current - 0.001 && i > 0) {
+        animProgressRef.current = prevBoundary;
+        setAnimProgress(prevBoundary);
+        return;
+      }
+      prevBoundary = stepEndProg;
+      cumMs += entry.steps[i].durationMs;
+    }
+    animProgressRef.current = 0;
+    setAnimProgress(0);
+  }, []);
+
+  const handleAnimScrub = useCallback((frac) => {
+    const v = Math.min(1, Math.max(0, frac));
+    animProgressRef.current = v;
+    setAnimPlaying(false);
+    setAnimProgress(v);
+  }, []);
+
+  const handleSpeedCycle = useCallback(() => {
+    setAnimSpeed((s) => (s === 0.5 ? 1 : s === 1 ? 2 : 0.5));
   }, []);
 
   // ─── Zoom buttons ───
@@ -579,8 +805,9 @@ export const ThreeDViewer = ({
     if (key.includes('micrometer') || key.includes('screw') || key.includes('exp3')) {
       return (
         <MicrometerViewerSvg
-          width={290} height={230}
-          rotationAngle={svgYaw}
+          width={320}
+          height={134}
+          onAngleChange={(a) => console.log('Angle:', a)}
         />
       );
     }
@@ -609,13 +836,14 @@ export const ThreeDViewer = ({
       );
     }
     if (key.includes('vernier') || key.includes('caliper')) {
-      // Pass both yaw and pitch so the solid-3D projector sees both axes.
-      // thickness=2.4 ensures the caliper reads as chunky from any angle.
+      // slide is driven by animPose when in animation mode.
+      // yaw/pitch always come from the gesture shared values (svgYaw/svgPitch).
       return (
         <VernierViewerSvg
           width={290} height={230}
           yaw={svgYaw}
           pitch={svgPitch}
+          slide={animationMode ? animPose.slide : 0}
           thickness={2.4}
           autoFit
         />
@@ -646,115 +874,282 @@ export const ThreeDViewer = ({
     );
   };
 
+  // The outer container is a flex column.
+  // When animationMode is on, the viewer occupies the top portion and the
+  // animation panel sits below it as a flex sibling (NOT an absolute overlay).
+  // This ensures the model is always visible while the panel is open.
   return (
     <View style={[styles.container, style]}>
-      {/* 1. WebGL 3D Canvas (If Fiber is available without errors) */}
-      {isFiberSupported && !webGLFailed ? (
-        <Canvas
-          camera={{ position: [0, 1.5, 4], fov: 45 }}
-          dpr={[1, 1.5]}
-          gl={{
-            powerPreference: 'default',
-            antialias: false,
-            alpha: true,
-            depth: true,
-          }}
-          style={styles.canvas}
-        >
-          <ambientLight intensity={0.8} />
-          <directionalLight position={[6, 8, 5]} intensity={1.2} />
-          <directionalLight position={[-6, -4, -5]} intensity={0.5} color="#60A5FA" />
-          <pointLight position={[0, 4, 2]} intensity={0.7} color="#FFFFFF" />
-
-          <OrbitControls
-            ref={orbitRef}
-            enableZoom={enableZoom}
-            enableRotate={enableRotate}
-            enablePan={true}
-            enableDamping={true}
-            dampingFactor={0.08}
-            autoRotate={autoRotateProp}
-            autoRotateSpeed={autoRotateSpeed}
-            minPolarAngle={Math.PI * 0.05} // ~9° from top (prevents flip)
-            maxPolarAngle={Math.PI * 0.95} // ~171° from top
-            minDistance={minZoom}
-            maxDistance={maxZoom * 5}
-            makeDefault
-          />
-
-          <Suspense fallback={null}>
-            {resolvedUri ? (
-              <ModelMesh
-                uri={resolvedUri}
-                scale={initialScale}
-                position={position}
-                rotation={rotation}
-                autoRotate={autoRotateProp}
-                autoRotateSpeed={autoRotateSpeed * 0.3}
-                animationState={animationStateRef}
-                onLoaded={() => {
-                  setLoadingWebGL(false);
-                  if (onLoad) onLoad();
-                }}
-              />
-            ) : (
-              <PhysicsFallbackMesh autoRotate={autoRotateProp} />
-            )}
-          </Suspense>
-        </Canvas>
-      ) : (
-        /* 2. Standard Interactive 3D Viewer (Immediate, zero loading hang, 100% reliable) */
-        <View style={styles.standardContainer}>
-          <GestureDetector gesture={composedGestures}>
-            <Animated.View style={[styles.modelWrapper, animatedModelStyle]}>
-              {renderDiagramVisual()}
-            </Animated.View>
-          </GestureDetector>
-        </View>
-      )}
-
-      {/* Floating Zoom & Reset Buttons */}
-      <View style={styles.floatingControls} pointerEvents="box-none">
-        <Pressable
-          onPress={handleZoomIn}
-          style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
-          hitSlop={8}
-        >
-          <Text style={styles.controlButtonText}>+</Text>
-        </Pressable>
-        <Pressable
-          onPress={handleZoomOut}
-          style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
-          hitSlop={8}
-        >
-          <Text style={styles.controlButtonText}>−</Text>
-        </Pressable>
-      </View>
-
-      {/* Loading Overlay (Auto-dismissed within 400ms to prevent infinite spinner) */}
-      {loadingWebGL && (
-        <View style={styles.loadingOverlay} pointerEvents="none">
-          <View style={styles.loaderBadge}>
-            <ActivityIndicator size="small" color="#38BDF8" />
-            <Text style={styles.loadingText}>Initializing 3D View...</Text>
-          </View>
-        </View>
-      )}
-
-      {/* Interactive Gesture Hint & Reset View Pill */}
-      {showControlsHint && (
-        <View style={styles.hintContainer} pointerEvents="box-none">
-          <View style={styles.hintBadge}>
-            <Text style={styles.hintText}>
-              Drag to Rotate • Pinch to Zoom • Double-Tap to Reset
+      {/* ── Viewer area (shrinks when panel is open) ── */}
+      <View style={animationMode ? styles.viewerArea : styles.viewerAreaFull}>
+        {/* Debug overlay — remove after verifying */}
+        {animationMode && (
+          <View style={styles.debugBar} pointerEvents="none">
+            <Text style={styles.debugText}>
+              t={Math.round(animProgress * (animEntryRef.current?.totalMs || 0))}ms  step={animPose.stepIndex}  slide={Math.round(animPose.slide)}
             </Text>
           </View>
-          <Pressable
-            onPress={handleReset}
-            style={({ pressed }) => [styles.resetButton, pressed && { opacity: 0.7 }]}
+        )}
+        {/* 1. WebGL 3D Canvas (If Fiber is available without errors) */}
+        {isFiberSupported && !webGLFailed ? (
+          <Canvas
+            camera={{ position: [0, 1.5, 4], fov: 45 }}
+            dpr={[1, 1.5]}
+            gl={{
+              powerPreference: 'default',
+              antialias: false,
+              alpha: true,
+              depth: true,
+            }}
+            style={styles.canvas}
           >
-            <Text style={styles.resetButtonText}>Reset View</Text>
+            <ambientLight intensity={0.8} />
+            <directionalLight position={[6, 8, 5]} intensity={1.2} />
+            <directionalLight position={[-6, -4, -5]} intensity={0.5} color="#60A5FA" />
+            <pointLight position={[0, 4, 2]} intensity={0.7} color="#FFFFFF" />
+
+            <OrbitControls
+              ref={orbitRef}
+              enableZoom={enableZoom}
+              enableRotate={enableRotate}
+              enablePan={true}
+              enableDamping={true}
+              dampingFactor={0.08}
+              autoRotate={autoRotateProp}
+              autoRotateSpeed={autoRotateSpeed}
+              minPolarAngle={Math.PI * 0.05} // ~9° from top (prevents flip)
+              maxPolarAngle={Math.PI * 0.95} // ~171° from top
+              minDistance={minZoom}
+              maxDistance={maxZoom * 5}
+              makeDefault
+            />
+
+            <Suspense fallback={null}>
+              {resolvedUri ? (
+                <ModelMesh
+                  uri={resolvedUri}
+                  scale={initialScale}
+                  position={position}
+                  rotation={rotation}
+                  autoRotate={autoRotateProp}
+                  autoRotateSpeed={autoRotateSpeed * 0.3}
+                  animationState={animationStateRef}
+                  onLoaded={() => {
+                    setLoadingWebGL(false);
+                    if (onLoad) onLoad();
+                  }}
+                />
+              ) : (
+                <PhysicsFallbackMesh autoRotate={autoRotateProp} />
+              )}
+            </Suspense>
+          </Canvas>
+        ) : (
+          /* 2. Standard Interactive 3D Viewer (Immediate, zero loading hang, 100% reliable) */
+          <View style={styles.standardContainer}>
+            <GestureDetector gesture={composedGestures}>
+              <Animated.View style={[styles.modelWrapper, animatedModelStyle]}>
+                {renderDiagramVisual()}
+              </Animated.View>
+            </GestureDetector>
+          </View>
+        )}
+
+        {/* Floating Zoom & Reset Buttons — always on top of viewer area */}
+        <View style={styles.floatingControls} pointerEvents="box-none">
+          <Pressable
+            onPress={handleZoomIn}
+            style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
+            hitSlop={8}
+          >
+            <Text style={styles.controlButtonText}>+</Text>
           </Pressable>
+          <Pressable
+            onPress={handleZoomOut}
+            style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
+            hitSlop={8}
+          >
+            <Text style={styles.controlButtonText}>−</Text>
+          </Pressable>
+        </View>
+
+        {/* Loading Overlay */}
+        {loadingWebGL && (
+          <View style={styles.loadingOverlay} pointerEvents="none">
+            <View style={styles.loaderBadge}>
+              <ActivityIndicator size="small" color="#38BDF8" />
+              <Text style={styles.loadingText}>Initializing 3D View...</Text>
+            </View>
+          </View>
+        )}
+
+        {/* Gesture Hint — shown only when panel is closed */}
+        {showControlsHint && !animationMode && (
+          <View style={styles.hintContainer} pointerEvents="box-none">
+            <View style={styles.hintBadge}>
+              <Text style={styles.hintText}>
+                Drag to Rotate • Pinch to Zoom • Double-Tap to Reset
+              </Text>
+            </View>
+            <Pressable
+              onPress={handleReset}
+              style={({ pressed }) => [styles.resetButton, pressed && { opacity: 0.7 }]}
+            >
+              <Text style={styles.resetButtonText}>Reset View</Text>
+            </Pressable>
+          </View>
+        )}
+      </View>{/* end viewerArea */}
+
+      {/* ── Animation Panel — flex sibling below viewer, NOT an overlay ── */}
+      {animationMode && (
+        <View style={styles.animPanel}>
+          {/* Header row: title + close */}
+          <View style={styles.animHeader}>
+            <Text style={styles.animTitle} numberOfLines={1}>
+              {animEntry?.title || 'Animation'}
+            </Text>
+            <Pressable
+              onPress={onAnimationModeExit}
+              style={({ pressed }) => [styles.animCloseBtn, pressed && { opacity: 0.7 }]}
+              hitSlop={10}
+            >
+              <Text style={styles.animCloseBtnText}>✕</Text>
+            </Pressable>
+          </View>
+
+          {animEntry && !animEntry.available ? (
+            <View style={styles.animComingSoon}>
+              <Text style={styles.animComingSoonIcon}>🔬</Text>
+              <Text style={styles.animComingSoonText}>{animEntry.comingSoon}</Text>
+            </View>
+          ) : animEntry?.available ? (
+            <>
+              {/* Caption */}
+              <View style={styles.animCaptionBox}>
+                <Text style={styles.animStepLabel}>
+                  {animPose.label || animEntry.steps[0]?.label || ''}
+                </Text>
+                <Text style={styles.animCaption}>
+                  {animPose.caption || animEntry.steps[0]?.caption || ''}
+                </Text>
+                {animPose.formula ? (
+                  <Text style={styles.animFormula}>{animPose.formula}</Text>
+                ) : null}
+              </View>
+
+              {/* Step chips */}
+              <ScrollView
+                horizontal
+                showsHorizontalScrollIndicator={false}
+                style={styles.animDotsScroll}
+                contentContainerStyle={styles.animDotsContent}
+              >
+                {animEntry.steps.map((st, idx) => {
+                  const stepEndMs = animEntry.steps.slice(0, idx + 1).reduce((a, s) => a + s.durationMs, 0);
+                  const stepStartMs = animEntry.steps.slice(0, idx).reduce((a, s) => a + s.durationMs, 0);
+                  const curMs = animProgress * animEntry.totalMs;
+                  const isActive = curMs >= stepStartMs && curMs < stepEndMs;
+                  const isDone = curMs >= stepEndMs;
+                  return (
+                    <Pressable
+                      key={idx}
+                      onPress={() => {
+                        handleAnimScrub(stepStartMs / animEntry.totalMs);
+                      }}
+                      style={[
+                        styles.animDot,
+                        isDone && styles.animDotDone,
+                        isActive && styles.animDotActive,
+                      ]}
+                    >
+                      <Text style={[styles.animDotText, (isDone || isActive) && { color: '#fff' }]} numberOfLines={1}>
+                        {st.label}
+                      </Text>
+                    </Pressable>
+                  );
+                })}
+              </ScrollView>
+
+              {/* Scrubber */}
+              <View style={styles.animScrubRow}>
+                <Text style={styles.animTimeText}>
+                  {Math.round(animProgress * animEntry.totalMs / 1000)}s
+                </Text>
+                <Pressable
+                  style={styles.animScrubTrack}
+                  onPress={(e) => {
+                    // coarse scrub: locationX / track pixel width
+                    // track fills remaining space, approximate with Dimensions
+                    const trackW = SCREEN_WIDTH - 72; // 2×28 time labels + gaps
+                    handleAnimScrub(e.nativeEvent.locationX / trackW);
+                  }}
+                >
+                  <View style={[styles.animScrubFill, { flex: animProgress }]} />
+                  <View style={[styles.animScrubEmpty, { flex: Math.max(0.001, 1 - animProgress) }]} />
+                </Pressable>
+                <Text style={styles.animTimeText}>
+                  {Math.round(animEntry.totalMs / 1000)}s
+                </Text>
+              </View>
+
+              {/* Controls row */}
+              <View style={styles.animControls}>
+                <Pressable
+                  onPress={handleAnimStepBack}
+                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
+                  hitSlop={8}
+                >
+                  <Text style={styles.animCtrlIcon}>⏮</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleAnimPlayPause}
+                  style={({ pressed }) => [styles.animPlayBtn, pressed && { opacity: 0.8 }]}
+                >
+                  <Text style={styles.animPlayIcon}>
+                    {animPlaying ? '⏸' : animProgress >= 1 ? '↺' : '▶'}
+                  </Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleAnimStepForward}
+                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
+                  hitSlop={8}
+                >
+                  <Text style={styles.animCtrlIcon}>⏭</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleAnimReplay}
+                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
+                  hitSlop={8}
+                >
+                  <Text style={styles.animCtrlIcon}>↺</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleSpeedCycle}
+                  style={({ pressed }) => [styles.animSpeedBtn, pressed && { opacity: 0.7 }]}
+                  hitSlop={8}
+                >
+                  <Text style={styles.animSpeedText}>{animSpeed}×</Text>
+                </Pressable>
+
+                <Pressable
+                  onPress={handleReset}
+                  style={({ pressed }) => [styles.animResetBtn, pressed && { opacity: 0.7 }]}
+                  hitSlop={8}
+                >
+                  <Text style={styles.resetButtonText}>Reset View</Text>
+                </Pressable>
+              </View>
+            </>
+          ) : (
+            <View style={styles.animComingSoon}>
+              <Text style={styles.animComingSoonText}>No animation available for this model.</Text>
+            </View>
+          )}
         </View>
       )}
     </View>
@@ -762,9 +1157,22 @@ export const ThreeDViewer = ({
 };
 
 const styles = StyleSheet.create({
+  // Outer flex column — viewer on top, animation panel on bottom
   container: {
     flex: 1,
+    flexDirection: 'column',
     backgroundColor: '#090D16',
+  },
+  // Viewer fills all space when panel is closed
+  viewerAreaFull: {
+    flex: 1,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  // Viewer occupies ~58% height when panel is open (leaves 42% for the panel)
+  viewerArea: {
+    flex: 1,     // still flex:1 so it fills remaining space above the panel
+    minHeight: 180,
     position: 'relative',
     overflow: 'hidden',
   },
@@ -931,6 +1339,207 @@ const styles = StyleSheet.create({
     color: '#FFFFFF',
     fontSize: 12,
     fontWeight: '700',
+  },
+
+  // ── Animation panel — flex sibling below the viewer, NOT an absolute overlay
+  animPanel: {
+    flexShrink: 0,            // don't let it compress; let viewer shrink instead
+    maxHeight: '45%',         // panel never takes more than 45% of the viewer height
+    backgroundColor: 'rgba(9,13,22,0.98)',
+    borderTopWidth: 1.5,
+    borderTopColor: 'rgba(56,189,248,0.25)',
+    paddingTop: 10,
+    paddingBottom: 12,
+    paddingHorizontal: 14,
+  },
+  animHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 8,
+  },
+  animTitle: {
+    color: '#38BDF8',
+    fontSize: 13,
+    fontWeight: '700',
+    flex: 1,
+    marginRight: 8,
+  },
+  animCloseBtn: {
+    width: 26,
+    height: 26,
+    borderRadius: 13,
+    backgroundColor: 'rgba(56,189,248,0.12)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  animCloseBtnText: {
+    color: '#94A3B8',
+    fontSize: 13,
+    fontWeight: '700',
+  },
+  animCaptionBox: {
+    backgroundColor: 'rgba(30,41,59,0.7)',
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.12)',
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    marginBottom: 8,
+  },
+  animStepLabel: {
+    color: '#38BDF8',
+    fontSize: 11,
+    fontWeight: '700',
+    marginBottom: 3,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  animCaption: {
+    color: '#E2E8F0',
+    fontSize: 12,
+    lineHeight: 17,
+  },
+  animFormula: {
+    color: '#A78BFA',
+    fontSize: 11,
+    fontFamily: 'monospace',
+    marginTop: 5,
+    lineHeight: 16,
+  },
+  animDotsScroll: {
+    marginBottom: 8,
+  },
+  animDotsContent: {
+    flexDirection: 'row',
+    gap: 6,
+    paddingVertical: 2,
+  },
+  animDot: {
+    paddingVertical: 4,
+    paddingHorizontal: 8,
+    borderRadius: 10,
+    backgroundColor: 'rgba(30,41,59,0.8)',
+    borderWidth: 1,
+    borderColor: 'rgba(148,163,184,0.2)',
+    maxWidth: 100,
+  },
+  animDotDone: {
+    backgroundColor: 'rgba(16,185,129,0.25)',
+    borderColor: 'rgba(16,185,129,0.4)',
+  },
+  animDotActive: {
+    backgroundColor: 'rgba(56,189,248,0.25)',
+    borderColor: '#38BDF8',
+  },
+  animDotText: {
+    color: '#64748B',
+    fontSize: 10,
+    fontWeight: '600',
+  },
+  animScrubRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+    gap: 6,
+  },
+  animTimeText: {
+    color: '#64748B',
+    fontSize: 10,
+    width: 26,
+    textAlign: 'center',
+  },
+  animScrubTrack: {
+    flex: 1,
+    height: 4,
+    borderRadius: 2,
+    flexDirection: 'row',
+    overflow: 'hidden',
+    backgroundColor: 'rgba(30,41,59,0.9)',
+  },
+  animScrubFill: {
+    height: 4,
+    backgroundColor: '#38BDF8',
+    borderRadius: 2,
+  },
+  animScrubEmpty: {
+    height: 4,
+    backgroundColor: 'rgba(56,189,248,0.15)',
+  },
+  animControls: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+    marginBottom: 6,
+  },
+  animCtrlBtn: {
+    width: 34,
+    height: 34,
+    borderRadius: 17,
+    backgroundColor: 'rgba(30,41,59,0.85)',
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.2)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  animCtrlIcon: {
+    color: '#94A3B8',
+    fontSize: 14,
+  },
+  animPlayBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: '#0EA5E9',
+    alignItems: 'center',
+    justifyContent: 'center',
+    shadowColor: '#0EA5E9',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.4,
+    shadowRadius: 6,
+    elevation: 4,
+  },
+  animPlayIcon: {
+    color: '#FFFFFF',
+    fontSize: 18,
+  },
+  animSpeedBtn: {
+    paddingVertical: 5,
+    paddingHorizontal: 10,
+    borderRadius: 12,
+    backgroundColor: 'rgba(167,139,250,0.15)',
+    borderWidth: 1,
+    borderColor: 'rgba(167,139,250,0.3)',
+  },
+  animSpeedText: {
+    color: '#A78BFA',
+    fontSize: 12,
+    fontWeight: '700',
+  },
+  animComingSoon: {
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 10,
+  },
+  animComingSoonIcon: {
+    fontSize: 28,
+    marginBottom: 6,
+  },
+  animComingSoonText: {
+    color: '#94A3B8',
+    fontSize: 12,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  animResetBtn: {
+    alignSelf: 'flex-end',
+    backgroundColor: '#1E293B',
+    paddingVertical: 5,
+    paddingHorizontal: 12,
+    borderRadius: 14,
+    borderWidth: 1,
+    borderColor: 'rgba(56,189,248,0.25)',
   },
 });
 

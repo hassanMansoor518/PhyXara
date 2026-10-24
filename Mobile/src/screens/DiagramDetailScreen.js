@@ -118,6 +118,8 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
   const [autoRotate, setAutoRotate] = useState(false);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const [isStarred, setIsStarred] = useState(false);
+  // true when the in-place animation panel is open inside the viewer
+  const [animationMode, setAnimationMode] = useState(false);
 
   // Friendly In-App Modal for Unsupported Devices
   const [showARUnsupportedModal, setShowARUnsupportedModal] = useState(false);
@@ -257,8 +259,12 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
     [triggerUnityAR]
   );
 
-  // Back Navigation handler
+  // Back Navigation handler — also exits animation mode first
   const handleBack = () => {
+    if (animationMode) {
+      setAnimationMode(false);
+      return;
+    }
     if (navigation?.goBack && navigation.canGoBack?.()) {
       navigation.goBack();
     } else if (router?.canGoBack?.()) {
@@ -342,11 +348,14 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
       {/* Quick Navigation Strip (Animation, AI Tutor, Quiz) */}
       <View style={styles.quickNavStrip}>
         <Pressable
-          onPress={() => router.push('/animation')}
-          style={styles.quickNavPill}
+          onPress={() => setAnimationMode((prev) => !prev)}
+          style={[
+            styles.quickNavPill,
+            animationMode && styles.quickNavPillActive,
+          ]}
         >
-          <Play size={12} color="#38BDF8" fill="#38BDF8" />
-          <Text style={styles.quickNavText}>Animation</Text>
+          <Play size={12} color={animationMode ? '#0B0F19' : '#38BDF8'} fill={animationMode ? '#0B0F19' : '#38BDF8'} />
+          <Text style={[styles.quickNavText, animationMode && styles.quickNavTextActive]}>Animation</Text>
         </Pressable>
 
         <Pressable
@@ -443,6 +452,8 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
             showControlsHint={true}
             onScanAnother={() => router.replace('/scanner')}
             style={styles.viewer}
+            animationMode={animationMode}
+            onAnimationModeExit={() => setAnimationMode(false)}
           />
         ) : (
           <View style={styles.placeholderContainer}>
@@ -663,6 +674,14 @@ const styles = StyleSheet.create({
     fontWeight: '700',
     color: '#38BDF8',
     marginLeft: 5,
+  },
+  // Animation pill highlighted state
+  quickNavPillActive: {
+    backgroundColor: '#38BDF8',
+    borderColor: '#38BDF8',
+  },
+  quickNavTextActive: {
+    color: '#0B0F19',
   },
   toggleSection: {
     paddingHorizontal: 16,
