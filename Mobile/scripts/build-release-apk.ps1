@@ -24,10 +24,8 @@ Write-Host "1/4  Syncing project source to $Work ..." -ForegroundColor Cyan
 New-Item -ItemType Directory -Force "$Work\Mobile" | Out-Null
 $skip = @("$Source\Mobile\node_modules", "$Source\Mobile\android", "$Source\Mobile\.expo", "$Source\Mobile\unity")
 robocopy "$Source\Mobile" "$Work\Mobile" /E /XD $skip /XF *.log /NFL /NDL /NJH /NJS /NP | Out-Null
-if (-not (Test-Path "$Work\Mobile\node_modules\expo\package.json")) {
-    Write-Host "     node_modules missing in $Work, copying (a few minutes) ..."
-    robocopy "$Source\Mobile\node_modules" "$Work\Mobile\node_modules" /E /XD .cxx /NFL /NDL /NJH /NJS /NP /MT:8 | Out-Null
-}
+Write-Host "     Syncing node_modules to $Work ..."
+robocopy "$Source\Mobile\node_modules" "$Work\Mobile\node_modules" /E /XD .cxx /NFL /NDL /NJH /NJS /NP /MT:8 | Out-Null
 
 Write-Host "2/4  Copying the new Unity export into the app ..." -ForegroundColor Cyan
 Push-Location "$Work\Mobile"

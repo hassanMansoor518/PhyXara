@@ -97,11 +97,14 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
         )}
         {rightIcon === 'bookmark' && (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel={isStarred ? 'Remove bookmark' : 'Bookmark'}
+            accessibilityState={{ selected: isStarred }}
             onPress={onRightPress}
             className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
             hitSlop={10}
           >
-            <Bookmark size={20} color="#737A96" />
+            <Bookmark size={20} color={isStarred ? "#2563EB" : "#737A96"} fill={isStarred ? "#DBEAFE" : "none"} />
           </Pressable>
         )}
         {rightIcon === 'bell' && (

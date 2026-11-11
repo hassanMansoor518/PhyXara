@@ -93,6 +93,14 @@ export const MotorViewerScreen: React.FC = () => {
       {/* Floating Light Theme Quick Navigation Strip */}
       <View className="flex-row items-center justify-between px-5 -mt-1 mb-2">
         <Pressable
+          onPress={() => router.push({ pathname: '/diagram-detail', params: { topicId: 'electric-motor' } })}
+          className="bg-[#EFF6FF] border border-[#BFDBFE] px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-blue-100"
+        >
+          <Box size={13} color="#2563EB" />
+          <Text className="text-[11px] font-bold text-[#2563EB] ml-1">3D/AR View</Text>
+        </Pressable>
+
+        <Pressable
           onPress={() => router.push('/animation')}
           className="bg-white border border-[#E2E8F0] px-3 py-1.5 rounded-full flex-row items-center shadow-sm active:bg-gray-50"
         >

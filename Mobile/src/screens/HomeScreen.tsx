@@ -15,28 +15,22 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React from 'react';
+import { SINDH_PHYSICS_CHAPTERS } from '../data/physicsTopics';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { HeroLabIllustration } from '../components/illustrations/HeroLabIllustration';
-import { progressService, UserStats } from '../services/progressService';
+import { emptyStats, Home, useLearningData } from '../services/learningService';
 
 export const HomeScreen: React.FC = () => {
   const { user } = useUser();
-  const [stats, setStats] = useState<UserStats>({
-    xp: 120,
-    streak: 7,
-    questionsAnswered: 18,
-    quizzesCompleted: 4,
-    chaptersCompleted: 2,
-    modelsExplored: 6,
-    overallProgress: 72,
-  });
 
-  useEffect(() => {
-    progressService.getStats().then(setStats);
-  }, []);
+  const { data, failed, retry } = useLearningData<Home>('/home');
+  const stats = data?.stats ?? emptyStats;
+  const topic = data?.topic ?? SINDH_PHYSICS_CHAPTERS[0];
+  const featured = data?.featured ?? topic;
+  const completion = data?.completedTopicIds.includes(topic.id) ? 100 : 0;
 
   const userName = user?.firstName || user?.fullName || 'Student';
   const userInitials =
@@ -83,6 +77,7 @@ export const HomeScreen: React.FC = () => {
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
       >
+        {failed && <Text onPress={retry}>Learning data unavailable. Tap to retry.</Text>}
         {/* Hero Banner: AR Physics Lab */}
         <View className="mb-6 rounded-[28px] overflow-hidden shadow-lg shadow-blue-500/20">
           <LinearGradient
@@ -128,31 +123,31 @@ export const HomeScreen: React.FC = () => {
         <View className="mb-6">
           <View className="flex-row items-center justify-between mb-3">
             <Text className="text-base font-extrabold text-[#0F172A]">Continue Learning</Text>
-            <Pressable onPress={() => router.push('/electricity')}>
+            <Pressable onPress={() => router.push({ pathname: '/electricity', params: { chapterId: featured.id } })}>
               <Text className="text-xs font-bold text-[#2563EB]">View all</Text>
             </Pressable>
           </View>
 
           {/* Continue Learning Card */}
           <Pressable
-            onPress={() => router.push('/motor-viewer')}
+            onPress={() => router.push({ pathname: '/electricity', params: { chapterId: topic.id } })}
             className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm flex-row items-center active:bg-gray-50/80"
           >
             {/* Chapter Number Badge */}
             <View className="w-14 h-14 rounded-2xl bg-[#3B5AF6] items-center justify-center mr-3.5 shadow-sm">
-              <Text className="text-xl font-black text-white">02</Text>
+              <Text className="text-xl font-black text-white">{String(topic.number).padStart(2, '0')}</Text>
             </View>
 
             {/* Chapter Info & Progress */}
             <View className="flex-1 justify-center">
               <Text className="text-[10px] font-black tracking-wider text-[#2563EB] uppercase mb-0.5">
-                CLASS 9 • CHAPTER 02
+                {topic.classLevel} • Chapter {topic.number}
               </Text>
-              <Text className="text-base font-bold text-[#0F172A] mb-1">Kinematics</Text>
+              <Text className="text-base font-bold text-[#0F172A] mb-1">{topic.title}</Text>
 
               <View className="flex-row items-center justify-between mb-1">
-                <Text className="text-[11px] text-[#64748B] font-medium">8 of 12 lessons</Text>
-                <Text className="text-[11px] font-bold text-[#2563EB]">64%</Text>
+                <Text className="text-[11px] text-[#64748B] font-medium">{completion ? 'Completed' : 'Open chapter'}</Text>
+                <Text className="text-[11px] font-bold text-[#2563EB]">{completion}%</Text>
               </View>
 
               {/* Progress Bar */}
@@ -161,7 +156,7 @@ export const HomeScreen: React.FC = () => {
                   colors={['#06B6D4', '#2563EB']}
                   start={{ x: 0, y: 0 }}
                   end={{ x: 1, y: 0 }}
-                  style={{ width: '64%', height: '100%', borderRadius: 999 }}
+                  style={{ width: completion ? '100%' : '0%', height: '100%', borderRadius: 999 }}
                 />
               </View>
             </View>
@@ -311,8 +306,8 @@ export const HomeScreen: React.FC = () => {
                   <Target size={19} color="#7C3AED" />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm font-bold text-[#0F172A]">Master Kinematics</Text>
-                  <Text className="text-xs text-[#64748B] mt-0.5">Practice set • 12 min</Text>
+                  <Text className="text-sm font-bold text-[#0F172A]">{featured.title}</Text>
+                  <Text className="text-xs text-[#64748B] mt-0.5">{featured.classLevel} • {featured.estimatedTime}</Text>
                 </View>
               </View>
               <ChevronRight size={18} color="#94A3B8" />

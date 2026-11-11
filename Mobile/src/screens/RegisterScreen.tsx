@@ -2,7 +2,7 @@ import { useSignUp } from '@clerk/expo/legacy';
 import { router } from 'expo-router';
 import { ArrowLeft, Eye, EyeOff, KeyRound, Lock, Mail, User } from 'lucide-react-native';
 import React, { useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { PrimaryButton } from '../components/PrimaryButton';
 
@@ -85,16 +85,31 @@ export const RegisterScreen: React.FC = () => {
         code: code.trim(),
       });
 
-      if (completeSignUp.status === 'complete') {
+      if (completeSignUp.status === 'complete' && completeSignUp.createdSessionId) {
         await setActive({ session: completeSignUp.createdSessionId });
-        router.replace('/(tabs)');
       } else {
-        setErrorMsg('Verification incomplete. Please try again.');
+        const missing = completeSignUp.missingFields.join(', ');
+        setErrorMsg(missing ? 'Registration requires: ' + missing : 'Verification incomplete. Please try again.');
       }
     } catch (err: any) {
       const message =
         err?.errors?.[0]?.longMessage || err?.errors?.[0]?.message || 'Invalid verification code.';
       setErrorMsg(message);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const resendCode = async () => {
+    if (!isLoaded || isLoading) return;
+    setIsLoading(true);
+    setErrorMsg('');
+    try {
+      await signUp.prepareEmailAddressVerification({ strategy: 'email_code' });
+      setCode('');
+      Alert.alert('Verification code sent');
+    } catch {
+      setErrorMsg('Could not resend the code. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -161,6 +176,9 @@ export const RegisterScreen: React.FC = () => {
               disabled={isLoading}
               className="w-full shadow-md mt-2"
             />
+            <Pressable disabled={isLoading} onPress={resendCode}>
+              <Text className="text-center text-sm font-semibold text-[#2563EB]">Resend verification code</Text>
+            </Pressable>
           </View>
         ) : (
           /* Registration Form */

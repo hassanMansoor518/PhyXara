@@ -1,15 +1,17 @@
 import { router } from 'expo-router';
 import { Award, CheckCircle2, ChevronRight, RotateCcw, Trophy, XCircle, Zap } from 'lucide-react-native';
-import React, { useState } from 'react';
+import React, { useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { PrimaryButton } from '../components/PrimaryButton';
 import { QuizOption } from '../components/QuizOption';
 import { PHYSICS_QUIZZES } from '../data/quizzes';
-import { progressService } from '../services/progressService';
+import { newEventId, useLearningAccount } from '../services/learningService';
 
 export const QuizScreen: React.FC = () => {
+  const { record } = useLearningAccount();
+  const attempt = useRef({ id: newEventId(), answers: [] as string[], submitted: false });
   const [currentIndex, setCurrentIndex] = useState(0);
   const [selectedKey, setSelectedKey] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
@@ -39,18 +41,26 @@ export const QuizScreen: React.FC = () => {
       return;
     }
 
+    if (attempt.current.submitted) return;
+    attempt.current.answers[currentIndex] = selectedKey;
     if (currentIndex < totalQuestions - 1) {
       setCurrentIndex((prev) => prev + 1);
       setSelectedKey(null);
       setShowFeedback(false);
     } else {
-      setIsCompleted(true);
-      // Save result using real service
-      await progressService.recordQuizCompleted(xpEarned, totalQuestions);
+      attempt.current.submitted = true;
+      try {
+        await record({ kind: 'quiz', answers: attempt.current.answers }, attempt.current.id);
+        setIsCompleted(true);
+      } catch {
+        attempt.current.submitted = false;
+        Alert.alert('Quiz could not be saved', 'Tap again to retry.');
+      }
     }
   };
 
   const handleRestart = () => {
+    attempt.current = { id: newEventId(), answers: [], submitted: false };
     setCurrentIndex(0);
     setSelectedKey(null);
     setShowFeedback(false);

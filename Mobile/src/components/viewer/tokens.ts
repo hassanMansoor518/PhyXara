@@ -1,0 +1,46 @@
+export const VIEWER_TOKENS = {
+  colors: {
+    mainBg: '#020B1C',
+    secondaryBg: '#061832',
+    cardBg: '#071D3B',
+    cardBgElevated: '#0B254A',
+    primaryBlue: '#087BFF',
+    primaryBlueDark: '#005CE6',
+    primaryBlueLight: '#389BFF',
+    cyanAccent: '#20C8FF',
+    cyanAccentMuted: 'rgba(32, 200, 255, 0.15)',
+    cyanAccentGlow: 'rgba(32, 200, 255, 0.4)',
+    primaryText: '#F5F9FF',
+    secondaryText: '#A9C6E8',
+    mutedText: '#6283A9',
+    border: '#103C70',
+    borderLight: '#184E91',
+    borderActive: '#20C8FF',
+    iconCircleBg: '#0C2B54',
+  },
+  typography: {
+    title: 18,
+    subtitle: 12,
+    body: 13,
+    caption: 11,
+    heading: 17,
+    value: 17,
+  },
+  spacing: {
+    xs: 4,
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    xxl: 24,
+  },
+  radius: {
+    sm: 8,
+    md: 12,
+    lg: 16,
+    xl: 20,
+    full: 9999,
+  },
+};
+
+export default VIEWER_TOKENS;

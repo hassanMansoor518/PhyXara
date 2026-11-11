@@ -14,31 +14,41 @@ import {
   User,
   Zap,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Alert, Image, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { UserAvatarSvg } from '../components/illustrations/UserAvatarSvg';
-import { progressService, UserStats } from '../services/progressService';
+import { defaultPreferences, emptyStats, Preferences, Progress, useLearningAccount, useLearningData } from '../services/learningService';
 
 export const ProfileScreen: React.FC = () => {
   const { user } = useUser();
   const { signOut } = useAuth();
 
-  const [stats, setStats] = useState<UserStats>({
-    xp: 120,
-    streak: 7,
-    questionsAnswered: 18,
-    quizzesCompleted: 4,
-    chaptersCompleted: 2,
-    modelsExplored: 6,
-    overallProgress: 72,
-  });
 
-  useEffect(() => {
-    progressService.getStats().then(setStats);
-  }, []);
+  const { data: progress } = useLearningData<Progress>('/progress');
+  const { data, failed, retry } = useLearningData<Preferences>('/me/preferences');
+  const { request } = useLearningAccount();
+  const [saving, setSaving] = useState(false);
+  const stats = progress?.stats ?? emptyStats;
+  const preferences = data ?? defaultPreferences;
+
+  const save = async (patch: Partial<Preferences>) => {
+    if (saving) return;
+    setSaving(true);
+    try {
+      await request('/me/preferences', { method: 'PATCH', body: JSON.stringify(patch) });
+      retry();
+    } catch {
+      Alert.alert('Settings unavailable', 'Try again when you are connected.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const chooseClass = (classes: string[]) => Alert.alert('Select class', undefined,
+    classes.map(classLevel => ({ text: classLevel, onPress: () => void save({ classLevel }) })));
 
   const userName = user?.fullName || user?.firstName || 'Student';
   const userEmail = user?.primaryEmailAddress?.emailAddress || 'student@phyxara.edu';
@@ -48,16 +58,20 @@ export const ProfileScreen: React.FC = () => {
     {
       id: 'edit_profile',
       title: 'Edit Profile & Class',
-      subtitle: 'Class 9 • Sindh Textbook Board',
+      subtitle: preferences.classLevel + ' • Sindh Textbook Board',
       icon: <User size={18} color="#2563EB" />,
-      action: () => Alert.alert('Edit Profile', 'Profile details updated.'),
+      action: () => Alert.alert('Select class', undefined, [
+        { text: 'Classes 9–10', onPress: () => chooseClass(['Class 9', 'Class 10']) },
+        { text: 'Classes 11–12', onPress: () => chooseClass(['Class 11', 'Class 12']) },
+        { text: 'Cancel', style: 'cancel' },
+      ]),
     },
     {
       id: 'notifications',
       title: 'Notifications',
-      subtitle: 'Daily study streak reminders',
+      subtitle: preferences.reminders ? 'Reminder preference on' : 'Reminder preference off',
       icon: <Bell size={18} color="#2563EB" />,
-      action: () => Alert.alert('Notifications', 'Daily reminders are enabled at 6:00 PM.'),
+      action: () => void save({ reminders: !preferences.reminders }),
     },
     {
       id: 'language',
@@ -69,9 +83,9 @@ export const ProfileScreen: React.FC = () => {
     {
       id: 'settings',
       title: 'Settings',
-      subtitle: 'AR quality & sound preferences',
+      subtitle: 'Streak time zone: ' + preferences.timeZone,
       icon: <Settings size={18} color="#2563EB" />,
-      action: () => Alert.alert('Settings', 'App Version: 1.0.0 (Physics AR Engine Active)'),
+      action: () => void save({ timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone }),
     },
     {
       id: 'help',
@@ -213,6 +227,7 @@ export const ProfileScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
+      {failed && <Text onPress={retry}>Settings unavailable. Tap to retry.</Text>}
       <BottomTabBar activeTab="profile" />
     </SafeAreaView>
   );

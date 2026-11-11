@@ -1,0 +1,43 @@
+# Ignore Root Unity Project (5 GB) & Caches
+/AR_MODE/
+/unity/
+**/unityLibrary/build/
+**/unityLibrary/.cxx/
+**/unityLibrary/.gradle/
+**/unityLibrary/symbols/
+**/Il2CppOutputProject/
+**/Library/
+**/Temp/
+**/Obj/
+**/Logs/
+**/.vs/
+**/.idea/
+
+# Explicitly ensure app code and assets are never ignored
+!Mobile/src/unity/
+!**/src/unity/**
+!Mobile/AR_MODE/
+!**/Mobile/AR_MODE/**
+
+# Ignore Logs, Caches, & Binaries
+*.log
+export.log
+*.tmp
+*.apk
+*.aab
+*.zip
+*.tar.gz
+
+# Node Modules & Caches
+**/node_modules/
+**/.expo/
+**/.gradle/
+**/.vscode/
+
+# Native Build Folders
+**/android/app/build/
+**/android/app/.cxx/
+**/android/.gradle/
+**/android/build/
+**/local.properties
+**/ios/build/
