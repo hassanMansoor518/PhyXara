@@ -53,6 +53,7 @@ function InitialLayout() {
       'animation',
       'library',
       'electricity',
+      'practical',
       'ai-tutor',
       'quiz',
       'profile',
@@ -60,14 +61,14 @@ function InitialLayout() {
     ];
 
     const isProtectedRoute = protectedRoutes.includes(currentSegment);
-    const isAuthRoute = ['login', 'register', 'forgot-password', 'onboarding'].includes(currentSegment);
+    const isAuthRoute = ['', 'index', 'splash', 'login', 'register', 'forgot-password', 'onboarding'].includes(currentSegment);
 
     if (!isSignedIn && isProtectedRoute) {
       router.replace('/login');
     } else if (isSignedIn && isAuthRoute) {
       router.replace('/(tabs)');
     }
-  }, [isLoaded, isSignedIn, segments]);
+  }, [isLoaded, isSignedIn, router, segments]);
 
   if (!isLoaded) {
     return <SplashScreen autoNavigate={false} />;
@@ -90,6 +91,7 @@ function InitialLayout() {
       <Stack.Screen name="exploded-view" options={{ headerShown: false }} />
       <Stack.Screen name="animation" options={{ headerShown: false }} />
       <Stack.Screen name="library" options={{ headerShown: false }} />
+      <Stack.Screen name="practical" options={{ headerShown: false }} />
       <Stack.Screen name="electricity" options={{ headerShown: false }} />
       <Stack.Screen name="ai-tutor" options={{ headerShown: false }} />
       <Stack.Screen name="quiz" options={{ headerShown: false }} />

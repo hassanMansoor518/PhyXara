@@ -11,33 +11,32 @@ import {
 } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import {
-  ArrowLeft,
   Box,
-  Sparkles,
-  Layers,
   AlertCircle,
   Eye,
-  Info,
-  Cpu,
-  RotateCw,
-  Play,
-  Trophy,
-  Star,
+  HelpCircle,
   CheckCircle2,
-  Atom,
 } from 'lucide-react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { Camera } from 'expo-camera';
 
-import ThreeDViewer from '../components/ThreeDViewer';
+import {
+  ViewerHeader,
+  ViewerModeSelector,
+  Interactive3DViewer,
+  HowItWorksCard,
+  MeasurementInfoGrid,
+  AskAITutorButton,
+  VIEWER_TOKENS,
+} from '../components/viewer';
+
 import {
   checkARSupport,
   isARSupportedSync,
-  setARSupportOverride,
   AR_UNSUPPORTED_FRIENDLY_MESSAGE,
 } from '../utils/arChecker';
 import { UnityBridge } from '../unity/UnityBridge';
-import { scannerService, PHYSICS_DIAGRAM_CATALOG } from '../services/scannerService';
+import { scannerService } from '../services/scannerService';
 
 // Bundled GLB models for 3D Visual Mode
 const DEFAULT_MOTOR_MODEL = require('../../AR_MODE/Assets/Model/electric_motor.glb');
@@ -55,45 +54,55 @@ const MODEL_SOURCES = {
 };
 
 /**
- * Dual-Mode Screen / Controller
+ * Redesigned 3D Learning Viewer Screen
+ * Matches Target UI Design (Reference Image 2)
  *
- * Implements the Required Flow:
- * Scan Diagram -> Show 3D Model Screen -> Choose Viewing Mode
- *
- * 1. 3D Model View:
- *    - Displays the scanned diagram's corresponding 3D model directly inside the app.
- *    - Allows rotation, zooming in, zooming out, reset, and inspection.
- *    - If no 3D model exists for the recognized diagram, displays "No matching 3D model is available for this image."
- *    - Never displays random or unrelated 3D models.
- *
- * 2. AR View:
- *    - Launched only when the user explicitly taps "AR View" and a 3D model is verified.
- *    - Checks ARCore hardware compatibility beforehand.
+ * Implements:
+ * - Header with Back, Title, Subtitle, Favorite, and Help
+ * - 3-Option Segmented Control (3D Model / AR View / Animation)
+ * - Large Interactive 3D Viewport with Perspective Grid, Floating Controls, and Cyan Annotations
+ * - Integrated In-Viewport Animation Playback Panel
+ * - How It Works Card with English/Urdu Toggle & 3 Numbered Steps
+ * - 2x2 Measurement Information Specifications Grid
+ * - Prominent "Ask AI Tutor" Action Button
  */
 export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) => {
   const searchParams = useLocalSearchParams?.() || {};
   const params = route?.params || searchParams || {};
 
-  const rawTopicId = params.topicId || params.diagramId || 'electric-motor';
+  const rawTopicId = params.topicId || params.diagramId || 'micrometer';
 
-  // Fetch full diagram metadata from scanner service
+  // Fetch diagram metadata from scanner service
   const diagramData = useMemo(() => {
     return scannerService.getDiagramData(rawTopicId);
-  }, [rawTopicId, params.scanId]);
+  }, [rawTopicId]);
 
   const diagram = useMemo(() => {
     if (!diagramData) {
       return {
-        id: 'unrecognized',
-        title: 'Unrecognized Image',
-        board: 'Curriculum Scanner',
-        chapter: 'Physics Syllabus',
-        has3DModel: false,
-        modelSource: null,
-        description: 'Unable to recognize this image. Please upload a clearer image and try again.',
-        formula: '',
-        components: [],
-        specifications: [],
+        id: 'micrometer',
+        title: 'Micrometer Screw Gauge',
+        board: 'Class 9 • Sindh Textbook Board',
+        chapter: 'Chapter 1: Measurement',
+        has3DModel: true,
+        modelSource: DEFAULT_MICROMETER_MODEL,
+        description:
+          'Translates the rotary motion of a precision screw into linear motion to measure dimensions up to 0.01 mm precision.',
+        formula: 'Least Count = Pitch / Total Divisions on Thimble = 0.5 mm / 50 = 0.01 mm',
+        components: [
+          'Anvil & Spindle',
+          'Sleeve (Main Scale)',
+          'Thimble (Circular Scale)',
+          'Ratchet Knob',
+          'Lock Nut',
+          'U-shaped Metal Frame',
+        ],
+        specifications: [
+          { label: 'Pitch of Screw', value: '0.5 mm' },
+          { label: 'Least Count', value: '0.01 mm' },
+          { label: 'Thimble Divisions', value: '50' },
+          { label: 'Precision', value: '±0.005 mm' },
+        ],
       };
     }
 
@@ -106,38 +115,33 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
       has3DModel: isModelVerified,
       description: diagramData.principle || diagramData.description || '',
       experimentId: id === 'micrometer' ? 'exp3_micrometer' : id === 'electric-motor' ? 'electric_motor' : null,
-      modelSource: isModelVerified ? (MODEL_SOURCES[id] || DEFAULT_MOTOR_MODEL) : null,
+      modelSource: isModelVerified ? (MODEL_SOURCES[id] || DEFAULT_MICROMETER_MODEL) : null,
     };
   }, [diagramData]);
 
   // State Management
-  const [activeMode, setActiveMode] = useState('3D'); // '3D' | 'AR'
+  const [activeMode, setActiveMode] = useState('3D'); // '3D' | 'AR' | 'Animation'
   const [arSupported, setArSupported] = useState(isARSupportedSync());
-  const [checkingAR, setCheckingAR] = useState(true);
-  const [arReason, setArReason] = useState('');
   const [autoRotate, setAutoRotate] = useState(false);
   const [isScreenFocused, setIsScreenFocused] = useState(true);
   const [isStarred, setIsStarred] = useState(false);
-  // true when the in-place animation panel is open inside the viewer
   const [animationMode, setAnimationMode] = useState(false);
 
   // Friendly In-App Modal for Unsupported Devices
   const [showARUnsupportedModal, setShowARUnsupportedModal] = useState(false);
   const [modalMessage, setModalMessage] = useState(AR_UNSUPPORTED_FRIENDLY_MESSAGE);
 
+  // Educational Help/Guide Modal
+  const [showHelpModal, setShowHelpModal] = useState(false);
+
   // Refresh hardware capability check on mount
   useEffect(() => {
     let isMounted = true;
 
     async function evaluateDeviceCapability() {
-      setCheckingAR(true);
       const result = await checkARSupport();
       if (isMounted) {
         setArSupported(result.isSupported);
-        setArReason(result.reason);
-        setCheckingAR(false);
-        // Default to safe 3D Standard View
-        setActiveMode('3D');
       }
     }
 
@@ -146,9 +150,9 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
     return () => {
       isMounted = false;
     };
-  }, [params.scanId]);
+  }, []);
 
-  // Screen Focus Listener for aggressive Memory Management on budget devices
+  // Screen Focus Listener for aggressive Memory Management
   useEffect(() => {
     if (navigation?.addListener) {
       const unsubscribeFocus = navigation.addListener('focus', () => {
@@ -202,11 +206,18 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
     }
   }, [diagram]);
 
-  // Handle Mode Switch
+  // Handle Mode Switch between 3D Model, AR View, and Animation
   const handleSelectMode = useCallback(
     async (mode) => {
       if (mode === '3D') {
         setActiveMode('3D');
+        setAnimationMode(false);
+        return;
+      }
+
+      if (mode === 'Animation') {
+        setActiveMode('Animation');
+        setAnimationMode(true);
         return;
       }
 
@@ -220,7 +231,7 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
           return;
         }
 
-        // Step 1: Re-verify hardware compatibility
+        // Step 1: Verify hardware compatibility
         const checkResult = await checkARSupport();
         if (!checkResult.isSupported) {
           setModalMessage(checkResult.reason || AR_UNSUPPORTED_FRIENDLY_MESSAGE);
@@ -253,15 +264,17 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
         }
 
         // Step 3: Launch Unity AR
+        setActiveMode('AR');
         triggerUnityAR();
       }
     },
-    [triggerUnityAR]
+    [diagram, triggerUnityAR]
   );
 
-  // Back Navigation handler — also exits animation mode first
+  // Back Navigation handler
   const handleBack = () => {
-    if (animationMode) {
+    if (animationMode && activeMode === 'Animation') {
+      setActiveMode('3D');
       setAnimationMode(false);
       return;
     }
@@ -274,186 +287,80 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
     }
   };
 
-  // Toggle debug override for quick verification of low-end vs. AR mode
-  const handleToggleDebugDevice = async () => {
-    const nextOverride = arSupported ? false : true;
-    setARSupportOverride(nextOverride);
-    const refreshed = await checkARSupport(true);
-    setArSupported(refreshed.isSupported);
-    setArReason(refreshed.reason);
-    if (!refreshed.isSupported) {
-      setActiveMode('3D');
-    }
+  const handleToggleFavorite = () => {
+    setIsStarred((prev) => {
+      const next = !prev;
+      Alert.alert(
+        next ? 'Saved to Favorites' : 'Removed from Favorites',
+        `${diagram.title} has been ${next ? 'added to' : 'removed from'} your library.`
+      );
+      return next;
+    });
+  };
+
+  const handleAskAITutor = () => {
+    router.push({
+      pathname: '/ai-tutor',
+      params: {
+        initialQuestion: `Explain how the ${diagram.title} operates, how to calculate its least count, and how to read the scale in Sindh Board Physics.`,
+        topicId: diagram.id,
+        topicName: diagram.title,
+      },
+    });
   };
 
   return (
     <SafeAreaView style={styles.safeArea} edges={['top', 'left', 'right']}>
-      <StatusBar barStyle="light-content" backgroundColor="#0B0F19" />
+      <StatusBar barStyle="light-content" backgroundColor={VIEWER_TOKENS.colors.mainBg} />
 
-      {/* Top Header */}
-      <View style={styles.header}>
-        <Pressable
-          onPress={handleBack}
-          style={({ pressed }) => [styles.backButton, pressed && { opacity: 0.7 }]}
-          hitSlop={12}
-        >
-          <ArrowLeft size={20} color="#F8FAFC" />
-        </Pressable>
+      {/* A. Header */}
+      <ViewerHeader
+        title={diagram.title}
+        subtitle={diagram.board || 'Class 9 • Sindh Textbook Board'}
+        isStarred={isStarred}
+        onBack={handleBack}
+        onToggleFavorite={handleToggleFavorite}
+        onHelp={() => setShowHelpModal(true)}
+      />
 
-        <View style={styles.headerTitleContainer}>
-          <Text style={styles.headerTitle} numberOfLines={1}>
-            {diagram.title}
+      {/* B. Viewer Mode Selector Segmented Tabs */}
+      <ViewerModeSelector
+        activeMode={activeMode}
+        onSelectMode={handleSelectMode}
+        arSupported={arSupported}
+      />
+
+      {/* Soft alert badge if AR is unsupported and AR tab was clicked */}
+      {!arSupported && activeMode === 'AR' && (
+        <View style={styles.softAlertBadge}>
+          <AlertCircle size={14} color="#F59E0B" style={{ marginRight: 6 }} />
+          <Text style={styles.softAlertText}>
+            AR is not supported on this device. You can explore the 3D model in Standard View.
           </Text>
-          <Text style={styles.headerSubtitle}>{diagram.board}</Text>
         </View>
+      )}
 
-        {/* Action Buttons */}
-        <View style={styles.headerActions}>
-          <Pressable
-            onPress={() => setAutoRotate((prev) => !prev)}
-            style={({ pressed }) => [
-              styles.iconButton,
-              autoRotate && styles.iconButtonActive,
-              pressed && { opacity: 0.7 },
-            ]}
-            hitSlop={8}
-          >
-            <RotateCw size={17} color={autoRotate ? '#38BDF8' : '#94A3B8'} />
-          </Pressable>
-
-          <Pressable
-            onPress={() => {
-              setIsStarred((prev) => !prev);
-              Alert.alert(
-                !isStarred ? 'Saved to Favorites' : 'Removed from Favorites',
-                `${diagram.title} has been updated in your library.`
-              );
-            }}
-            style={({ pressed }) => [
-              styles.iconButton,
-              isStarred && styles.iconButtonActive,
-              pressed && { opacity: 0.7 },
-            ]}
-            hitSlop={8}
-          >
-            <Star
-              size={17}
-              color={isStarred ? '#F59E0B' : '#94A3B8'}
-              fill={isStarred ? '#F59E0B' : 'none'}
-            />
-          </Pressable>
-        </View>
-      </View>
-
-      {/* Quick Navigation Strip (Animation, AI Tutor, Quiz) */}
-      <View style={styles.quickNavStrip}>
-        <Pressable
-          onPress={() => setAnimationMode((prev) => !prev)}
-          style={[
-            styles.quickNavPill,
-            animationMode && styles.quickNavPillActive,
-          ]}
-        >
-          <Play size={12} color={animationMode ? '#0B0F19' : '#38BDF8'} fill={animationMode ? '#0B0F19' : '#38BDF8'} />
-          <Text style={[styles.quickNavText, animationMode && styles.quickNavTextActive]}>Animation</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() =>
-            router.push({
-              pathname: '/ai-tutor',
-              params: { initialQuestion: `Explain how the ${diagram.title} operates and its key components.` },
-            })
-          }
-          style={styles.quickNavPill}
-        >
-          <Sparkles size={12} color="#A78BFA" />
-          <Text style={[styles.quickNavText, { color: '#C4B5FD' }]}>AI Tutor</Text>
-        </Pressable>
-
-        <Pressable
-          onPress={() => router.push('/quiz')}
-          style={styles.quickNavPill}
-        >
-          <Trophy size={12} color="#FBBF24" />
-          <Text style={[styles.quickNavText, { color: '#FDE68A' }]}>Quiz</Text>
-        </Pressable>
-      </View>
-
-      {/* Two Required Viewing Mode Buttons */}
-      <View style={styles.toggleSection}>
-        <View style={styles.segmentedContainer}>
-          {/* Button 1: 3D Model View (Standard Mode) */}
-          <Pressable
-            onPress={() => handleSelectMode('3D')}
-            style={[
-              styles.segmentTab,
-              activeMode === '3D' && styles.segmentTabActive,
-            ]}
-          >
-            <Box
-              size={16}
-              color={activeMode === '3D' ? '#FFFFFF' : '#94A3B8'}
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.segmentTabText,
-                activeMode === '3D' && styles.segmentTabTextActive,
-              ]}
-            >
-              3D Model View
-            </Text>
-          </Pressable>
-
-          {/* Button 2: AR View */}
-          <Pressable
-            onPress={() => handleSelectMode('AR')}
-            style={[
-              styles.segmentTab,
-              activeMode === 'AR' && styles.segmentTabActive,
-            ]}
-          >
-            <Sparkles
-              size={16}
-              color={activeMode === 'AR' ? '#FFFFFF' : '#94A3B8'}
-              style={{ marginRight: 6 }}
-            />
-            <Text
-              style={[
-                styles.segmentTabText,
-                activeMode === 'AR' && styles.segmentTabTextActive,
-              ]}
-            >
-              AR View
-            </Text>
-          </Pressable>
-        </View>
-
-        {/* Soft Alert Banner when AR is unsupported on this device */}
-        {!arSupported && (
-          <View style={styles.softAlertBadge}>
-            <AlertCircle size={14} color="#F59E0B" style={{ marginRight: 6 }} />
-            <Text style={styles.softAlertText}>
-              AR is not supported on this device. You can still explore the 3D model in Standard View.
-            </Text>
-          </View>
-        )}
-      </View>
-
-      {/* Main 3D Viewport with Verified Model Matching */}
-      <View style={styles.viewportContainer}>
-        {isScreenFocused && activeMode === '3D' ? (
-          <ThreeDViewer
+      {/* Clean Vertically Scrollable Screen Layout */}
+      <ScrollView
+        style={styles.scrollView}
+        contentContainerStyle={styles.scrollContent}
+        showsVerticalScrollIndicator={false}
+      >
+        {/* C & D. Interactive 3D Viewer with Floating & Animation Controls */}
+        {isScreenFocused ? (
+          <Interactive3DViewer
             modelPath={diagram.modelSource}
             diagramId={diagram.id}
             has3DModel={diagram.has3DModel}
             autoRotate={autoRotate}
-            showControlsHint={true}
-            onScanAnother={() => router.replace('/scanner')}
-            style={styles.viewer}
+            onToggleAutoRotate={() => setAutoRotate((prev) => !prev)}
+            showAnnotations={true}
             animationMode={animationMode}
-            onAnimationModeExit={() => setAnimationMode(false)}
+            onAnimationModeExit={() => {
+              setAnimationMode(false);
+              setActiveMode('3D');
+            }}
+            onScanAnother={() => router.replace('/scanner')}
           />
         ) : (
           <View style={styles.placeholderContainer}>
@@ -463,94 +370,22 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
             </Text>
           </View>
         )}
-      </View>
 
-      {/* Educational Physics Specs Bottom Sheet */}
-      <View style={styles.bottomSheet}>
-        <View style={styles.dragHandle} />
+        {/* E. How It Works Section with EN/Urdu Toggle & 3 Steps */}
+        <HowItWorksCard />
 
-        <ScrollView
-          style={styles.sheetScroll}
-          contentContainerStyle={styles.sheetContent}
-          showsVerticalScrollIndicator={false}
-        >
-          <View style={styles.sheetHeaderRow}>
-            <View style={styles.tag}>
-              <Layers size={12} color="#38BDF8" style={{ marginRight: 4 }} />
-              <Text style={styles.tagText}>{diagram.chapter}</Text>
-            </View>
+        {/* F. Measurement Information Section 2x2 Grid */}
+        <MeasurementInfoGrid />
 
-            {/* Model verification status badge */}
-            {diagram.has3DModel ? (
-              <View style={[styles.hardwareBadge, { backgroundColor: 'rgba(16, 185, 129, 0.12)', borderColor: 'rgba(16, 185, 129, 0.3)' }]}>
-                <Box size={12} color="#10B981" style={{ marginRight: 4 }} />
-                <Text style={[styles.hardwareBadgeText, { color: '#10B981' }]}>3D Model Matched</Text>
-              </View>
-            ) : (
-              <View style={[styles.hardwareBadge, { backgroundColor: 'rgba(245, 158, 11, 0.12)', borderColor: 'rgba(245, 158, 11, 0.3)' }]}>
-                <AlertCircle size={12} color="#F59E0B" style={{ marginRight: 4 }} />
-                <Text style={[styles.hardwareBadgeText, { color: '#F59E0B' }]}>No 3D Model</Text>
-              </View>
-            )}
-          </View>
+        {/* G. Ask AI Tutor Prominent Bottom Action */}
+        <AskAITutorButton
+          topicName={diagram.title}
+          onPress={handleAskAITutor}
+          style={styles.aiTutorContainer}
+        />
+      </ScrollView>
 
-          <Text style={styles.sheetDescription}>{diagram.description}</Text>
-
-          {/* Principle & Formula Badge */}
-          {diagram.formula ? (
-            <View style={styles.formulaCard}>
-              <View style={styles.formulaHeader}>
-                <Atom size={14} color="#38BDF8" style={{ marginRight: 6 }} />
-                <Text style={styles.formulaTitle}>Core Formula / Principle</Text>
-              </View>
-              <Text style={styles.formulaText}>{diagram.formula}</Text>
-            </View>
-          ) : null}
-
-          {/* Detected Components Chips */}
-          {diagram.components && diagram.components.length > 0 && (
-            <View style={styles.componentsSection}>
-              <Text style={styles.sectionTitle}>Detected Components</Text>
-              <View style={styles.componentChipsRow}>
-                {diagram.components.map((comp, idx) => (
-                  <View key={idx} style={styles.componentChip}>
-                    <CheckCircle2 size={12} color="#10B981" style={{ marginRight: 5 }} />
-                    <Text style={styles.componentChipText}>{comp}</Text>
-                  </View>
-                ))}
-              </View>
-            </View>
-          )}
-
-          {/* Quick Physics Properties Grid */}
-          <View style={styles.specsGrid}>
-            {diagram.specifications.map((item, index) => (
-              <View key={index} style={styles.specCard}>
-                <Text style={styles.specLabel}>{item.label}</Text>
-                <Text style={styles.specValue}>{item.value}</Text>
-              </View>
-            ))}
-          </View>
-
-          {/* Ask AI Tutor CTA */}
-          <Pressable
-            onPress={() =>
-              router.push({
-                pathname: '/ai-tutor',
-                params: { initialQuestion: `Explain how the ${diagram.title} operates and its role in Sindh Board Physics.` },
-              })
-            }
-            style={styles.aiTutorButton}
-          >
-            <Sparkles size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-            <Text style={styles.aiTutorButtonText}>
-              Ask AI Tutor About {diagram.title}
-            </Text>
-          </Pressable>
-        </ScrollView>
-      </View>
-
-      {/* Friendly In-App Modal when AR is unsupported on device */}
+      {/* Friendly In-App Modal when AR is unsupported */}
       <Modal
         visible={showARUnsupportedModal}
         transparent
@@ -559,22 +394,17 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
       >
         <View style={styles.modalOverlay}>
           <View style={styles.modalContent}>
-            {/* Icon */}
             <View style={styles.modalIconContainer}>
               <AlertCircle size={32} color="#F59E0B" />
             </View>
 
-            {/* Title */}
             <Text style={styles.modalTitle}>AR Not Supported</Text>
-
-            {/* Required user-facing explanation */}
             <Text style={styles.modalBody}>{modalMessage}</Text>
 
             <Text style={styles.modalSubtext}>
               Your device hardware is optimized for Standard 3D View. You can rotate, zoom, and inspect every component interactively without ARCore.
             </Text>
 
-            {/* Return to 3D Model View Button */}
             <Pressable
               onPress={() => {
                 setShowARUnsupportedModal(false);
@@ -583,9 +413,54 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
               style={styles.modalReturnButton}
             >
               <Box size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
-              <Text style={styles.modalReturnButtonText}>
-                Return to 3D Model View
+              <Text style={styles.modalReturnButtonText}>Return to 3D Model View</Text>
+            </Pressable>
+          </View>
+        </View>
+      </Modal>
+
+      {/* Educational Guide & Help Modal */}
+      <Modal
+        visible={showHelpModal}
+        transparent
+        animationType="fade"
+        onRequestClose={() => setShowHelpModal(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={[styles.modalIconContainer, { backgroundColor: 'rgba(32, 200, 255, 0.15)' }]}>
+              <HelpCircle size={30} color={VIEWER_TOKENS.colors.cyanAccent} />
+            </View>
+
+            <Text style={styles.modalTitle}>Student Quick Guide</Text>
+
+            <View style={styles.guideItem}>
+              <Text style={styles.guideHeading}>🔬 3D Exploration</Text>
+              <Text style={styles.guideText}>
+                Drag with one finger to rotate the micrometer, pinch with two fingers to zoom, or tap the 360° button.
               </Text>
+            </View>
+
+            <View style={styles.guideItem}>
+              <Text style={styles.guideHeading}>▶ Animation Playback</Text>
+              <Text style={styles.guideText}>
+                Press the play button or scrub the timeline slider to see the spindle advance and the thimble scale rotate.
+              </Text>
+            </View>
+
+            <View style={styles.guideItem}>
+              <Text style={styles.guideHeading}>🌐 Bilingual Notes</Text>
+              <Text style={styles.guideText}>
+                Toggle between EN and Urdu in the &quot;How it works&quot; section for textbook-aligned explanations.
+              </Text>
+            </View>
+
+            <Pressable
+              onPress={() => setShowHelpModal(false)}
+              style={styles.modalReturnButton}
+            >
+              <CheckCircle2 size={16} color="#FFFFFF" style={{ marginRight: 8 }} />
+              <Text style={styles.modalReturnButtonText}>Got It, Continue Learning</Text>
             </Pressable>
           </View>
         </View>
@@ -597,138 +472,24 @@ export const DiagramDetailScreen = ({ navigation = null, route = null } = {}) =>
 const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
-    backgroundColor: '#0B0F19',
+    backgroundColor: VIEWER_TOKENS.colors.mainBg,
   },
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderBottomWidth: 1,
-    borderBottomColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  backButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: '#1E293B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  headerTitleContainer: {
+  scrollView: {
     flex: 1,
-    marginHorizontal: 12,
+    backgroundColor: VIEWER_TOKENS.colors.mainBg,
   },
-  headerTitle: {
-    fontSize: 16,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    letterSpacing: -0.3,
-  },
-  headerSubtitle: {
-    fontSize: 11,
-    color: '#94A3B8',
-    marginTop: 1,
-  },
-  headerActions: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 8,
-  },
-  iconButton: {
-    width: 36,
-    height: 36,
-    borderRadius: 18,
-    backgroundColor: '#1E293B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  iconButtonActive: {
-    backgroundColor: 'rgba(56, 189, 248, 0.15)',
-    borderColor: 'rgba(56, 189, 248, 0.4)',
-  },
-  quickNavStrip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 8,
-    gap: 8,
-  },
-  quickNavPill: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#161F30',
-    paddingVertical: 5,
-    paddingHorizontal: 10,
-    borderRadius: 16,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  quickNavText: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#38BDF8',
-    marginLeft: 5,
-  },
-  // Animation pill highlighted state
-  quickNavPillActive: {
-    backgroundColor: '#38BDF8',
-    borderColor: '#38BDF8',
-  },
-  quickNavTextActive: {
-    color: '#0B0F19',
-  },
-  toggleSection: {
-    paddingHorizontal: 16,
-    paddingBottom: 8,
-    backgroundColor: '#0B0F19',
-  },
-  segmentedContainer: {
-    flexDirection: 'row',
-    backgroundColor: '#161F30',
-    borderRadius: 24,
-    padding: 4,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-  },
-  segmentTab: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    paddingVertical: 10,
-    borderRadius: 20,
-  },
-  segmentTabActive: {
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.35,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  segmentTabText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: '#94A3B8',
-  },
-  segmentTabTextActive: {
-    color: '#FFFFFF',
-    fontWeight: '800',
+  scrollContent: {
+    paddingBottom: 28,
   },
   softAlertBadge: {
     flexDirection: 'row',
     alignItems: 'center',
     backgroundColor: 'rgba(245, 158, 11, 0.12)',
     paddingVertical: 7,
-    paddingHorizontal: 12,
+    paddingHorizontal: 14,
     borderRadius: 12,
-    marginTop: 8,
+    marginHorizontal: VIEWER_TOKENS.spacing.lg,
+    marginTop: 6,
     borderWidth: 1,
     borderColor: 'rgba(245, 158, 11, 0.25)',
   },
@@ -739,259 +500,115 @@ const styles = StyleSheet.create({
     flex: 1,
     lineHeight: 15,
   },
-  viewportContainer: {
-    flex: 1,
-    position: 'relative',
-    backgroundColor: '#070A10',
-  },
-  viewer: {
-    flex: 1,
-  },
   placeholderContainer: {
-    flex: 1,
+    height: 320,
+    marginHorizontal: VIEWER_TOKENS.spacing.lg,
+    marginTop: VIEWER_TOKENS.spacing.sm,
+    borderRadius: VIEWER_TOKENS.radius.xl,
+    backgroundColor: '#031024',
+    borderWidth: 1.5,
+    borderColor: VIEWER_TOKENS.colors.border,
     alignItems: 'center',
     justifyContent: 'center',
   },
   placeholderText: {
-    color: '#64748B',
+    color: VIEWER_TOKENS.colors.secondaryText,
     fontSize: 13,
     marginTop: 8,
   },
-  bottomSheet: {
-    backgroundColor: '#0F172A',
-    borderTopLeftRadius: 20,
-    borderTopRightRadius: 20,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.08)',
-    maxHeight: 260,
+  aiTutorContainer: {
+    marginTop: VIEWER_TOKENS.spacing.lg,
+    marginBottom: VIEWER_TOKENS.spacing.sm,
   },
-  dragHandle: {
-    width: 36,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: '#334155',
-    alignSelf: 'center',
-    marginTop: 8,
-    marginBottom: 6,
-  },
-  sheetScroll: {
-    maxHeight: 240,
-  },
-  sheetContent: {
-    paddingHorizontal: 16,
-    paddingBottom: 24,
-  },
-  sheetHeaderRow: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    marginBottom: 8,
-  },
-  tag: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: 'rgba(56, 189, 248, 0.12)',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-  },
-  tagText: {
-    color: '#38BDF8',
-    fontSize: 11,
-    fontWeight: '600',
-  },
-  hardwareBadge: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingVertical: 4,
-    paddingHorizontal: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  hardwareBadgeText: {
-    color: '#94A3B8',
-    fontSize: 10,
-    fontWeight: '600',
-  },
-  sheetDescription: {
-    color: '#CBD5E1',
-    fontSize: 12,
-    lineHeight: 17,
-    marginBottom: 10,
-  },
-  formulaCard: {
-    backgroundColor: '#161F30',
-    padding: 10,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: 'rgba(56, 189, 248, 0.2)',
-    marginBottom: 12,
-  },
-  formulaHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 4,
-  },
-  formulaTitle: {
-    fontSize: 10,
-    fontWeight: '700',
-    color: '#38BDF8',
-    textTransform: 'uppercase',
-  },
-  formulaText: {
-    fontSize: 12,
-    fontWeight: '700',
-    color: '#F8FAFC',
-  },
-  componentsSection: {
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: 11,
-    fontWeight: '700',
-    color: '#94A3B8',
-    marginBottom: 6,
-    textTransform: 'uppercase',
-  },
-  componentChipsRow: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 6,
-  },
-  componentChip: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#1E293B',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.06)',
-  },
-  componentChipText: {
-    color: '#E2E8F0',
-    fontSize: 11,
-    fontWeight: '500',
-  },
-  specsGrid: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 8,
-    marginBottom: 14,
-  },
-  specCard: {
-    flex: 1,
-    minWidth: '45%',
-    backgroundColor: '#161F30',
-    padding: 8,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.04)',
-  },
-  specLabel: {
-    fontSize: 10,
-    color: '#94A3B8',
-    fontWeight: '500',
-  },
-  specValue: {
-    fontSize: 11,
-    color: '#F8FAFC',
-    fontWeight: '700',
-    marginTop: 2,
-  },
-  aiTutorButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    backgroundColor: '#2563EB',
-    paddingVertical: 12,
-    borderRadius: 14,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
-  },
-  aiTutorButtonText: {
-    color: '#FFFFFF',
-    fontSize: 12,
-    fontWeight: '700',
-  },
+
+  // Modal styles
   modalOverlay: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.7)',
+    backgroundColor: 'rgba(2, 11, 28, 0.85)',
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 24,
+    padding: 24,
   },
   modalContent: {
     width: '100%',
-    maxWidth: 340,
-    backgroundColor: '#0F172A',
-    borderRadius: 24,
+    maxWidth: 380,
+    backgroundColor: VIEWER_TOKENS.colors.cardBg,
+    borderRadius: VIEWER_TOKENS.radius.xl,
     padding: 24,
     alignItems: 'center',
     borderWidth: 1,
-    borderColor: 'rgba(255, 255, 255, 0.1)',
+    borderColor: VIEWER_TOKENS.colors.border,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.5,
+    shadowOpacity: 0.4,
     shadowRadius: 16,
-    elevation: 10,
+    elevation: 8,
   },
   modalIconContainer: {
     width: 60,
     height: 60,
     borderRadius: 30,
-    backgroundColor: 'rgba(245, 158, 11, 0.15)',
+    backgroundColor: 'rgba(245, 158, 11, 0.12)',
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
-    borderWidth: 1,
-    borderColor: 'rgba(245, 158, 11, 0.3)',
+    marginBottom: 16,
   },
   modalTitle: {
     fontSize: 18,
-    fontWeight: '800',
-    color: '#F8FAFC',
-    marginBottom: 8,
+    fontWeight: '700',
+    color: VIEWER_TOKENS.colors.primaryText,
+    marginBottom: 12,
     textAlign: 'center',
   },
   modalBody: {
     fontSize: 13,
-    color: '#FCD34D',
-    fontWeight: '600',
+    lineHeight: 19,
+    color: VIEWER_TOKENS.colors.secondaryText,
     textAlign: 'center',
-    lineHeight: 18,
-    marginBottom: 8,
+    marginBottom: 10,
   },
   modalSubtext: {
-    fontSize: 11,
-    color: '#94A3B8',
-    textAlign: 'center',
+    fontSize: 11.5,
     lineHeight: 16,
+    color: VIEWER_TOKENS.colors.mutedText,
+    textAlign: 'center',
     marginBottom: 20,
+  },
+  guideItem: {
+    width: '100%',
+    marginBottom: 14,
+    backgroundColor: 'rgba(6, 24, 50, 0.6)',
+    padding: 10,
+    borderRadius: 10,
+    borderWidth: 1,
+    borderColor: 'rgba(16, 60, 112, 0.4)',
+  },
+  guideHeading: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: VIEWER_TOKENS.colors.primaryText,
+    marginBottom: 4,
+  },
+  guideText: {
+    fontSize: 11.5,
+    lineHeight: 16,
+    color: VIEWER_TOKENS.colors.secondaryText,
   },
   modalReturnButton: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    backgroundColor: VIEWER_TOKENS.colors.primaryBlue,
+    paddingVertical: 12,
+    paddingHorizontal: 20,
+    borderRadius: VIEWER_TOKENS.radius.full,
     width: '100%',
-    backgroundColor: '#2563EB',
-    paddingVertical: 13,
-    borderRadius: 16,
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.3,
-    shadowRadius: 6,
-    elevation: 4,
+    marginTop: 4,
   },
   modalReturnButtonText: {
     color: '#FFFFFF',
-    fontSize: 13,
     fontWeight: '700',
+    fontSize: 14,
   },
 });
 

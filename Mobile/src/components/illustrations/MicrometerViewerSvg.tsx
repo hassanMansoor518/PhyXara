@@ -1,4 +1,4 @@
-import React, { useRef, useState, useMemo } from 'react';
+import React, { useRef, useState, useMemo, useEffect } from 'react';
 import { View, PanResponder } from 'react-native';
 import Svg, {
   Rect,
@@ -18,17 +18,33 @@ const MAX_MOVE = 45;     // spindle ki max movement (SVG units)
 // Drag sensitivity ab width se nikalta hai: component ki 70% width drag = poora open/close
 const DRAG_FRACTION = 0.7;
 
+interface MicrometerViewerProps {
+  width?: number;
+  height?: number;
+  initialAngle?: number;
+  angle?: number | null;
+  onAngleChange?: (angle: number) => void;
+}
+
 export const MicrometerViewerSvg = ({
   width = 290,
   height = 112,
   initialAngle = 0,
+  angle: propAngle,
   onAngleChange,
-}) => {
-  const [angle, setAngle] = useState(initialAngle);
+}: MicrometerViewerProps) => {
+  const [internalAngle, setInternalAngle] = useState(initialAngle);
+  const angle = propAngle !== undefined && propAngle !== null ? propAngle : internalAngle;
   const startAngle = useRef(initialAngle);
   const angleRef = useRef(initialAngle);
   const onChangeRef = useRef(onAngleChange);
   onChangeRef.current = onAngleChange;
+
+  useEffect(() => {
+    if (propAngle !== undefined && propAngle !== null) {
+      angleRef.current = propAngle;
+    }
+  }, [propAngle]);
 
   const panResponder = useMemo(
     () =>
@@ -45,7 +61,7 @@ export const MicrometerViewerSvg = ({
           const next = startAngle.current + g.dx * (MAX_ANGLE / (width * DRAG_FRACTION));
           const clamped = Math.max(0, Math.min(MAX_ANGLE, next));
           angleRef.current = clamped;
-          setAngle(clamped);
+          setInternalAngle(clamped);
           if (onChangeRef.current) onChangeRef.current(clamped);
         },
       }),
@@ -57,7 +73,7 @@ export const MicrometerViewerSvg = ({
 
   // Thimble reading (0-49)
   const reading = Math.floor(angle / 7.2) % 50;
-  const wrap = (n) => ((n % 50) + 50) % 50;
+  const wrap = (n: number) => ((n % 50) + 50) % 50;
   const base = 20 + reading;
   const nums = [wrap(base + 5), wrap(base), wrap(base - 5), wrap(base - 10)];
 

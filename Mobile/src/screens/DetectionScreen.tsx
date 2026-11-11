@@ -6,7 +6,10 @@ import { AppHeader } from '../components/AppHeader';
 import { DetectionLoader } from '../components/DetectionLoader';
 import { scannerService, DetectedDiagramData } from '../services/scannerService';
 
+import { useLearningAccount } from '../services/learningService';
+
 export const DetectionScreen: React.FC = () => {
+  const { record } = useLearningAccount();
   const params = useLocalSearchParams<{
     imageUri?: string;
     topicId?: string;
@@ -69,6 +72,10 @@ export const DetectionScreen: React.FC = () => {
 
   const handleComplete = () => {
     if (!detectedData) return;
+    if (detectedData.has3DModel) {
+      void record({ kind: 'scan', target: detectedData.diagramId }, params.scanId || activeScanRef.current)
+        .catch(error => console.warn('Scan progress could not be saved', error));
+    }
     router.replace({
       pathname: '/diagram-detail',
       params: {

@@ -13,24 +13,55 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react-native';
-import React, { useState } from 'react';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
-import { SINDH_PHYSICS_CHAPTERS } from '../data/physicsTopics';
+import { learningRequest, Progress, useLearningAccount, useLearningData } from '../services/learningService';
+import { class9Labs, class9LabsByChapter } from '../data/class9Labs';
+import { PhysicsChapter, SINDH_PHYSICS_CHAPTERS } from '../data/physicsTopics';
 
 export const ElectricityScreen: React.FC = () => {
   const params = useLocalSearchParams<{ chapterId?: string }>();
   const chapterId = params.chapterId || 'electricity';
 
+  const { record, userId } = useLearningAccount();
+  const { data, retry } = useLearningData<Progress>('/progress');
+  const [remoteChapter, setRemoteChapter] = useState<PhysicsChapter>();
+  useEffect(() => {
+    let current = true;
+    learningRequest<PhysicsChapter>('/topics/' + encodeURIComponent(chapterId))
+      .then(topic => { if (current) setRemoteChapter(topic); }).catch(() => {});
+    return () => { current = false; };
+  }, [chapterId]);
+
   const chapter =
+    (remoteChapter?.id === chapterId ? remoteChapter : undefined) ||
     SINDH_PHYSICS_CHAPTERS.find((c) => c.id === chapterId) ||
     SINDH_PHYSICS_CHAPTERS.find((c) => c.id === 'electricity') ||
     SINDH_PHYSICS_CHAPTERS[1]; // Kinematics default
 
+  const [queued, setQueued] = useState<{ userId: string; chapterId: string }>();
+  const completed = Boolean(data?.completedTopicIds.includes(chapter.id) ||
+    (queued && queued.userId === userId && queued.chapterId === chapter.id));
+  useEffect(() => {
+    if (userId) void record({ kind: 'topic_open', target: chapter.id }).catch(() => {});
+  }, [record, userId, chapter.id]);
+
   const [activeTab, setActiveTab] = useState<'learn' | 'ar' | 'practice'>('learn');
-  const [isBookmarked, setIsBookmarked] = useState(false);
+  const bookmarkKey = userId ? '@phyxara_bookmark:' + userId + ':' + chapter.id : undefined;
+  const [bookmark, setBookmark] = useState<{ key: string; saved: boolean }>();
+  const isBookmarked = bookmark?.key === bookmarkKey && bookmark?.saved === true;
+  useEffect(() => {
+    if (!bookmarkKey) return;
+    let current = true;
+    AsyncStorage.getItem(bookmarkKey).then(value => {
+      if (current) setBookmark({ key: bookmarkKey, saved: value === '1' });
+    }).catch(() => {});
+    return () => { current = false; };
+  }, [bookmarkKey]);
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top', 'left', 'right']}>
@@ -40,8 +71,10 @@ export const ElectricityScreen: React.FC = () => {
         rightIcon="bookmark"
         isStarred={isBookmarked}
         onRightPress={() => {
-          setIsBookmarked(!isBookmarked);
-          Alert.alert(isBookmarked ? 'Removed from Bookmarks' : 'Saved to Bookmarks');
+          if (!bookmarkKey) return;
+          void AsyncStorage.setItem(bookmarkKey, isBookmarked ? '0' : '1').then(() => {
+            setBookmark({ key: bookmarkKey, saved: !isBookmarked });
+          }).catch(() => Alert.alert('Bookmark could not be saved'));
         }}
         onBack={() => router.back()}
       />
@@ -71,12 +104,12 @@ export const ElectricityScreen: React.FC = () => {
           <View className="pt-3 border-t border-[#F1F5F9]">
             <View className="flex-row items-center justify-between mb-1.5">
               <Text className="text-xs font-bold text-[#64748B]">Chapter Completion</Text>
-              <Text className="text-xs font-black text-[#2563EB]">{chapter.progress}%</Text>
+              <Text className="text-xs font-black text-[#2563EB]">{(completed ? 100 : 0)}%</Text>
             </View>
             <View className="h-2 bg-[#EFF6FF] rounded-full overflow-hidden">
               <View
                 className="h-full bg-[#2563EB] rounded-full"
-                style={{ width: `${chapter.progress}%` }}
+                style={{ width: `${(completed ? 100 : 0)}%` }}
               />
             </View>
           </View>
@@ -318,6 +351,25 @@ export const ElectricityScreen: React.FC = () => {
             <ArrowRight size={14} color="#2563EB" />
           </Pressable>
         </View>
+        {chapter.classLevel === 'Class 9' && (class9LabsByChapter[chapter.id] ?? []).map(number => (
+          <Pressable key={number} accessibilityRole="button" className="rounded-2xl bg-white border border-[#DBEAFE] p-4 mt-3"
+            onPress={() => router.push({ pathname: '/practical', params: { experiment: String(number) } })}>
+            <Text className="text-xs font-bold text-[#2563EB]">PRACTICAL {number}</Text>
+            <Text className="font-bold text-[#0F172A]">{class9Labs[number - 1].title}</Text>
+          </Pressable>
+        ))}
+        <Pressable className="rounded-2xl bg-[#2563EB] p-4 mt-4" disabled={completed}
+          onPress={async () => {
+            try {
+              await record({ kind: 'topic_complete', target: chapter.id }, 'complete-' + chapter.id);
+              if (userId) setQueued({ userId, chapterId: chapter.id });
+              retry();
+            } catch {
+              Alert.alert('Progress could not be saved', 'Try again to save this chapter.');
+            }
+          }}>
+          <Text className="text-center text-white font-bold">{completed ? "Chapter completed" : "Mark chapter complete"}</Text>
+        </Pressable>
       </ScrollView>
 
       {/* Bottom Navigation */}

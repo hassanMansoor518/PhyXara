@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+  <Tracking>
+    <ImageTarget name="referencematerial_13" size="0.18 0.08334975" />
+    <ImageTarget name="referencematerial_3" size="0.18 0.07065000" />
+    <ImageTarget name="referencematerial_11" size="0.18 0.11542209" />
+    <ImageTarget name="referencematerial_8" size="0.18 0.10095237" />
+    <ImageTarget name="referencematerial_5" size="0.18 0.12897843" />
+    <ImageTarget name="referencematerial_10" size="0.18 0.09296442" />
+    <ImageTarget name="referencematerial_1" size="0.18 0.08181819" />
+    <ImageTarget name="referencematerial_12" size="0.18 0.12736092" />
+    <ImageTarget name="referencematerial_7" size="0.18 0.07088235" />
+    <ImageTarget name="referencematerial_9" size="0.18 0.33487182" />
+    <ImageTarget name="referencematerial_4" size="0.18 0.24989847" />
+    <ImageTarget name="referencematerial_2" size="0.18 0.09128406" />
+  </Tracking>
+</QCARConfig>

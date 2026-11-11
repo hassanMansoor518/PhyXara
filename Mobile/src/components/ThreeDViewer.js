@@ -1,3 +1,4 @@
+import * as THREE from "three";
 import React, { Suspense, useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import {
   View,
@@ -21,6 +22,10 @@ import Animated, {
 } from 'react-native-reanimated';
 import { Layers, Camera, AlertCircle } from 'lucide-react-native';
 import { ANIMATION_REGISTRY, interpolateSteps } from './animationRegistry';
+import { ViewerControls } from './viewer/ViewerControls';
+import { AnimationControls } from './viewer/AnimationControls';
+import { PerspectiveGridFloor } from './viewer/PerspectiveGridFloor';
+import { MicrometerAnnotations } from './viewer/MicrometerAnnotations';
 
 // Educational Interactive Illustrations for Standard 3D View (works on 100% of Android devices)
 import { ElectricMotorFrontSvg } from './illustrations/ElectricMotorFrontSvg';
@@ -118,7 +123,6 @@ function ModelMesh({
     // Set up AnimationMixer if model has animation clips
     if (gltf.animations && gltf.animations.length > 0 && gltf.scene) {
       try {
-        const THREE = require('three');
         const mixer = new THREE.AnimationMixer(gltf.scene);
         mixerRef.current = mixer;
         actionsRef.current = gltf.animations.map(clip => mixer.clipAction(clip));
@@ -186,10 +190,12 @@ export const ThreeDViewer = ({
   rotation = [0, 0, 0],
   // Existing props (backward compatible)
   autoRotate: autoRotateProp = false,
+  onToggleAutoRotate,
   showControlsHint = true,
+  showAnnotations = true,
   style,
-  onError,
-  onLoad,
+  onError = undefined,
+  onLoad = undefined,
   onScanAnother,
   // New API props
   autoRotateSpeed = 1.5,
@@ -197,12 +203,18 @@ export const ThreeDViewer = ({
   enableZoom = true,
   minZoom = 0.5,
   maxZoom = 2.5,
-  onInteractionStart,
-  onInteractionEnd,
+  onInteractionStart = undefined,
+  onInteractionEnd = undefined,
   // Animation mode: when true the animation panel is shown in-place
   animationMode = false,
   onAnimationModeExit,
 }) => {
+  // Track viewport layout for responsive perspective grid and annotations
+  const [viewportLayout, setViewportLayout] = useState({
+    width: Dimensions.get('window').width - 32,
+    height: 320,
+  });
+
   // WebGL loading state with strict safety timeout
   const [loadingWebGL, setLoadingWebGL] = useState(isFiberSupported);
   const [webGLFailed, setWebGLFailed] = useState(!isFiberSupported);
@@ -807,7 +819,8 @@ export const ThreeDViewer = ({
         <MicrometerViewerSvg
           width={320}
           height={134}
-          onAngleChange={(a) => console.log('Angle:', a)}
+          angle={animPose.angle ?? null}
+          onAngleChange={() => {}}
         />
       );
     }
@@ -874,22 +887,26 @@ export const ThreeDViewer = ({
     );
   };
 
-  // The outer container is a flex column.
-  // When animationMode is on, the viewer occupies the top portion and the
-  // animation panel sits below it as a flex sibling (NOT an absolute overlay).
-  // This ensures the model is always visible while the panel is open.
+  const totalDurationMs = animEntry?.totalMs || 45000;
+
   return (
     <View style={[styles.container, style]}>
-      {/* ── Viewer area (shrinks when panel is open) ── */}
-      <View style={animationMode ? styles.viewerArea : styles.viewerAreaFull}>
-        {/* Debug overlay — remove after verifying */}
-        {animationMode && (
-          <View style={styles.debugBar} pointerEvents="none">
-            <Text style={styles.debugText}>
-              t={Math.round(animProgress * (animEntryRef.current?.totalMs || 0))}ms  step={animPose.stepIndex}  slide={Math.round(animPose.slide)}
-            </Text>
-          </View>
-        )}
+      {/* ── Main Interactive 3D Viewport ── */}
+      <View
+        style={styles.viewerAreaFull}
+        onLayout={(e) => {
+          const { width, height } = e.nativeEvent.layout;
+          if (width > 0 && height > 0) {
+            setViewportLayout({ width, height });
+          }
+        }}
+      >
+        {/* Perspective grid floor */}
+        <PerspectiveGridFloor
+          width={viewportLayout.width}
+          height={viewportLayout.height * 0.55}
+        />
+
         {/* 1. WebGL 3D Canvas (If Fiber is available without errors) */}
         {isFiberSupported && !webGLFailed ? (
           <Canvas
@@ -955,23 +972,32 @@ export const ThreeDViewer = ({
           </View>
         )}
 
-        {/* Floating Zoom & Reset Buttons — always on top of viewer area */}
-        <View style={styles.floatingControls} pointerEvents="box-none">
-          <Pressable
-            onPress={handleZoomIn}
-            style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
-            hitSlop={8}
-          >
-            <Text style={styles.controlButtonText}>+</Text>
-          </Pressable>
-          <Pressable
-            onPress={handleZoomOut}
-            style={({ pressed }) => [styles.controlButton, pressed && { opacity: 0.7 }]}
-            hitSlop={8}
-          >
-            <Text style={styles.controlButtonText}>−</Text>
-          </Pressable>
-        </View>
+        {/* Cyan Annotations for Micrometer */}
+        <MicrometerAnnotations
+          visible={showAnnotations && (key.includes('micrometer') || key.includes('screw') || key.includes('exp3'))}
+          width={viewportLayout.width}
+          height={viewportLayout.height}
+        />
+
+        {/* Floating Top-Right Controls: 360 Rotate, Zoom In, Zoom Out */}
+        <ViewerControls
+          autoRotate={autoRotateProp}
+          onToggleAutoRotate={onToggleAutoRotate}
+          onZoomIn={handleZoomIn}
+          onZoomOut={handleZoomOut}
+        />
+
+        {/* Integrated In-Viewport Animation Playback Bar */}
+        <AnimationControls
+          isPlaying={animPlaying}
+          progress={animProgress}
+          currentTimeMs={Math.round(animProgress * totalDurationMs)}
+          totalTimeMs={totalDurationMs}
+          speed={animSpeed}
+          onTogglePlayPause={handleAnimPlayPause}
+          onScrub={handleAnimScrub}
+          onCycleSpeed={handleSpeedCycle}
+        />
 
         {/* Loading Overlay */}
         {loadingWebGL && (
@@ -982,176 +1008,7 @@ export const ThreeDViewer = ({
             </View>
           </View>
         )}
-
-        {/* Gesture Hint — shown only when panel is closed */}
-        {showControlsHint && !animationMode && (
-          <View style={styles.hintContainer} pointerEvents="box-none">
-            <View style={styles.hintBadge}>
-              <Text style={styles.hintText}>
-                Drag to Rotate • Pinch to Zoom • Double-Tap to Reset
-              </Text>
-            </View>
-            <Pressable
-              onPress={handleReset}
-              style={({ pressed }) => [styles.resetButton, pressed && { opacity: 0.7 }]}
-            >
-              <Text style={styles.resetButtonText}>Reset View</Text>
-            </Pressable>
-          </View>
-        )}
-      </View>{/* end viewerArea */}
-
-      {/* ── Animation Panel — flex sibling below viewer, NOT an overlay ── */}
-      {animationMode && (
-        <View style={styles.animPanel}>
-          {/* Header row: title + close */}
-          <View style={styles.animHeader}>
-            <Text style={styles.animTitle} numberOfLines={1}>
-              {animEntry?.title || 'Animation'}
-            </Text>
-            <Pressable
-              onPress={onAnimationModeExit}
-              style={({ pressed }) => [styles.animCloseBtn, pressed && { opacity: 0.7 }]}
-              hitSlop={10}
-            >
-              <Text style={styles.animCloseBtnText}>✕</Text>
-            </Pressable>
-          </View>
-
-          {animEntry && !animEntry.available ? (
-            <View style={styles.animComingSoon}>
-              <Text style={styles.animComingSoonIcon}>🔬</Text>
-              <Text style={styles.animComingSoonText}>{animEntry.comingSoon}</Text>
-            </View>
-          ) : animEntry?.available ? (
-            <>
-              {/* Caption */}
-              <View style={styles.animCaptionBox}>
-                <Text style={styles.animStepLabel}>
-                  {animPose.label || animEntry.steps[0]?.label || ''}
-                </Text>
-                <Text style={styles.animCaption}>
-                  {animPose.caption || animEntry.steps[0]?.caption || ''}
-                </Text>
-                {animPose.formula ? (
-                  <Text style={styles.animFormula}>{animPose.formula}</Text>
-                ) : null}
-              </View>
-
-              {/* Step chips */}
-              <ScrollView
-                horizontal
-                showsHorizontalScrollIndicator={false}
-                style={styles.animDotsScroll}
-                contentContainerStyle={styles.animDotsContent}
-              >
-                {animEntry.steps.map((st, idx) => {
-                  const stepEndMs = animEntry.steps.slice(0, idx + 1).reduce((a, s) => a + s.durationMs, 0);
-                  const stepStartMs = animEntry.steps.slice(0, idx).reduce((a, s) => a + s.durationMs, 0);
-                  const curMs = animProgress * animEntry.totalMs;
-                  const isActive = curMs >= stepStartMs && curMs < stepEndMs;
-                  const isDone = curMs >= stepEndMs;
-                  return (
-                    <Pressable
-                      key={idx}
-                      onPress={() => {
-                        handleAnimScrub(stepStartMs / animEntry.totalMs);
-                      }}
-                      style={[
-                        styles.animDot,
-                        isDone && styles.animDotDone,
-                        isActive && styles.animDotActive,
-                      ]}
-                    >
-                      <Text style={[styles.animDotText, (isDone || isActive) && { color: '#fff' }]} numberOfLines={1}>
-                        {st.label}
-                      </Text>
-                    </Pressable>
-                  );
-                })}
-              </ScrollView>
-
-              {/* Scrubber */}
-              <View style={styles.animScrubRow}>
-                <Text style={styles.animTimeText}>
-                  {Math.round(animProgress * animEntry.totalMs / 1000)}s
-                </Text>
-                <Pressable
-                  style={styles.animScrubTrack}
-                  onPress={(e) => {
-                    // coarse scrub: locationX / track pixel width
-                    // track fills remaining space, approximate with Dimensions
-                    const trackW = SCREEN_WIDTH - 72; // 2×28 time labels + gaps
-                    handleAnimScrub(e.nativeEvent.locationX / trackW);
-                  }}
-                >
-                  <View style={[styles.animScrubFill, { flex: animProgress }]} />
-                  <View style={[styles.animScrubEmpty, { flex: Math.max(0.001, 1 - animProgress) }]} />
-                </Pressable>
-                <Text style={styles.animTimeText}>
-                  {Math.round(animEntry.totalMs / 1000)}s
-                </Text>
-              </View>
-
-              {/* Controls row */}
-              <View style={styles.animControls}>
-                <Pressable
-                  onPress={handleAnimStepBack}
-                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
-                  hitSlop={8}
-                >
-                  <Text style={styles.animCtrlIcon}>⏮</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleAnimPlayPause}
-                  style={({ pressed }) => [styles.animPlayBtn, pressed && { opacity: 0.8 }]}
-                >
-                  <Text style={styles.animPlayIcon}>
-                    {animPlaying ? '⏸' : animProgress >= 1 ? '↺' : '▶'}
-                  </Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleAnimStepForward}
-                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
-                  hitSlop={8}
-                >
-                  <Text style={styles.animCtrlIcon}>⏭</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleAnimReplay}
-                  style={({ pressed }) => [styles.animCtrlBtn, pressed && { opacity: 0.6 }]}
-                  hitSlop={8}
-                >
-                  <Text style={styles.animCtrlIcon}>↺</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleSpeedCycle}
-                  style={({ pressed }) => [styles.animSpeedBtn, pressed && { opacity: 0.7 }]}
-                  hitSlop={8}
-                >
-                  <Text style={styles.animSpeedText}>{animSpeed}×</Text>
-                </Pressable>
-
-                <Pressable
-                  onPress={handleReset}
-                  style={({ pressed }) => [styles.animResetBtn, pressed && { opacity: 0.7 }]}
-                  hitSlop={8}
-                >
-                  <Text style={styles.resetButtonText}>Reset View</Text>
-                </Pressable>
-              </View>
-            </>
-          ) : (
-            <View style={styles.animComingSoon}>
-              <Text style={styles.animComingSoonText}>No animation available for this model.</Text>
-            </View>
-          )}
-        </View>
-      )}
+      </View>
     </View>
   );
 };
@@ -1161,7 +1018,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     flexDirection: 'column',
-    backgroundColor: '#090D16',
+    backgroundColor: '#031024',
   },
   // Viewer fills all space when panel is closed
   viewerAreaFull: {

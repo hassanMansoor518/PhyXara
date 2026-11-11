@@ -73,8 +73,8 @@ const PRESET_SCENARIOS = {
 const server = http.createServer(async (req, res) => {
   // CORS Headers
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Accept, X-PhyXara-Account');
 
   if (req.method === 'OPTIONS') {
     res.writeHead(204);
@@ -83,6 +83,7 @@ const server = http.createServer(async (req, res) => {
   }
 
   const url = req.url || '';
+  if (url.startsWith('/api/v1/')) return require('./learning').handleLearning(req, res, url);
 
   // 1. Health check endpoint
   if (url === '/api/health' && req.method === 'GET') {
