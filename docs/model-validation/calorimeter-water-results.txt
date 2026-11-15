@@ -1,0 +1,1 @@
+PASS: both scenes retain 25 models and complete calorimeter label bindings; boiler and calorimeter have translucent filled cylinder water with back-face culling; cup water spans 10.1–23 mm without intersecting its base, preserves its level throughout the clip, and submerges the solid at the final pose.

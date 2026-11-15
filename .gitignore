@@ -1,0 +1,27 @@
+# Local caches, generated Unity files and diagnostic logs
+/.gradle-cache/
+/.vs/
+**/[Oo]bj/
+*.log
+*.csproj
+*.sln
+*.suo
+*.user
+*.vsconfig
+
+# Credentials and local environment
+.env
+.env.*
+!.env.example
+*.keystore
+*.jks
+*.pem
+*.key
+*.p8
+*.p12
+*.mobileprovision
+*.ulf
+*.alf
+
+# The repository keeps a blank Vuforia config; keep local license changes unstaged.
+/AR mode class 9/Assets/Resources/VuforiaConfiguration.asset

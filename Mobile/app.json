@@ -55,8 +55,8 @@
       "expo-image",
       "expo-status-bar",
       "expo-web-browser",
-      "@azesmway/react-native-unity",
-      "./plugins/withUnity"
+      "./plugins/withUnity",
+      "@azesmway/react-native-unity"
     ],
     "experiments": {
       "typedRoutes": true,

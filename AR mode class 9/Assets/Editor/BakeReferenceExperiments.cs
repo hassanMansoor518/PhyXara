@@ -13,6 +13,212 @@ public static class BakeReferenceExperiments
     const string Folder = "Assets/Experiments/Models";
     const string ScenePath = "Assets/Scenes/SampleScene.unity";
 
+    [MenuItem("PhyXara/Rebuild Reference Models 10-13")]
+    public static void Rebuild10To13()
+    {
+        RebuildModels(false);
+    }
+
+    [MenuItem("PhyXara/Rebuild Realistic Syringe")]
+    public static void RebuildSyringe() => RebuildModels(true);
+
+    public static void RebuildBookAnimations() => RebuildModels(false, true);
+
+    [MenuItem("PhyXara/Rebuild Pulley Board")]
+    public static void RebuildPulleyBoard()
+    {
+        RebuildModels(false, false, 4);
+        ExperimentProcedureSetup.InstallPulleyBoard();
+    }
+
+    [MenuItem("PhyXara/Rebuild Calorimeter Water")]
+    public static void RebuildCalorimeter()
+    {
+        RebuildModels(false, false, 12);
+        ExperimentProcedureSetup.InstallCalorimeter();
+    }
+
+    static void RebuildModels(bool syringeOnly, bool allReferences = false, int onlyReference = 0)
+    {
+        if (EditorApplication.isPlayingOrWillChangePlaymode ||
+            Enumerable.Range(0, UnityEngine.SceneManagement.SceneManager.sceneCount)
+                .Any(i => UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).isDirty))
+            throw new InvalidOperationException("Save open scenes and exit Play Mode before rebuilding.");
+        var originalPath = EditorSceneManager.GetActiveScene().path;
+        var shader = Shader.Find("Universal Render Pipeline/Unlit");
+        var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
+        if (!shader || !font) throw new InvalidOperationException("Missing model shader or font.");
+        var palette = new Dictionary<Color32, Material>();
+        const string backup = "Library/ReferenceModelBackups";
+        Directory.CreateDirectory(backup);
+        foreach (var path in new[] { ScenePath, MobileARSetup.ScenePath })
+        {
+            Backup(path);
+            var scene = EditorSceneManager.OpenScene(path);
+            var manager = scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<ReferenceImageExperiments>(true)).Single();
+            var data = new SerializedObject(manager);
+            var entries = data.FindProperty("experiments");
+            int rebuilt = 0;
+            for (int i = 0; i < entries.arraySize; i++)
+            {
+                var entry = entries.GetArrayElementAtIndex(i);
+                int number = entry.FindPropertyRelative("Number").intValue;
+                if (onlyReference != 0 ? number != onlyReference : number < (allReferences ? 4 : 10) || number > 13 || (syringeOnly && number != 11)) continue;
+                var old = (Animation)entry.FindPropertyRelative("Model").objectReferenceValue;
+                if (!old) throw new InvalidOperationException("Missing old model " + number);
+                var target = old.transform.parent;
+                bool active = old.gameObject.activeSelf;
+                var model = new GameObject(old.name);
+                model.transform.SetParent(target, false);
+                model.transform.localPosition = old.transform.localPosition;
+                model.transform.localRotation = old.transform.localRotation;
+                model.transform.localScale = old.transform.localScale;
+                var pose = new ReferenceExperimentModel(model.transform, ColorMaterial).Build(number);
+                foreach (var filter in model.GetComponentsInChildren<MeshFilter>())
+                {
+                    var mesh = filter.sharedMesh;
+                    if (!mesh || !mesh.name.StartsWith("Syringe ") || AssetDatabase.Contains(mesh)) continue;
+                    string meshPath = $"{Folder}/{mesh.name}.asset";
+                    var saved = AssetDatabase.LoadAssetAtPath<Mesh>(meshPath);
+                    if (saved)
+                    {
+                        EditorUtility.CopySerialized(mesh, saved);
+                        filter.sharedMesh = saved;
+                        UnityEngine.Object.DestroyImmediate(mesh);
+                    }
+                    else AssetDatabase.CreateAsset(mesh, meshPath);
+                }
+                Validate(model.transform, pose);
+                MakeNamesUnique(model.transform);
+                AddLabel(model.transform, target.name.Replace(" Image Target", ""), font);
+                var clip = BakeClip(model.transform, pose, ReferenceExperimentModel.Duration(number));
+                string clipPath = $"{Folder}/Reference {number:00} Loop.anim";
+                Backup(clipPath);
+                var existing = AssetDatabase.LoadAssetAtPath<AnimationClip>(clipPath);
+                if (!existing) throw new InvalidOperationException("Missing clip " + clipPath);
+                clip.name = existing.name;
+                EditorUtility.CopySerialized(clip, existing);
+                UnityEngine.Object.DestroyImmediate(clip);
+                var animation = model.AddComponent<Animation>();
+                animation.AddClip(existing, existing.name);
+                animation.clip = existing;
+                animation.playAutomatically = false;
+                animation.cullingType = AnimationCullingType.AlwaysAnimate;
+                entry.FindPropertyRelative("Model").objectReferenceValue = animation;
+                UnityEngine.Object.DestroyImmediate(old.gameObject);
+                model.SetActive(active);
+                rebuilt++;
+            }
+            int expected = onlyReference != 0 || syringeOnly ? 1 : allReferences ? 9 : 4;
+            if (rebuilt != expected) throw new InvalidOperationException($"Expected {expected} models in {path}");
+            data.ApplyModifiedPropertiesWithoutUndo();
+            AssetDatabase.SaveAssets();
+            if (!EditorSceneManager.SaveScene(scene)) throw new IOException("Could not save " + path);
+        }
+        if (onlyReference == 0) RenderPreviews(ColorMaterial, syringeOnly);
+        if (!string.IsNullOrEmpty(originalPath)) EditorSceneManager.OpenScene(originalPath);
+        Debug.Log("REFERENCE_MODELS_OK: Rebuilt selected models in both scenes and validated animation transforms.");
+
+        void Backup(string path)
+        {
+            string destination = Path.Combine(backup, Path.GetFileName(path));
+            if (!File.Exists(destination)) File.Copy(path, destination);
+        }
+        Material ColorMaterial(Color32 color)
+        {
+            if (palette.TryGetValue(color, out var cached)) return cached;
+            bool realistic = color.a < 255 || color.Equals(new Color32(244, 246, 242, 255)) || color.Equals(new Color32(33, 35, 39, 255));
+            bool water = color.Equals(new Color32(42, 149, 205, 80));
+            string name = realistic ? "Syringe " + ColorUtility.ToHtmlStringRGBA(color) : ColorUtility.ToHtmlStringRGB(color);
+            var material = AssetDatabase.LoadAssetAtPath<Material>($"{Folder}/{name}.mat");
+            if (!material)
+            {
+                material = new Material(realistic || onlyReference == 4 ? Shader.Find("Universal Render Pipeline/Lit") : shader) { name = name, color = color };
+                if (realistic)
+                {
+                    material.SetFloat("_Smoothness", water ? .25f : color.a < 255 ? .92f : .48f);
+                    if (color.a < 255)
+                    {
+                        material.SetFloat("_Surface", 1);
+                        material.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+                        material.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+                        material.SetFloat("_ZWrite", 0);
+                        material.SetFloat("_Cull", (float)(water ? UnityEngine.Rendering.CullMode.Back : UnityEngine.Rendering.CullMode.Off));
+                        material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                        material.SetOverrideTag("RenderType", "Transparent");
+                        material.renderQueue = 3000;
+                    }
+                }
+                AssetDatabase.CreateAsset(material, $"{Folder}/{name}.mat");
+            }
+            palette.Add(color, material);
+            return material;
+        }
+    }
+
+    static void Validate(Transform model, Action<float> pose)
+    {
+        for (int frame = 0; frame <= 180; frame++)
+        {
+            pose(frame / 30f);
+            foreach (var part in model.GetComponentsInChildren<Transform>())
+            {
+                var p = part.localPosition;
+                var s = part.localScale;
+                if (float.IsNaN(p.sqrMagnitude) || float.IsInfinity(p.sqrMagnitude) ||
+                    float.IsNaN(s.sqrMagnitude) || float.IsInfinity(s.sqrMagnitude) ||
+                    s.x <= 0 || s.y <= 0 || s.z <= 0)
+                    throw new InvalidOperationException("Invalid model transform: " + part.name);
+            }
+        }
+        pose(0);
+    }
+
+    static void RenderPreviews(Func<Color32, Material> material, bool syringeOnly)
+    {
+        var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
+        string output = Path.GetFullPath("../docs/model-validation");
+        Directory.CreateDirectory(output);
+        var key = new GameObject("Studio key").AddComponent<Light>();
+        key.type = LightType.Directional;
+        key.intensity = 1.6f;
+        key.transform.rotation = Quaternion.Euler(35, -35, 0);
+        RenderSettings.ambientMode = UnityEngine.Rendering.AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(.52f, .55f, .6f);
+        var camera = new GameObject("Preview camera").AddComponent<Camera>();
+        camera.orthographic = true;
+        camera.orthographicSize = 95;
+        camera.nearClipPlane = .1f;
+        camera.farClipPlane = 1000;
+        camera.clearFlags = CameraClearFlags.SolidColor;
+        camera.backgroundColor = new Color(.92f, .94f, .96f);
+        camera.transform.position = new Vector3(0, 104, -330);
+        camera.transform.LookAt(new Vector3(0, 60, 0));
+        var target = new RenderTexture(1400, 1100, 24);
+        camera.targetTexture = target;
+        for (int number = 10; number <= 13; number++)
+        {
+            if (syringeOnly && number != 11) continue;
+            var model = new GameObject("Reference " + number);
+            var pose = new ReferenceExperimentModel(model.transform, material).Build(number);
+            pose(number == 10 ? 2 : number == 12 ? 4.5f : 1);
+            camera.Render();
+            var previous = RenderTexture.active;
+            RenderTexture.active = target;
+            var image = new Texture2D(target.width, target.height, TextureFormat.RGB24, false);
+            image.ReadPixels(new Rect(0, 0, target.width, target.height), 0, 0);
+            image.Apply();
+            File.WriteAllBytes(Path.Combine(output, $"reference-{number}.png"), image.EncodeToPNG());
+            RenderTexture.active = previous;
+            UnityEngine.Object.DestroyImmediate(image);
+            UnityEngine.Object.DestroyImmediate(model);
+        }
+        camera.targetTexture = null;
+        UnityEngine.Object.DestroyImmediate(target);
+        UnityEngine.Object.DestroyImmediate(camera.gameObject);
+        UnityEngine.Object.DestroyImmediate(key.gameObject);
+    }
+
     public static string Run()
     {
         var scene = EditorSceneManager.GetActiveScene();
@@ -55,7 +261,7 @@ public static class BakeReferenceExperiments
             pose(0f);
             MakeNamesUnique(model.transform);
             AddLabel(model.transform, title, font);
-            var duration = number == 8 ? 2 * Mathf.PI / 3.8f : number == 12 ? 6f : 4f;
+            var duration = ReferenceExperimentModel.Duration(number);
             var clip = BakeClip(model.transform, pose, duration);
             clip.name = title + " Loop";
             AssetDatabase.CreateAsset(clip, $"{Folder}/Reference {number:00} Loop.anim");
@@ -157,7 +363,7 @@ public static class BakeReferenceExperiments
         text.ForceMeshUpdate();
     }
 
-    static AnimationClip BakeClip(Transform root, Action<float> pose, float duration)
+    public static AnimationClip BakeClip(Transform root, Action<float> pose, float duration)
     {
         var parts = root.GetComponentsInChildren<Transform>();
         var samples = Mathf.CeilToInt(duration * 30);
@@ -178,17 +384,20 @@ public static class BakeReferenceExperiments
         }
         pose(0f);
 
-        var clip = new AnimationClip { legacy = true, frameRate = 30, wrapMode = WrapMode.Loop };
+        var clip = new AnimationClip { legacy = true, frameRate = 30, wrapMode = WrapMode.ClampForever };
         string[] names = { "m_LocalPosition.x", "m_LocalPosition.y", "m_LocalPosition.z",
             "m_LocalRotation.x", "m_LocalRotation.y", "m_LocalRotation.z", "m_LocalRotation.w",
             "m_LocalScale.x", "m_LocalScale.y", "m_LocalScale.z" };
         for (int i = 0; i < parts.Length; i++)
         {
             var path = AnimationUtility.CalculateTransformPath(parts[i], root);
+            bool positionMoves = Enumerable.Range(0, 3).Any(Varies);
             bool rotationMoves = Enumerable.Range(3, 4).Any(Varies);
+            bool scaleMoves = Enumerable.Range(7, 3).Any(Varies);
             for (int c = 0; c < names.Length; c++)
             {
-                if (c >= 3 && c <= 6 ? !rotationMoves : !Varies(c))
+                // Unity packs vector curves: preserve all axes when any axis changes.
+                if (c < 3 ? !positionMoves : c <= 6 ? !rotationMoves : !scaleMoves)
                     continue;
                 var frames = Enumerable.Range(0, samples + 1).Select(f => keys[i, c, f]).ToArray();
                 var curve = new AnimationCurve(frames);

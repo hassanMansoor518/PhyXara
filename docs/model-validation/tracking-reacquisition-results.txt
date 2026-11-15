@@ -1,0 +1,1 @@
+PASS: 50 models; SDK status-event dispatch and manager activation, accumulated reveal across brief losses, frozen untracked pose, duplicate-loss grace clock, fresh reveal after long loss, label reset and no procedure autoplay. Edit Mode lifecycle callbacks were invoked explicitly; webcam/native recognition and real Play Mode timing remain untested.

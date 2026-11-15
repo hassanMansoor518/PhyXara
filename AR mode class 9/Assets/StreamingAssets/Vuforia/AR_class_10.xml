@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<QCARConfig>
+  <Tracking>
+    <ImageTarget name="glass_slab_refraction_no_watermark" size="10.000000 4.824940" />
+    <ImageTarget name="prism_total_reflection_no_watermark" size="10.000000 7.798233" />
+    <ImageTarget name="parallel_circuit_no_watermark" size="15.000000 5.773050" />
+    <ImageTarget name="referencematerial_18" size="18.000000 9.033596" />
+    <ImageTarget name="referencematerial_17" size="18.000000 8.524375" />
+    <ImageTarget name="referencematerial_19" size="18.000000 5.775124" />
+    <ImageTarget name="referencematerial_20" size="18.000000 7.927273" />
+    <ImageTarget name="prism_diagram_enhanced" size="18.000000 8.540146" />
+    <ImageTarget name="referencematerial_24" size="18.000000 7.172104" />
+    <ImageTarget name="referencematerial_22" size="18.000000 11.551584" />
+    <ImageTarget name="referencematerial_16" size="18.000000 6.082818" />
+    <ImageTarget name="referencematerial_14" size="18.000000 9.021176" />
+  </Tracking>
+</QCARConfig>
