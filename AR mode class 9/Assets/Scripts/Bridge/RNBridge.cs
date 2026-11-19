@@ -17,6 +17,7 @@ namespace PhyXara.Bridge
 
         [Header("Data")]
         public ExperimentRegistry registry;
+        public VuforiaMobileSession vuforiaSession;
 
         [Header("AR rig (disabled while not in AR mode)")]
         [Tooltip("Parent of ARSession + XR Origin. Disabled outside AR mode so the camera is released.")]
@@ -47,6 +48,8 @@ namespace PhyXara.Bridge
         void Awake()
         {
             name = "RNBridge"; // RN addresses this GameObject by name
+            if (vuforiaSession != null)
+                vuforiaSession.TrackingChanged += OnVuforiaTracking;
             SetRigs(Mode.Idle);
         }
 
@@ -80,6 +83,17 @@ namespace PhyXara.Bridge
 
         void HandleOpen(string mode, string experimentId)
         {
+            if (mode == "ar" && vuforiaSession != null)
+            {
+                if (CurrentMode == Mode.AR && vuforiaSession.IsRunning)
+                    return;
+                Teardown();
+                CurrentExperimentId = experimentId;
+                SetRigs(Mode.AR);
+                Send(new StateMessage { name = "scanning" });
+                return;
+            }
+
             if (registry == null) { SendError("no_registry", "ExperimentRegistry is not assigned"); return; }
             var e = registry.Find(experimentId);
             if (e == null || e.modelPrefab == null) { SendError("unknown_experiment", experimentId); return; }
@@ -167,6 +181,8 @@ namespace PhyXara.Bridge
         void SetRigs(Mode m)
         {
             CurrentMode = m;
+            if (vuforiaSession != null)
+                vuforiaSession.SetRunning(m == Mode.AR);
             if (arSession != null) arSession.enabled = m == Mode.AR;
             if (arRig != null) arRig.SetActive(m == Mode.AR);
             if (previewCamera != null) previewCamera.gameObject.SetActive(m == Mode.Preview);
@@ -175,6 +191,8 @@ namespace PhyXara.Bridge
 
         void Teardown()
         {
+            if (vuforiaSession != null)
+                vuforiaSession.SetRunning(false);
             if (trackedImageManager != null) trackedImageManager.trackablesChanged.RemoveListener(OnTrackablesChanged);
             if (controller != null)
             {
@@ -189,6 +207,28 @@ namespace PhyXara.Bridge
         }
 
         // ---------------------------------------------------------------- AR tracking
+
+        void OnVuforiaTracking(string experimentId, bool found, GameObject target)
+        {
+            if (controller != null)
+            {
+                controller.StateChanged -= OnControllerState;
+                controller.ReadoutChanged -= OnControllerReadout;
+                controller = null;
+            }
+            if (found)
+            {
+                CurrentExperimentId = experimentId;
+                controller = target.GetComponentInChildren<IExperimentController>(true);
+                if (controller != null)
+                {
+                    controller.StateChanged += OnControllerState;
+                    controller.ReadoutChanged += OnControllerReadout;
+                }
+            }
+            tracked = found;
+            Send(new TrackingMessage { state = found ? "found" : "lost", experimentId = experimentId });
+        }
 
         void OnTrackablesChanged(ARTrackablesChangedEventArgs<ARTrackedImage> args)
         {
@@ -260,9 +300,16 @@ namespace PhyXara.Bridge
             // Unity's ARCore plugin pauses/resumes the session with the activity; we only make sure
             // a paused app does not keep a stale tracked state.
             if (paused) tracked = false;
+            if (vuforiaSession != null)
+                vuforiaSession.SetRunning(!paused && CurrentMode == Mode.AR);
         }
 
-        void OnDestroy() { Teardown(); }
+        void OnDestroy()
+        {
+            if (vuforiaSession != null)
+                vuforiaSession.TrackingChanged -= OnVuforiaTracking;
+            Teardown();
+        }
 
         // ---------------------------------------------------------------- helpers
 

@@ -14,8 +14,15 @@ public sealed class ReferenceImageExperiments : MonoBehaviour
         public Animation Model;
     }
 
+    void Start()
+    {
+        if (!GetComponent<ExperimentLabelButton>())
+            gameObject.AddComponent<ExperimentLabelButton>();
+    }
+
     void OnEnable()
     {
+        Application.targetFrameRate = 60;
         foreach (var experiment in experiments)
             if (experiment.Target)
                 experiment.Target.OnTargetStatusChanged += SetVisibility;
@@ -49,8 +56,8 @@ public sealed class ReferenceImageExperiments : MonoBehaviour
                 return;
 
             model.gameObject.SetActive(tracked);
-            if (tracked)
-                model.Play();
+            if (!tracked)
+                model.Stop();
             return;
         }
     }

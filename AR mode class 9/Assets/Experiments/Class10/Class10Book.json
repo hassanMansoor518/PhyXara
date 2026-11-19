@@ -1,0 +1,177 @@
+{
+    "book": "Physics Practical Journal - Class X (Sindh Textbook Board)",
+    "sourcePdf": "837751091-10th-Class-Physics-Practical-Book-1.pdf",
+    "sourceSha256": "54edcba64137eab28f6500bcd862088abd0f6dd4220496a465b6e53857c5ad39",
+    "database": "Vuforia/AR_class_10.xml",
+    "calibration": "The source XML declares 10/15/18-metre widths. Scene overrides provisionally use 0.10/0.15/0.18 metres for book diagrams. Measure the actual printed target crop before hardware calibration; resized prints and screen images need their own width.",
+    "experiments": [
+        {
+            "Number": 1,
+            "TargetName": "glass_slab_refraction_no_watermark",
+            "Title": "Refraction through a glass slab",
+            "PdfPage": 9,
+            "PrintedPage": 2,
+            "WidthMeters": 0.10000000149011612,
+            "Steps": [
+                "Trace the glass slab and draw an incident ray",
+                "Place two pins along the incident ray",
+                "Align two emergent pins; trace the refracted ray",
+                "Measure i and r; compare sin i / sin r"
+            ]
+        },
+        {
+            "Number": 2,
+            "TargetName": "referencematerial_14",
+            "Title": "Refractive index of water with a concave mirror",
+            "PdfPage": 11,
+            "PrintedPage": 4,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Place the concave mirror horizontally",
+                "Adjust the needle until its image has no parallax",
+                "Add water; find the new no-parallax position",
+                "Compare the real and apparent radii of curvature"
+            ]
+        },
+        {
+            "Number": 3,
+            "TargetName": "prism_total_reflection_no_watermark",
+            "Title": "Critical angle of glass",
+            "PdfPage": 14,
+            "PrintedPage": 7,
+            "WidthMeters": 0.10000000149011612,
+            "Steps": [
+                "Trace the prism and mark a normal",
+                "Send a ray into the glass through the first face",
+                "Adjust until the emergent ray grazes the surface",
+                "Measure the critical angle inside the glass"
+            ]
+        },
+        {
+            "Number": 4,
+            "TargetName": "prism_diagram_enhanced",
+            "Title": "Deviation of light through a prism",
+            "PdfPage": 15,
+            "PrintedPage": 8,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Trace the triangular prism and an incident ray",
+                "Align pins with the emergent ray",
+                "Draw the refracted path and measure deviation",
+                "Repeat at different angles; find minimum deviation"
+            ]
+        },
+        {
+            "Number": 5,
+            "TargetName": "referencematerial_16",
+            "Title": "Focal length of a convex lens by parallax",
+            "PdfPage": 17,
+            "PrintedPage": 10,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Place the lens and object pin on a scale",
+                "Move the search pin to the image position",
+                "Remove parallax between the image and search pin",
+                "Measure p and q; calculate f = p q / (p + q)"
+            ]
+        },
+        {
+            "Number": 6,
+            "TargetName": "referencematerial_17",
+            "Title": "Astronomical telescope",
+            "PdfPage": 19,
+            "PrintedPage": 12,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Choose a long-focus objective and short-focus eyepiece",
+                "Align both lenses on a common axis",
+                "Adjust their separation to focus a distant object",
+                "Compare magnification with f objective / f eyepiece"
+            ]
+        },
+        {
+            "Number": 7,
+            "TargetName": "referencematerial_18",
+            "Title": "Compound microscope",
+            "PdfPage": 21,
+            "PrintedPage": 14,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Place a small object on the microscope stage",
+                "Focus the short-focus objective near the object",
+                "Adjust the eyepiece to view the intermediate image",
+                "Observe the enlarged final image"
+            ]
+        },
+        {
+            "Number": 8,
+            "TargetName": "referencematerial_19",
+            "Title": "Verify Ohm's law",
+            "PdfPage": 23,
+            "PrintedPage": 16,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Connect the ammeter in series with the resistance",
+                "Connect the voltmeter across the resistance",
+                "Close the key; vary current with the rheostat",
+                "Record V and I; check that V / I stays constant"
+            ]
+        },
+        {
+            "Number": 9,
+            "TargetName": "referencematerial_20",
+            "Title": "Resistors in series",
+            "PdfPage": 26,
+            "PrintedPage": 19,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Connect the two resistors in one series path",
+                "Place the ammeter in series and voltmeter across both",
+                "Close the key and record voltage and current",
+                "Compare V / I with R1 + R2"
+            ]
+        },
+        {
+            "Number": 10,
+            "TargetName": "parallel_circuit_no_watermark",
+            "Title": "Resistors in parallel",
+            "PdfPage": 28,
+            "PrintedPage": 21,
+            "WidthMeters": 0.15000000596046448,
+            "Steps": [
+                "Connect the resistors across the same two nodes",
+                "Apply the same voltage to all branches",
+                "Observe current splitting between the branches",
+                "Check 1 / R = 1 / R1 + 1 / R2 + 1 / R3"
+            ]
+        },
+        {
+            "Number": 11,
+            "TargetName": "referencematerial_22",
+            "Title": "Galvanometer resistance by half deflection",
+            "PdfPage": 30,
+            "PrintedPage": 23,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Connect a high series resistance and galvanometer",
+                "Close the main key and note the deflection",
+                "Close the shunt key; adjust for half deflection",
+                "Use the series and shunt resistances to calculate G"
+            ]
+        },
+        {
+            "Number": 12,
+            "TargetName": "referencematerial_24",
+            "Title": "Magnetic field of a bar magnet",
+            "PdfPage": 33,
+            "PrintedPage": 26,
+            "WidthMeters": 0.18000000715255737,
+            "Steps": [
+                "Place a bar magnet on a sheet of paper",
+                "Place the plotting compass near its north pole",
+                "Mark successive compass directions around the magnet",
+                "Trace field lines from north to south outside the magnet"
+            ]
+        }
+    ]
+}

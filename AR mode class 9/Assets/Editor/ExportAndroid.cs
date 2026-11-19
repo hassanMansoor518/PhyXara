@@ -15,7 +15,7 @@ using UnityEngine;
 /// </summary>
 public static class ExportAndroid
 {
-    const string Scene = "Assets/Scenes/PhyXaraMain.unity";
+    const string Scene = MobileARSetup.ScenePath;
     const string OutputRelative = "Builds/android";
 
     [MenuItem("PhyXara/Export Android (release)")]
@@ -41,9 +41,10 @@ public static class ExportAndroid
 
     static bool Run(bool development)
     {
+        MobileARSetup.Build();
         if (!File.Exists(Scene))
         {
-            Debug.LogError("[ExportAndroid] Missing " + Scene + ". Run PhyXara > Setup Scene And Assets first.");
+            Debug.LogError("[ExportAndroid] Missing " + Scene + ". Run PhyXara > Prepare Mobile AR Scene first.");
             return false;
         }
 
@@ -54,8 +55,14 @@ public static class ExportAndroid
 
         var android = NamedBuildTarget.Android;
         PlayerSettings.SetScriptingBackend(android, ScriptingImplementation.IL2CPP);
+        PlayerSettings.stripEngineCode = true;
+        PlayerSettings.SetManagedStrippingLevel(android, ManagedStrippingLevel.Low);
+        PlayerSettings.SetStackTraceLogType(LogType.Log, development ? StackTraceLogType.ScriptOnly : StackTraceLogType.None);
         PlayerSettings.Android.targetArchitectures = AndroidArchitecture.ARM64;
-        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel26; // keep >= RN/Expo minSdk, see Mobile/README-unity.md
+        PlayerSettings.Android.applicationEntry = AndroidApplicationEntry.Activity;
+        PlayerSettings.Android.minSdkVersion = AndroidSdkVersions.AndroidApiLevel29;
+        PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.Android, false);
+        PlayerSettings.SetGraphicsAPIs(BuildTarget.Android, new[] { UnityEngine.Rendering.GraphicsDeviceType.OpenGLES3 });
         PlayerSettings.SetIl2CppCompilerConfiguration(android, development ? Il2CppCompilerConfiguration.Debug : Il2CppCompilerConfiguration.Release);
         EditorUserBuildSettings.exportAsGoogleAndroidProject = true;
         EditorUserBuildSettings.buildAppBundle = false;
@@ -72,10 +79,20 @@ public static class ExportAndroid
 
         // ARCore's build step fails on an image library with zero images. Until the real page image is added,
         // park the empty library outside the AssetDatabase for the build (RNBridge reports "no_reference_image" in AR mode).
+        var xr = UnityEditor.XR.Management.XRGeneralSettingsPerBuildTarget.XRGeneralSettingsForBuildTarget(BuildTargetGroup.Android);
+        bool autoStartXR = xr != null && xr.InitManagerOnStart;
         var parked = ParkEmptyLibrary();
         BuildReport report;
-        try { report = BuildPipeline.BuildPlayer(options); }
-        finally { if (parked) UnparkLibrary(); }
+        try
+        {
+            if (xr != null) xr.InitManagerOnStart = false;
+            report = BuildPipeline.BuildPlayer(options);
+        }
+        finally
+        {
+            if (xr != null) xr.InitManagerOnStart = autoStartXR;
+            if (parked) UnparkLibrary();
+        }
         var summary = report.summary;
         Debug.Log("[ExportAndroid] result=" + summary.result + " errors=" + summary.totalErrors + " warnings=" + summary.totalWarnings + " out=" + outDir);
         return summary.result == BuildResult.Succeeded;

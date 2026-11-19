@@ -15,7 +15,13 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import Svg, { Defs, LinearGradient, Rect, Stop } from 'react-native-svg';
 import { AtomSplashVisual } from '../components/illustrations/AtomSplashVisual';
 
-export const SplashScreen: React.FC = () => {
+interface SplashScreenProps {
+  /** Go to onboarding after the animation. Off while the root layout shows this as a loading state
+   *  (the navigator is not mounted yet, so router.replace would throw). */
+  autoNavigate?: boolean;
+}
+
+export const SplashScreen: React.FC<SplashScreenProps> = ({ autoNavigate = true }) => {
   const { width, height } = useWindowDimensions();
 
   // Visual size — nicely centered
@@ -60,6 +66,8 @@ export const SplashScreen: React.FC = () => {
         false
       )
     );
+
+    if (!autoNavigate) return;
 
     // Auto-navigate after 2.2 seconds
     const timer = setTimeout(() => {

@@ -12,37 +12,20 @@ import {
   Trophy,
   Zap,
 } from 'lucide-react-native';
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { SINDH_PHYSICS_CHAPTERS } from '../data/physicsTopics';
-import { Achievement, progressService, UserStats } from '../services/progressService';
+import { emptyStats, Progress, useLearningData } from '../services/learningService';
 
 export const ProgressScreen: React.FC = () => {
-  const [stats, setStats] = useState<UserStats>({
-    xp: 120,
-    streak: 7,
-    questionsAnswered: 18,
-    quizzesCompleted: 4,
-    chaptersCompleted: 2,
-    modelsExplored: 6,
-    overallProgress: 72,
-  });
-  const [achievements, setAchievements] = useState<Achievement[]>([]);
+  const { data, failed, retry } = useLearningData<Progress>('/progress');
+  const stats = data?.stats ?? emptyStats;
+  const achievements = data?.achievements ?? [];
   const [activeTab, setActiveTab] = useState<'overview' | 'achievements'>('overview');
 
-  useEffect(() => {
-    loadData();
-  }, []);
-
-  const loadData = async () => {
-    const s = await progressService.getStats();
-    const a = await progressService.getAchievements();
-    setStats(s);
-    setAchievements(a);
-  };
 
   const getAchievementIcon = (iconName: string, unlocked: boolean) => {
     const color = unlocked ? '#2563EB' : '#94A3B8';
@@ -137,7 +120,7 @@ export const ProgressScreen: React.FC = () => {
               </View>
 
               <Text className="text-xs text-[#64748B] leading-relaxed">
-                You've completed 2 chapters and 18 interactive questions. Keep going to reach Level 5!
+                Completed chapters: {stats.chaptersCompleted} • Questions answered: {stats.questionsAnswered}
               </Text>
             </View>
 
@@ -214,14 +197,14 @@ export const ProgressScreen: React.FC = () => {
                           {chapter.title}
                         </Text>
                       </View>
-                      <Text className="text-xs font-extrabold text-[#2563EB]">{chapter.progress}%</Text>
+                      <Text className="text-xs font-extrabold text-[#2563EB]">{(data?.completedTopicIds.includes(chapter.id) ? 100 : 0)}%</Text>
                     </View>
 
                     {/* Progress Bar */}
                     <View className="h-1.5 bg-[#EFF6FF] rounded-full overflow-hidden w-full">
                       <View
                         className="h-full bg-[#2563EB] rounded-full"
-                        style={{ width: `${chapter.progress}%` }}
+                        style={{ width: `${(data?.completedTopicIds.includes(chapter.id) ? 100 : 0)}%` }}
                       />
                     </View>
                   </Pressable>
@@ -302,6 +285,7 @@ export const ProgressScreen: React.FC = () => {
       </ScrollView>
 
       {/* Bottom Navigation */}
+      {failed && <Text onPress={retry}>Progress unavailable. Tap to retry.</Text>}
       <BottomTabBar activeTab="progress" />
     </SafeAreaView>
   );

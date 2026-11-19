@@ -48,3 +48,41 @@ Join our community of developers creating universal apps.
 
 - [Expo on GitHub](https://github.com/expo/expo): View our open source platform and contribute.
 - [Discord community](https://chat.expo.dev): Chat with Expo users and ask questions.
+
+## Learning backend
+
+Use Node 24 and a PostgreSQL database. Copy the learning API settings from
+`.env.example` into `.env`. Set `DATABASE_URL` to the database connection
+string and `CLERK_ISSUER` to the HTTPS issuer for the same Clerk instance as
+the app's publishable key. The API initializes its tables and seeds the
+catalog on its first database request. The database role needs permission
+to create those tables.
+
+From this directory, run `npm run server` and `npm start` in separate terminals.
+Check `/api/v1/health` for database readiness. On a physical device, use the
+computer's LAN IP in `EXPO_PUBLIC_LEARNING_API_URL` and restart Expo after
+editing the environment. For a hosted app, use the API's HTTPS origin and
+configure database backups with the database provider.
+
+Learning activity queues locally by Clerk account and retries when a
+learning screen gains focus. Previous device-only totals were unowned and
+included demo values, so they are excluded from cloud progress. The reminder
+setting saves a preference for the account.
+
+Chapter completion and bookmarks are saved on the device per account. Chapter
+completion also syncs to the backend when it is reachable. The server can
+infer its Clerk issuer from the publishable key when CLERK_ISSUER is omitted.
+
+The Class 9 practical catalog is available at /api/v1/practicals. Each
+practical has detail, quiz, and model routes. Signed-in clients use
+/api/v1/practicals/:number/state and /events for progress, bookmarks, and
+server-scored quiz attempts. The learning database initialization creates
+the practical_events table. The device stores pending events while offline.
+
+Camera AR uses the existing Unity development build and is available for
+the registered Vernier and micrometer models on supported devices. All
+16 practicals include an interactive in-app 3D apparatus view.
+
+Set EXPO_PUBLIC_PRACTICAL_MANUAL_URL to a hosted copy of the manual to
+enable PDF page links in the app. The book's page references are visible
+without this setting.

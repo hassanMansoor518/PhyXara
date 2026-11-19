@@ -16,6 +16,7 @@ public sealed class MomentsAnimation : MonoBehaviour
     Quaternion pivotRest;
     float weightX, endX, labelX, tiltDirection;
     float elapsed, zoom = 1f, pinchDistance;
+    bool playing;
     int firstTouch, secondTouch;
 
     readonly struct Reveal
@@ -73,6 +74,7 @@ public sealed class MomentsAnimation : MonoBehaviour
     void OnDisable()
     {
         EnhancedTouchSupport.Disable();
+        playing = false;
         elapsed = 0f;
         pinchDistance = 0f;
     }
@@ -86,11 +88,18 @@ public sealed class MomentsAnimation : MonoBehaviour
             return;
         }
 
-        Pose(elapsed);
-        elapsed = Mathf.Repeat(elapsed + Time.deltaTime, 6f);
+        if (playing)
+        {
+            elapsed = Mathf.Min(elapsed + Time.deltaTime * .5f, 6f);
+            Pose(elapsed);
+            if (elapsed >= 6f) playing = false;
+        }
         ReadZoom();
         model.localScale = modelScale * zoom;
     }
+
+    public void PlayAnimation() { elapsed = 0; playing = true; }
+    public void StopAnimation() { playing = false; elapsed = 0; if (reveals != null) Pose(6); }
 
     void Pose(float seconds)
     {
