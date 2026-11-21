@@ -40,6 +40,12 @@ public static class Class10Setup
         Directory.CreateDirectory(Folder);
         Directory.CreateDirectory("Library/BeforeClass10");
         AssetDatabase.Refresh();
+        var normalPath = Folder + "/Surface Textures/Cast instrument normal.png";
+        if (AssetImporter.GetAtPath(normalPath) is TextureImporter normal && normal.textureType != TextureImporterType.NormalMap)
+        {
+            normal.textureType = TextureImporterType.NormalMap;
+            normal.SaveAndReimport();
+        }
         materials.Clear();
         var font = AssetDatabase.LoadAssetAtPath<TMP_FontAsset>("Assets/TextMesh Pro/Resources/Fonts & Materials/LiberationSans SDF.asset");
         if (!font) throw new InvalidOperationException("The existing label font is missing.");
@@ -58,31 +64,36 @@ public static class Class10Setup
                 var manager = Components<ReferenceImageExperiments>(scene).Single();
                 var data = new SerializedObject(manager);
                 var entries = data.FindProperty("experiments");
-                for (int i = entries.arraySize - 1; i >= 0; i--)
+                var existingEntries = new Dictionary<int, int>();
+                for (int i = 0; i < entries.arraySize; i++)
                 {
                     var entry = entries.GetArrayElementAtIndex(i);
                     int number = entry.FindPropertyRelative("Number").intValue;
-                    if (number >= 101 && number <= 112) entries.DeleteArrayElementAtIndex(i);
+                    if (number >= 101 && number <= 112) existingEntries.Add(number, i);
                 }
-                data.ApplyModifiedPropertiesWithoutUndo();
-                foreach (var target in targets.Where(t => Class10Book.IsTarget(t.TargetName)))
-                    UnityEngine.Object.DestroyImmediate(target.gameObject);
-                var oldGroup = scene.GetRootGameObjects().SingleOrDefault(g => g.name == "Class 10 Book");
-                if (oldGroup)
-                {
-                    if (oldGroup.transform.childCount != 0)
-                        throw new InvalidOperationException("Class 10 Book contains unrecognized objects; preserve them before rebuilding.");
-                    UnityEngine.Object.DestroyImmediate(oldGroup);
-                }
-                var group = new GameObject("Class 10 Book").transform;
-                int offset = entries.arraySize;
-                entries.arraySize += Class10Book.Entries.Length;
+                var group = scene.GetRootGameObjects().SingleOrDefault(g => g.name == "Class 10 Book") ?? new GameObject("Class 10 Book");
                 foreach (var book in Class10Book.Entries)
                 {
-                    var targetObject = new GameObject("Class 10 - " + book.Title + " Image Target");
-                    targetObject.transform.SetParent(group, false);
-                    targetObject.transform.localPosition = new Vector3((book.Number - 1) % 4 * .30f, 0, 1 + (book.Number - 1) / 4 * .30f);
-                    var target = targetObject.AddComponent<ImageTargetBehaviour>();
+                    var target = targets.SingleOrDefault(t => t.TargetName == book.TargetName);
+                    if (!target)
+                    {
+                        var targetObject = new GameObject("Class 10 - " + book.Title + " Image Target");
+                        targetObject.transform.SetParent(group.transform, false);
+                        targetObject.transform.localPosition = new Vector3((book.Number - 1) % 4 * .30f, 0, 1 + (book.Number - 1) / 4 * .30f);
+                        target = targetObject.AddComponent<ImageTargetBehaviour>();
+                    }
+                    // Mobile targets start inactive, but the mesh and animation bakers need active children.
+                    target.gameObject.SetActive(true);
+                    int number = 100 + book.Number;
+                    if (!existingEntries.TryGetValue(number, out int index))
+                    {
+                        index = entries.arraySize;
+                        entries.arraySize++;
+                    }
+                    var entry = entries.GetArrayElementAtIndex(index);
+                    var previous = existingEntries.ContainsKey(number) ? entry.FindPropertyRelative("Model").objectReferenceValue as Animation : null;
+                    if (previous && previous.GetComponentInParent<ImageTargetBehaviour>(true) != target)
+                        throw new InvalidOperationException("The existing model belongs to another target: " + book.Title);
                     var targetData = new SerializedObject(target);
                     var image = database.Descendants("ImageTarget").Single(e => (string)e.Attribute("name") == book.TargetName);
                     var size = ((string)image.Attribute("size")).Split(' ').Select(v => float.Parse(v, System.Globalization.CultureInfo.InvariantCulture)).ToArray();
@@ -119,7 +130,7 @@ public static class Class10Setup
                     player.playAutomatically = false;
                     player.cullingType = AnimationCullingType.AlwaysAnimate;
                     var tap = model.AddComponent<ExperimentTapAnimation>();
-                    tap.referenceNumber = 100 + book.Number;
+                    tap.referenceNumber = number;
                     tap.animationPlayer = player;
                     tap.duration = 12;
                     tap.procedureSteps = book.Steps;
@@ -129,11 +140,11 @@ public static class Class10Setup
                     hitArea.center = bounds.center;
                     hitArea.size = Vector3.Max(bounds.size, Vector3.one);
                     AddLabels(model.transform, book.Title, tap, apparatus, bounds, font);
-                    model.SetActive(false);
-                    var entry = entries.GetArrayElementAtIndex(offset + book.Number - 1);
-                    entry.FindPropertyRelative("Number").intValue = 100 + book.Number;
+                    model.SetActive(path == SourceScene);
+                    entry.FindPropertyRelative("Number").intValue = number;
                     entry.FindPropertyRelative("Target").objectReferenceValue = target;
                     entry.FindPropertyRelative("Model").objectReferenceValue = player;
+                    if (previous) UnityEngine.Object.DestroyImmediate(previous.gameObject);
                 }
                 data.ApplyModifiedPropertiesWithoutUndo();
                 if (Components<ImageTargetBehaviour>(scene).Length != 25)
@@ -167,7 +178,6 @@ public static class Class10Setup
         if (!material)
         {
             material = new Material(Shader.Find("Universal Render Pipeline/Lit")) { color = color };
-            material.SetFloat("_Smoothness", color.a < 255 ? .8f : .4f);
             if (color.a < 255)
             {
                 material.SetFloat("_Surface", 1);
@@ -175,12 +185,43 @@ public static class Class10Setup
                 material.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
                 material.SetFloat("_ZWrite", 0);
                 material.EnableKeyword("_SURFACE_TYPE_TRANSPARENT");
+                material.SetOverrideTag("RenderType", "Transparent");
                 material.renderQueue = (int)RenderQueue.Transparent;
             }
             AssetDatabase.CreateAsset(material, path);
         }
+        bool metal = color.Equals(Class10ExperimentModel.Steel) || color.Equals(Class10ExperimentModel.Brass);
+        bool wood = color.Equals(Class10ExperimentModel.Wood);
+        bool cast = color.Equals(Class10ExperimentModel.Dark) || color.Equals(Class10ExperimentModel.Enamel);
+        bool paper = color.Equals(Class10ExperimentModel.White);
+        material.SetFloat("_Metallic", metal ? .62f : 0);
+        material.SetFloat("_Smoothness", color.a < 255 ? .82f : metal ? .61f : wood || paper ? .24f : .38f);
+        if (wood)
+        {
+            material.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Experiments/Models/WoodGrain.png"));
+            material.color = Color.white;
+        }
+        else if (metal || cast || paper)
+        {
+            string finish = metal ? "Brushed alloy" : cast ? "Cast instrument finish" : "Paper fibre";
+            material.SetTexture("_BaseMap", SurfaceMap(finish));
+        }
+        if (cast)
+        {
+            material.SetTexture("_BumpMap", SurfaceMap("Cast instrument normal"));
+            material.SetFloat("_BumpScale", .35f);
+            material.EnableKeyword("_NORMALMAP");
+        }
+        EditorUtility.SetDirty(material);
         materials.Add(color, material);
         return material;
+    }
+
+    static Texture2D SurfaceMap(string finish)
+    {
+        var texture = AssetDatabase.LoadAssetAtPath<Texture2D>($"{Folder}/Surface Textures/{finish}.png");
+        if (!texture) throw new InvalidOperationException("Missing Class 10 surface texture: " + finish);
+        return texture;
     }
 
     static void SaveMeshes(Transform model, int number)
@@ -259,6 +300,8 @@ public static class Class10Setup
             line.sharedMaterial = MaterialFor(new Color32(36, 49, 66, 255));
             line.SetPosition(0, label.transform.position);
             line.SetPosition(1, tap.labelledParts[i].position);
+            label.gameObject.SetActive(false);
+            line.gameObject.SetActive(false);
             tap.leaderLines[i] = line;
         }
         tap.UpdateLabels(ExperimentTapAnimation.ActiveCamera());

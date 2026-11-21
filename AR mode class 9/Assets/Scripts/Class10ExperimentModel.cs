@@ -5,14 +5,16 @@ using UnityEngine;
 // Apparatus dimensions use millimetres; the scene scales them to metres.
 public sealed partial class Class10ExperimentModel
 {
-    static readonly Color32 Steel = new Color32(177, 193, 210, 255);
-    static readonly Color32 Dark = new Color32(36, 49, 66, 255);
-    static readonly Color32 Wood = new Color32(172, 104, 62, 255);
-    static readonly Color32 Brass = new Color32(228, 174, 73, 255);
+    public static readonly Color32 Steel = new Color32(177, 193, 210, 255);
+    public static readonly Color32 Dark = new Color32(34, 48, 56, 255);
+    public static readonly Color32 Wood = new Color32(172, 104, 62, 255);
+    public static readonly Color32 Brass = new Color32(228, 174, 73, 255);
     static readonly Color32 Blue = new Color32(42, 127, 205, 255);
     static readonly Color32 Glass = new Color32(130, 217, 237, 110);
+    static readonly Color32 GlassEdge = new Color32(106, 185, 179, 190);
+    public static readonly Color32 Enamel = new Color32(224, 229, 218, 255);
     static readonly Color32 Red = new Color32(226, 67, 57, 255);
-    static readonly Color32 White = new Color32(235, 241, 245, 255);
+    public static readonly Color32 White = new Color32(235, 241, 245, 255);
     static readonly Color32 Green = new Color32(53, 157, 121, 255);
     static readonly Color32 Yellow = new Color32(246, 180, 39, 255);
     static readonly Color32 Wire = new Color32(39, 48, 61, 255);
@@ -83,6 +85,40 @@ public sealed partial class Class10ExperimentModel
 
     Transform Sphere(Transform parent, string name, Vector3 position, Vector3 size, Color32 color) =>
         Shape(parent, name, PrimitiveType.Sphere, position, size, color);
+
+    void Screw(Transform parent, Vector3 position, float diameter = 2.5f, bool front = false)
+    {
+        var screw = Group(parent, "Slotted screw", position);
+        if (front) screw.localRotation = Quaternion.Euler(-90, 0, 0);
+        Cylinder(screw, "Steel head", Vector3.zero, diameter, .65f, Steel);
+        Box(screw, "Driver slot", Vector3.up * .34f, new Vector3(diameter * .73f, .14f, .38f), Dark);
+    }
+
+    void Feet(Transform parent, float halfWidth, float halfDepth, float y = .8f)
+    {
+        foreach (int x in new[] { -1, 1 })
+        foreach (int z in new[] { -1, 1 })
+            Cylinder(parent, "Rubber foot", new Vector3(x * halfWidth, y, z * halfDepth), 6, 1.6f, Dark);
+    }
+
+    void MillimetreScale(Transform parent, Vector3 zero, int length, int majorStep)
+    {
+        var scale = Group(parent, "Measurement Scale", zero);
+        Box(scale, "Ruler datum", new Vector3(length * .5f, 0, 0), new Vector3(length, .12f, .25f), Dark);
+        for (int mm = 0; mm <= length; mm += 5)
+        {
+            bool major = mm % majorStep == 0;
+            float depth = major ? 2.9f : 1.6f;
+            Box(scale, "Ruler tick", new Vector3(mm, 0, depth / 2), new Vector3(major ? .40f : .24f, .13f, depth), Dark);
+            if (major) PlateText(scale, mm.ToString(), new Vector3(mm, .13f, -2), 14);
+        }
+        PlateText(scale, "mm", new Vector3(length + 7, .13f, -2), 13);
+    }
+
+    void PlateText(Transform plate, string value, Vector3 position, float size)
+    {
+        EText(plate, value, position, size).localRotation = Quaternion.Euler(90, 0, 0);
+    }
 
     Transform Rod(Transform parent, string name, Vector3 start, Vector3 end, float diameter, Color32 color)
     {

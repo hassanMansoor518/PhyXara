@@ -55,6 +55,7 @@ public static class Class10Review
                         Check(filter.sharedMesh && !string.IsNullOrEmpty(AssetDatabase.GetAssetPath(filter.sharedMesh)) &&
                             filter.GetComponent<Renderer>().sharedMaterials.All(m => m && m.shader),
                             "Unsaved geometry or missing material: " + filter.name);
+                    ValidateFinishesAndScales(tap, book.Number);
                     var player = tap.animationPlayer;
                     Check(player && player.clip && !player.playAutomatically && Mathf.Abs(player.clip.length - 12) < .05f,
                         "Missing single-run Class 10 procedure animation");
@@ -99,7 +100,7 @@ public static class Class10Review
         finally { if (setup.Length > 0) EditorSceneManager.RestoreSceneManagerSetup(setup); }
         Check(verified == 24, "Expected twelve Class 10 models in both scenes");
         Directory.CreateDirectory("../docs/class-10");
-        string result = "PASS: 12 Class 10 book targets and animated, labelled apparatus in both scenes; all 13 Class 9 targets preserved; 25 mobile observers; metre scene widths, saved meshes/materials, valid 12-second timelines, Snell/reflection laws, parallel telescope rays, galvanometer half deflection, one collider per new apparatus. Printed-width calibration and physical-device tracking remain unverified.";
+        string result = "PASS: 12 Class 10 book targets and animated, labelled apparatus in both scenes; all 13 Class 9 targets preserved; 25 mobile observers; metre scene widths, textured geometry with UVs, numbered measurement scales, valid 12-second timelines, Snell/reflection laws, parallel telescope rays, galvanometer half deflection, one collider per new apparatus. Printed-width calibration and physical-device tracking remain unverified.";
         File.WriteAllText("../docs/class-10/validation-results.txt", result);
         Debug.Log("CLASS10_VALIDATION_OK: " + result);
     }
@@ -174,6 +175,32 @@ public static class Class10Review
 
     static T[] Components<T>(Scene scene) where T : Component =>
         scene.GetRootGameObjects().SelectMany(r => r.GetComponentsInChildren<T>(true)).ToArray();
+
+    static void ValidateFinishesAndScales(ExperimentTapAnimation model, int number)
+    {
+        var textured = model.GetComponentsInChildren<MeshFilter>(true).Where(f => !f.GetComponent<TMP_Text>())
+            .Where(f => AssetDatabase.GetAssetPath(f.GetComponent<Renderer>().sharedMaterial.GetTexture("_BaseMap"))
+                .Contains("/Surface Textures/")).ToArray();
+        Check(textured.Length > 0 && textured.All(f => f.sharedMesh.HasVertexAttribute(UnityEngine.Rendering.VertexAttribute.TexCoord0)),
+            "Missing finish or texture coordinates: " + model.name);
+        var parts = model.GetComponentsInChildren<Transform>(true);
+        if (number >= 8 && number <= 11)
+        {
+            var meters = parts.Where(p => p.name == "Meter Scale").ToArray();
+            Check(meters.Length == (number == 11 ? 1 : 2) && meters.All(m => m.GetComponentsInChildren<TMP_Text>(true).Length >= 5 && m.childCount >= 30),
+                "Missing major labels or minor graduations: " + model.name);
+            return;
+        }
+        var ruler = parts.Single(p => p.name == "Measurement Scale");
+        var labels = ruler.GetComponentsInChildren<TMP_Text>(true).Select(t => t.text).ToArray();
+        Check(labels.Length >= 6 && labels.Contains("0") && labels.Contains("mm"), "Missing millimetre scale: " + model.name);
+        if (number == 1 || number == 3 || number == 4)
+            Check(parts.Single(p => p.name == "Protractor Scale").GetComponentsInChildren<TMP_Text>(true).Any(t => t.text == "45°"),
+                "Missing degree markings: " + model.name);
+        if (number == 12)
+            Check(parts.Single(p => p.name == "Compass Scale").GetComponentsInChildren<TMP_Text>(true).Length == 4,
+                "Missing compass headings");
+    }
 
     static void ValidatePhysics(ExperimentTapAnimation tap, int number)
     {

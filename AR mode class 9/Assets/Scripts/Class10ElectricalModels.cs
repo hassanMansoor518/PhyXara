@@ -10,8 +10,8 @@ public sealed partial class Class10ExperimentModel
         var source = ESource(new Vector3(-55, 0, 35));
         var key = EKey("Main key", new Vector3(-9, 0, 36));
         var rheostat = ERheostat("Rheostat", new Vector3(46, 0, 35));
-        var ammeter = EMeter("Ammeter", new Vector3(-47, 0, -36), "A");
-        var voltmeter = EMeter("Voltmeter", new Vector3(44, 0, -36), "V");
+        var ammeter = EMeter("Ammeter", new Vector3(-47, 0, -36), "A", .5f);
+        var voltmeter = EMeter("Voltmeter", new Vector3(44, 0, -36), "V", 3);
         var wire = Group(root, "Test wire", new Vector3(0, 0, -2));
         Box(wire, "Wire support", new Vector3(0, 4, 0), new Vector3(43, 3, 12), White);
         EPost(wire, new Vector3(-17, 7, 0), Red);
@@ -52,8 +52,8 @@ public sealed partial class Class10ExperimentModel
         var source = ESource(new Vector3(-55, 0, 35));
         var key = EKey("Main key", new Vector3(-9, 0, 36));
         var rheostat = ERheostat("Rheostat", new Vector3(46, 0, 35));
-        var ammeter = EMeter("Ammeter", new Vector3(-47, 0, -36), "A");
-        var voltmeter = EMeter("Voltmeter", new Vector3(44, 0, -36), "V");
+        var ammeter = EMeter("Ammeter", new Vector3(-47, 0, -36), "A", .5f);
+        var voltmeter = EMeter("Voltmeter", new Vector3(44, 0, -36), "V", 3);
         var first = EResistor("R1", new Vector3(-18, 8, -1), 2);
         var second = EResistor("R2", new Vector3(18, 8, -1), 4);
         var left = new Vector3(-33, 8, -1);
@@ -87,8 +87,8 @@ public sealed partial class Class10ExperimentModel
         EBench();
         var source = ESource(new Vector3(49, 0, 45));
         var key = EKey("Main key", new Vector3(-40, 0, 46));
-        var ammeter = EMeter("Total-current ammeter", new Vector3(-65, 0, 2), "A");
-        var voltmeter = EMeter("Common-voltage voltmeter", new Vector3(0, 0, -45), "V");
+        var ammeter = EMeter("Total-current ammeter", new Vector3(-65, 0, 2), "A", 3);
+        var voltmeter = EMeter("Common-voltage voltmeter", new Vector3(0, 0, -45), "V", 3);
         var resistors = new Transform[3];
         var flows = new Transform[3];
         var branchPaths = new Vector3[3][];
@@ -133,9 +133,15 @@ public sealed partial class Class10ExperimentModel
         var shuntKey = EKey("Shunt key K2", new Vector3(48, 0, -44));
         var resistance = Group(root, "Series resistance R", new Vector3(47, 0, 35));
         Box(resistance, "Resistance box", new Vector3(0, 8, 0), new Vector3(36, 12, 22), Wood);
-        for (int i = 0; i < 3; i++) Cylinder(resistance, "Resistance plug " + i, new Vector3(-10 + i * 10, 16, 0), 5, 4, Brass);
+        Box(resistance, "Ebonite panel", new Vector3(0, 14.35f, 0), new Vector3(34, .7f, 20), Wire);
+        for (int i = 0; i < 3; i++)
+        {
+            var plug = Group(resistance, "Resistance plug " + i, new Vector3(-10 + i * 10, 17, 0));
+            Cylinder(plug, "Brass socket", Vector3.down * 1.6f, 6, 1.1f, Brass);
+            Cylinder(plug, "Insulated grip", Vector3.up * 1.6f, 4.8f, 3.3f, Dark);
+        }
         EPost(resistance, new Vector3(-21, 5, 0), Red); EPost(resistance, new Vector3(21, 5, 0), Dark);
-        var galvanometer = EMeter("Galvanometer G", new Vector3(0, 0, -9), "G");
+        var galvanometer = EMeter("Galvanometer G", new Vector3(0, 0, -9), "G", 40);
         var shunt = ERheostat("Adjustable shunt S", new Vector3(0, 0, -44));
         ELead("Source to K1", Red, source.positive, new Vector3(-49, 7, 24), new Vector3(-16, 7, 24), mainKey.left);
         ELead("K1 to series resistance", Red, mainKey.right, new Vector3(26, 5, 35));
@@ -163,9 +169,11 @@ public sealed partial class Class10ExperimentModel
     Action<float> MagneticField()
     {
         EBench();
+        MillimetreScale(root, new Vector3(-70, 2.49f, -54), 140, 20);
         var magnet = Group(root, "Bar magnet", new Vector3(0, 9, 0));
         var south = Box(magnet, "South pole", new Vector3(-15, 0, 0), new Vector3(30, 12, 18), Blue);
         var north = Box(magnet, "North pole", new Vector3(15, 0, 0), new Vector3(30, 12, 18), Red);
+        Box(magnet, "Magnet center seam", Vector3.zero, new Vector3(.8f, 12.15f, 18.1f), Steel);
         EText(magnet, "S", new Vector3(-17, 6.2f, 0), 45).localRotation = Quaternion.Euler(90, 0, 0);
         EText(magnet, "N", new Vector3(17, 6.2f, 0), 45).localRotation = Quaternion.Euler(90, 0, 0);
         Transform firstLine = null, outerLine = null;
@@ -193,6 +201,16 @@ public sealed partial class Class10ExperimentModel
         var compass = Group(root, "Tracing compass", Vector3.zero);
         Cylinder(compass, "Compass case", Vector3.zero, 15, 3, Brass);
         Cylinder(compass, "Compass dial", Vector3.up * 1.8f, 13, .5f, White);
+        OpticsRing(compass, "Compass bezel", Vector3.up * 2.7f, 6.9f, .55f, Dark).localRotation = Quaternion.Euler(0, 0, 90);
+        var compassScale = Group(compass, "Compass Scale", Vector3.zero);
+        for (int degrees = 0; degrees < 360; degrees += 10)
+        {
+            var heading = Quaternion.Euler(0, degrees, 0);
+            bool cardinal = degrees % 90 == 0;
+            Box(compassScale, "Azimuth graduation", heading * (Vector3.forward * 5.7f) + Vector3.up * 2.08f,
+                new Vector3(cardinal ? .24f : .14f, .08f, cardinal ? 1.1f : .5f), Dark).localRotation = heading;
+            if (cardinal) PlateText(compassScale, "NESW"[degrees / 90].ToString(), heading * (Vector3.forward * 4.1f) + Vector3.up * 2.17f, 10);
+        }
         var needle = Group(compass, "Compass needle", Vector3.up * 2.8f);
         Box(needle, "North seeking end", Vector3.right * 2.8f, new Vector3(6, .8f, 1.4f), Red);
         Box(needle, "South seeking end", Vector3.left * 2.8f, new Vector3(6, .8f, 1.4f), Blue);
@@ -214,8 +232,9 @@ public sealed partial class Class10ExperimentModel
 
     void EBench()
     {
-        Box(root, "Laboratory board", Vector3.up, new Vector3(172, 2, 120), Wood);
-        Box(root, "Insulated bench surface", new Vector3(0, 2.2f, 0), new Vector3(168, .4f, 116), White);
+        Box(root, "Laboratory board", new Vector3(0, 1.1f, 0), new Vector3(172, 1.8f, 120), Wood);
+        Feet(root, 77, 53, 0);
+        Box(root, "Insulated bench surface", new Vector3(0, 2.2f, 0), new Vector3(168, .4f, 116), Enamel);
     }
 
     (Transform body, Vector3 positive, Vector3 negative) ESource(Vector3 position)
@@ -223,7 +242,14 @@ public sealed partial class Class10ExperimentModel
         var body = Group(root, "DC power supply", position);
         Box(body, "Power supply housing", new Vector3(0, 13, 0), new Vector3(32, 24, 24), Dark);
         Box(body, "Power supply face", new Vector3(0, 14, -12.6f), new Vector3(29, 18, 1), Steel);
-        Cylinder(body, "Voltage control", new Vector3(-8, 14, -14), 7, 3, Dark).localRotation = Quaternion.Euler(90, 0, 0);
+        var control = Group(body, "Voltage control", new Vector3(-8, 14, -14));
+        control.localRotation = Quaternion.Euler(-90, 0, 0);
+        Cylinder(control, "Knob", Vector3.zero, 7, 3, Dark);
+        Knurl(control, 3.5f, 1.4f);
+        Box(control, "Setting index", new Vector3(0, 1.55f, 1.4f), new Vector3(.55f, .1f, 2.1f), White);
+        for (int i = -4; i <= 4; i++)
+            Box(body, "Supply ventilation", new Vector3(i * 2.8f, 25.04f, 3), new Vector3(.75f, .1f, 8), Wire);
+        Screw(body, new Vector3(12, 21, -13.2f), 1.8f, true);
         EPost(body, new Vector3(6, 5, -14), Red); EPost(body, new Vector3(13, 5, -14), Dark);
         EText(body, "DC", new Vector3(6, 20, -13.3f), 24);
         return (body, position + new Vector3(6, 5, -14), position + new Vector3(13, 5, -14));
@@ -233,6 +259,8 @@ public sealed partial class Class10ExperimentModel
     {
         var body = Group(root, name, position);
         Box(body, "Key base", new Vector3(0, 4, 0), new Vector3(21, 5, 14), Wood);
+        Box(body, "Key insulator", new Vector3(0, 6.6f, 0), new Vector3(19, .8f, 11), Dark);
+        Screw(body, new Vector3(0, 7.05f, 3), 1.8f);
         EPost(body, new Vector3(-7, 7, 0), Brass); EPost(body, new Vector3(7, 7, 0), Brass);
         var blade = Group(body, "Knife lever", new Vector3(-7, 7, 0));
         Rod(blade, "Conducting blade", Vector3.zero, Vector3.right * 14, 1.4f, Brass);
@@ -244,31 +272,49 @@ public sealed partial class Class10ExperimentModel
     {
         var body = Group(root, name, position);
         Box(body, "Rheostat base", new Vector3(0, 5, 0), new Vector3(49, 5, 17), Dark);
-        Cylinder(body, "Resistance winding", new Vector3(0, 10, 0), 8, 36, Steel).localRotation = Quaternion.Euler(0, 0, 90);
-        for (int i = 0; i < 10; i++) Cylinder(body, "Winding turn " + i, new Vector3(-16 + i * 3.5f, 10, 0), 8.7f, .6f, Wire).localRotation = Quaternion.Euler(0, 0, 90);
+        Cylinder(body, "Ceramic winding core", new Vector3(0, 10, 0), 8, 38, White).localRotation = Quaternion.Euler(0, 0, 90);
+        for (int i = 0; i < 24; i++) Cylinder(body, "Resistance winding", new Vector3(-17.25f + i * 1.5f, 10, 0), 8.5f, .55f, Wire).localRotation = Quaternion.Euler(0, 0, 90);
+        foreach (int side in new[] { -1, 1 })
+            Box(body, "Ceramic end bracket", new Vector3(side * 20, 9, 0), new Vector3(3.4f, 8, 11), Enamel);
         Rod(body, "Slider rail", new Vector3(-23, 16, -3), new Vector3(23, 16, -3), 1.4f, Brass);
         var slider = Group(body, "Slider", Vector3.zero);
         Box(slider, "Slider contact", new Vector3(0, 13, -1.5f), new Vector3(5, 8, 8), Red);
+        Screw(slider, new Vector3(0, 17.05f, -.8f), 2.5f);
         EPost(body, new Vector3(-23, 8, 0), Red); EPost(body, new Vector3(23, 16, -3), Dark);
         return (body, slider, position + new Vector3(-23, 8, 0), position + new Vector3(23, 16, -3));
     }
 
-    (Transform body, Transform needle, Vector3 positive, Vector3 negative) EMeter(string name, Vector3 position, string symbol)
+    (Transform body, Transform needle, Vector3 positive, Vector3 negative) EMeter(string name, Vector3 position, string symbol, float range)
     {
         var body = Group(root, name, position);
         Box(body, "Meter housing", new Vector3(0, 12, 0), new Vector3(31, 23, 12), Dark);
-        Box(body, "White dial", new Vector3(0, 13, -6.6f), new Vector3(27, 19, 1), White);
-        for (int i = 0; i < 9; i++)
+        Box(body, "Inset ivory dial", new Vector3(0, 13, -6.6f), new Vector3(27, 19, 1), White);
+        foreach (int side in new[] { -1, 1 })
         {
-            float angle = Mathf.Lerp(-65, 65, i / 8f) * Mathf.Deg2Rad;
+            Box(body, "Meter bezel", new Vector3(side * 13.2f, 13, -7.55f), new Vector3(1.5f, 19.5f, 1.1f), Steel);
+            Box(body, "Meter bezel", new Vector3(0, 13 + side * 9.7f, -7.55f), new Vector3(27.8f, 1.3f, 1.1f), Steel);
+            Screw(body, new Vector3(side * 13.1f, 21.5f, -8.18f), 1.25f, true);
+        }
+        var scale = Group(body, "Meter Scale", new Vector3(0, 8, -7.32f));
+        int divisions = symbol == "G" ? 40 : range < 1 ? 25 : 30;
+        int majorEvery = symbol == "G" ? 10 : 5;
+        for (int tick = 0; tick <= divisions; tick++)
+        {
+            float fraction = tick / (float)divisions;
+            float angle = Mathf.Lerp(-65, 65, fraction) * Mathf.Deg2Rad;
             var axis = new Vector3(Mathf.Sin(angle), Mathf.Cos(angle), 0);
-            Rod(body, "Scale tick " + i, new Vector3(0, 8, -7.3f) + axis * 10.2f, new Vector3(0, 8, -7.3f) + axis * 12, .5f, Wire);
+            bool major = tick % majorEvery == 0;
+            Rod(scale, "Scale tick", axis * (major ? 10.25f : 11.15f), axis * 12, major ? .25f : .13f, Wire);
+            if (major)
+                EText(scale, (range * fraction).ToString("0.#", System.Globalization.CultureInfo.InvariantCulture), axis * 8.45f, 14);
         }
         var needle = Group(body, "Needle pivot", new Vector3(0, 8, -7.8f));
         Rod(needle, "Needle", Vector3.zero, Vector3.up * 10.5f, .6f, Red);
+        Rod(needle, "Counterweight", Vector3.zero, Vector3.down * 2.1f, .9f, Wire);
         Sphere(needle, "Needle axle", Vector3.zero, Vector3.one * 2, Dark);
         EPost(body, new Vector3(-10, 3, -8), Red); EPost(body, new Vector3(10, 3, -8), Dark);
         EText(body, symbol, new Vector3(0, 5, -8.2f), 28);
+        if (symbol == "G") EText(body, "divisions", new Vector3(0, 3.1f, -7.45f), 10);
         return (body, needle, position + new Vector3(-10, 3, -8), position + new Vector3(10, 3, -8));
     }
 
@@ -287,7 +333,8 @@ public sealed partial class Class10ExperimentModel
     void EPost(Transform parent, Vector3 position, Color32 color)
     {
         Cylinder(parent, "Terminal base " + position, position, 3.3f, 2, Dark);
-        Sphere(parent, "Terminal cap " + position, position + Vector3.up * 1.2f, Vector3.one * 2.8f, color);
+        Cylinder(parent, "Insulated terminal collar", position + Vector3.up * 1.23f, 3.8f, 1.6f, color);
+        Cylinder(parent, "Terminal conductor", position + Vector3.up * 2.12f, 1.85f, .6f, Brass);
     }
 
     Transform EText(Transform parent, string value, Vector3 position, float fontSize)
@@ -305,6 +352,9 @@ public sealed partial class Class10ExperimentModel
     {
         var lead = Group(root, name, Vector3.zero);
         for (int i = 1; i < points.Length; i++) Rod(lead, "Wire segment " + i, points[i - 1], points[i], 1.2f, color);
+        for (int i = 1; i < points.Length - 1; i++) Sphere(lead, "Cable bend", points[i], Vector3.one * 1.2f, color);
+        Rod(lead, "Strain relief", points[0], Vector3.MoveTowards(points[0], points[1], 2.7f), 1.9f, color);
+        Rod(lead, "Strain relief", points[points.Length - 1], Vector3.MoveTowards(points[points.Length - 1], points[points.Length - 2], 2.7f), 1.9f, color);
     }
 
     static void ECloseKey(Transform blade, float closed) => blade.localRotation = Quaternion.Euler(0, 0, 38 * (1 - closed));

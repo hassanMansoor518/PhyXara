@@ -1,17 +1,19 @@
 using System.Collections.Generic;
+using TMPro;
 using UnityEngine;
+using UnityEngine.UI;
 
 public sealed class ExperimentLabelButton : MonoBehaviour
 {
     readonly List<ExperimentTapAnimation> models = new List<ExperimentTapAnimation>();
     ExperimentTapAnimation activeModel;
-    UnityEngine.UI.Button button;
-    UnityEngine.UI.Image background;
-    TMPro.TextMeshProUGUI caption;
+    Button button, reset;
+    TextMeshProUGUI caption;
+    RectTransform toolbar;
+    Sprite surface;
     RectTransform safeAreaRoot;
     Rect lastSafeArea;
     Vector2Int lastScreenSize;
-    bool labelsVisible;
 
     void Awake()
     {
@@ -31,33 +33,16 @@ public sealed class ExperimentLabelButton : MonoBehaviour
 
         safeAreaRoot = new GameObject("Safe Area", typeof(RectTransform)).GetComponent<RectTransform>();
         safeAreaRoot.SetParent(canvas.transform, false);
-        var buttonObject = new GameObject("Label", typeof(RectTransform), typeof(UnityEngine.UI.Image),
-            typeof(UnityEngine.UI.Button));
-        var rect = buttonObject.GetComponent<RectTransform>();
-        rect.SetParent(safeAreaRoot, false);
-        rect.anchorMin = rect.anchorMax = new Vector2(1, 0);
-        rect.pivot = new Vector2(1, 0);
-        rect.sizeDelta = new Vector2(280, 144);
-        rect.anchoredPosition = new Vector2(-40, 40);
-        background = buttonObject.GetComponent<UnityEngine.UI.Image>();
-        background.color = new Color(.06f, .09f, .15f);
-        button = buttonObject.GetComponent<UnityEngine.UI.Button>();
-        button.targetGraphic = background;
-        button.interactable = false;
+        toolbar = new GameObject("Model Actions", typeof(RectTransform)).GetComponent<RectTransform>();
+        toolbar.SetParent(safeAreaRoot, false);
+        toolbar.anchorMin = toolbar.anchorMax = toolbar.pivot = new Vector2(1, 0);
+        toolbar.anchoredPosition = new Vector2(-36, 36);
+        toolbar.sizeDelta = new Vector2(650, 132);
+        surface = RoundedSurface();
+        button = MakeButton("Show labels", 0, out caption);
+        reset = MakeButton("Reset view", -333, out _);
         button.onClick.AddListener(ToggleLabels);
-
-        caption = new GameObject("Caption", typeof(RectTransform), typeof(TMPro.TextMeshProUGUI))
-            .GetComponent<TMPro.TextMeshProUGUI>();
-        caption.rectTransform.SetParent(rect, false);
-        caption.rectTransform.anchorMin = Vector2.zero;
-        caption.rectTransform.anchorMax = Vector2.one;
-        caption.rectTransform.offsetMin = new Vector2(16, 8);
-        caption.rectTransform.offsetMax = new Vector2(-16, -8);
-        caption.text = "Label";
-        caption.fontSize = 48;
-        caption.alignment = TMPro.TextAlignmentOptions.Center;
-        caption.color = Color.white;
-        caption.raycastTarget = false;
+        reset.onClick.AddListener(() => { if (activeModel) activeModel.ResetView(); });
 
         if (!UnityEngine.EventSystems.EventSystem.current)
         {
@@ -67,6 +52,72 @@ public sealed class ExperimentLabelButton : MonoBehaviour
         }
         ApplySafeArea();
         RefreshState();
+    }
+
+    Button MakeButton(string title, float x, out TextMeshProUGUI text)
+    {
+        var control = new GameObject(title, typeof(RectTransform), typeof(Image), typeof(Button)).GetComponent<Button>();
+        var rect = (RectTransform)control.transform;
+        rect.SetParent(toolbar, false);
+        rect.anchorMin = rect.anchorMax = rect.pivot = new Vector2(1, 0);
+        rect.sizeDelta = new Vector2(315, 132);
+        rect.anchoredPosition = new Vector2(x, 0);
+        var image = control.GetComponent<Image>();
+        image.sprite = surface;
+        image.type = Image.Type.Sliced;
+        control.targetGraphic = image;
+        var colors = control.colors;
+        colors.highlightedColor = new Color(.93f, .97f, 1);
+        colors.pressedColor = new Color(.77f, .85f, .91f);
+        control.colors = colors;
+        image.color = new Color32(24, 43, 58, 255);
+        text = new GameObject("Caption", typeof(RectTransform), typeof(TextMeshProUGUI)).GetComponent<TextMeshProUGUI>();
+        text.rectTransform.SetParent(rect, false);
+        text.rectTransform.anchorMin = Vector2.zero;
+        text.rectTransform.anchorMax = Vector2.one;
+        text.rectTransform.offsetMin = new Vector2(16, 8);
+        text.rectTransform.offsetMax = new Vector2(-16, -8);
+        text.text = title;
+        text.fontSize = 42;
+        text.fontStyle = FontStyles.Bold;
+        text.alignment = TextAlignmentOptions.Center;
+        text.color = Color.white;
+        text.raycastTarget = false;
+        return control;
+    }
+
+    static Sprite RoundedSurface()
+    {
+        const int size = 64, radius = 24;
+        var texture = new Texture2D(size, size, TextureFormat.RGBA32, false) { wrapMode = TextureWrapMode.Clamp };
+        var pixels = new Color32[size * size];
+        for (int y = 0; y < size; y++)
+            for (int x = 0; x < size; x++)
+            {
+                float dx = Mathf.Max(0, Mathf.Abs(x + .5f - size / 2f) - (size / 2f - radius));
+                float dy = Mathf.Max(0, Mathf.Abs(y + .5f - size / 2f) - (size / 2f - radius));
+                byte alpha = (byte)(255 * Mathf.Clamp01(radius + .5f - Mathf.Sqrt(dx * dx + dy * dy)));
+                pixels[y * size + x] = new Color32(255, 255, 255, alpha);
+            }
+        texture.SetPixels32(pixels);
+        texture.Apply();
+        return Sprite.Create(texture, new Rect(0, 0, size, size), Vector2.one * .5f, 100, 0,
+            SpriteMeshType.FullRect, Vector4.one * radius);
+    }
+
+    void OnDestroy()
+    {
+        if (!surface) return;
+        if (Application.isPlaying)
+        {
+            Destroy(surface.texture);
+            Destroy(surface);
+        }
+        else
+        {
+            DestroyImmediate(surface.texture);
+            DestroyImmediate(surface);
+        }
     }
 
     void Update()
@@ -83,10 +134,11 @@ public sealed class ExperimentLabelButton : MonoBehaviour
             if (model && model.CanToggleLabels) { activeModel = model; break; }
         bool available = activeModel;
         bool visible = available && activeModel.LabelsVisible;
-        if (button.interactable == available && labelsVisible == visible) return;
         button.interactable = available;
-        labelsVisible = visible;
-        background.color = visible ? new Color(.12f, .32f, .8f) : new Color(.06f, .09f, .15f);
+        toolbar.gameObject.SetActive(available);
+        reset.gameObject.SetActive(available && activeModel.CanRotateView);
+        button.image.color = visible ? new Color32(0, 105, 99, 255) : new Color32(24, 43, 58, 255);
+        caption.text = visible ? "Hide labels" : "Show labels";
     }
 
     void ToggleLabels()

@@ -8,6 +8,11 @@ public sealed partial class Class10ExperimentModel
     {
         OpticsBoard("Refraction drawing board", 160, 112);
         Mark(Box(root, "Rectangular glass slab", new Vector3(0, 14, 0), new Vector3(50, 16, 42), Glass), "Glass slab");
+        foreach (int side in new[] { -1, 1 })
+        {
+            Box(root, "Polished slab rim", new Vector3(side * 24.6f, 21.6f, 0), new Vector3(.8f, .8f, 42), GlassEdge);
+            Box(root, "Polished slab rim", new Vector3(0, 21.6f, side * 20.6f), new Vector3(48.4f, .8f, .8f), GlassEdge);
+        }
         float incidence = 40 * Mathf.Deg2Rad;
         float refraction = Mathf.Asin(Mathf.Sin(incidence) / 1.5f);
         var direction = new Vector3(Mathf.Sin(incidence), 0, Mathf.Cos(incidence));
@@ -15,6 +20,7 @@ public sealed partial class Class10ExperimentModel
         var exit = entry + new Vector3(42 * Mathf.Tan(refraction), 0, 42);
         var start = entry - direction * 36;
         var end = exit + direction * 36;
+        AngleScale(root, new Vector3(entry.x, 5.9f, entry.z), Vector3.back, 21, 60);
         var firstPins = Mark(Group(root, "Incident alignment pins", Vector3.zero), "Incident pins P1 and P2");
         OpticsPin(firstPins, "P1", Vector3.Lerp(start, entry, .2f));
         OpticsPin(firstPins, "P2", Vector3.Lerp(start, entry, .8f));
@@ -40,16 +46,26 @@ public sealed partial class Class10ExperimentModel
 
     Action<float> WaterIndex()
     {
-        Box(root, "Wooden mirror platform", new Vector3(0, 4, 0), new Vector3(108, 8, 78), Wood);
-        var stand = Mark(Rod(root, "Retort stand", new Vector3(-36, 8, 8), new Vector3(-36, 108, 8), 4, Dark), "Needle stand");
+        Box(root, "Wooden mirror platform", new Vector3(0, 4.7f, 0), new Vector3(108, 6.6f, 78), Wood);
+        Feet(root, 45, 31);
+        Cylinder(root, "Retort flange", new Vector3(-36, 9, 8), 17, 2.6f, Dark);
+        Mark(Rod(root, "Retort stand", new Vector3(-36, 8, 8), new Vector3(-36, 108, 8), 4, Steel), "Needle stand");
+        Sphere(root, "Retort end cap", new Vector3(-36, 108, 8), Vector3.one * 4, Dark);
         Cylinder(root, "Mirror backing", new Vector3(0, 8, 0), 52, 3, Dark);
         Mark(OpticsDish(root, "Concave mirror", new Vector3(0, 9, 0), 25, 4), "Concave mirror: pole O");
-        var ruler = Mark(Group(root, "Vertical metre rod", new Vector3(40, 0, 0)), "Metre rod");
-        Box(ruler, "Metre rod face", new Vector3(0, 57, 0), new Vector3(8, 100, 3), White);
-        for (int i = 0; i <= 10; i++)
-            Box(ruler, "Rod graduation", new Vector3(-1, 9 + 9 * i, -1.7f), new Vector3(i % 5 == 0 ? 6 : 3, .65f, .5f), Dark);
+        OpticsRing(root, "Mirror retaining bezel", new Vector3(0, 12.6f, 0), 25.5f, 1.2f, Brass).localRotation = Quaternion.Euler(0, 0, 90);
+        var ruler = Mark(Group(root, "Measurement Scale", new Vector3(40, 0, 0)), "Measuring rod (mm)");
+        Box(ruler, "Measuring rod face", new Vector3(0, 60, 0), new Vector3(12, 108, 3), White);
+        for (int mm = 0; mm <= 100; mm += 5)
+        {
+            bool major = mm % 20 == 0;
+            Box(ruler, "Rod graduation", new Vector3(major ? -3.5f : -4.35f, 9 + mm, -1.6f), new Vector3(major ? 3.8f : 2.1f, .3f, .2f), Dark);
+            if (major) EText(ruler, mm.ToString(), new Vector3(1.65f, 9 + mm, -1.75f), 16);
+        }
+        EText(ruler, "mm", new Vector3(1.65f, 112, -1.75f), 12);
         var needle = Mark(Group(root, "Adjustable parallax needle", new Vector3(-36, 87, 0)), "Parallax needle");
         Box(needle, "Sliding clamp", new Vector3(0, 0, 8), new Vector3(10, 6, 14), Red);
+        Cylinder(needle, "Clamp thumb screw", new Vector3(-5, 0, 8), 6, 4, Brass).localRotation = Quaternion.Euler(0, 0, 90);
         Rod(needle, "Horizontal needle", Vector3.zero, new Vector3(36, 0, 0), 1, Steel);
         var dry = Mark(OpticsDashes(root, "Dry centre reference", new Vector3(-7, 87, -2), new Vector3(10, 87, -2), Dark), "Dry centre C: OC");
         var water = Mark(Cylinder(root, "Thin water film", new Vector3(0, 12, 0), 44, 1.5f, Glass), "Water film");
@@ -74,8 +90,13 @@ public sealed partial class Class10ExperimentModel
         Mark(OpticsDashes(root, "Glass-air surface normal", hit - normal * 20, hit + normal * 20, Dark), "Normal at glass-air face");
         var protractor = Mark(OpticsRing(root, "Protractor", new Vector3(hit.x, 6.8f, hit.z), 20, .55f, Dark), "Critical angle: about 41.8 degrees");
         protractor.localRotation = Quaternion.Euler(0, 0, 90);
+        AngleScale(root, new Vector3(hit.x, 7.4f, hit.z), normal, 18, -60);
         var source = Mark(Group(root, "Single-ray light box", Vector3.zero), "Light ray box");
         Box(source, "Ray box casing", Vector3.zero, new Vector3(14, 10, 16), Dark);
+        Box(source, "Ray box socket plate", new Vector3(0, 0, -8.3f), new Vector3(11, 7, 1), Steel);
+        Screw(source, new Vector3(-4, 2, -8.9f), 1.6f, true);
+        for (int i = -2; i <= 2; i++)
+            Box(source, "Cooling slot", new Vector3(i * 2.1f, 5.06f, -2.8f), new Vector3(.7f, .2f, 6), Wire);
         Box(source, "Single slit", new Vector3(0, 0, 8.2f), new Vector3(1.4f, 7, .7f), Yellow);
         var incoming = Mark(Rod(root, "Ray entering glass", Vector3.zero, Vector3.forward, .9f, Red), "Ray enters the glass");
         var inside = Rod(root, "Internal incident ray", Vector3.zero, Vector3.forward, .9f, Yellow);
@@ -129,6 +150,7 @@ public sealed partial class Class10ExperimentModel
         OpticsDashes(root, "Incident ray produced", entry, intersection + inDirection * 40, Dark);
         OpticsDashes(root, "Emergent ray produced backward", intersection, exit, Dark);
         var deviation = Mark(Group(root, "Deviation angle arc", intersection), "Angle of deviation");
+        AngleScale(root, new Vector3(intersection.x, 6.05f, intersection.z), inDirection, 32, 60);
         for (int i = 0; i < 8; i++)
         {
             float a = Mathf.Lerp(-halfDeviation, halfDeviation, i / 8f);
@@ -224,20 +246,37 @@ public sealed partial class Class10ExperimentModel
 
     Action<float> Microscope()
     {
-        Box(root, "Microscope foot", new Vector3(0, 4, 0), new Vector3(88, 8, 60), Dark);
-        Rod(root, "Microscope pillar", new Vector3(30, 8, 13), new Vector3(32, 73, 13), 11, Dark);
-        Rod(root, "Microscope upper arm", new Vector3(32, 73, 13), new Vector3(14, 93, 13), 10, Dark);
-        Rod(root, "Microscope tube support", new Vector3(14, 93, 13), new Vector3(0, 93, 6), 9, Dark);
-        var knob = Mark(Cylinder(root, "Fine-focus knob", new Vector3(32, 70, 2), 14, 7, Brass), "Focusing knob");
+        Box(root, "Cast iron microscope foot", new Vector3(0, 4.7f, 0), new Vector3(83, 6.2f, 55), Dark);
+        Box(root, "Enamel microscope base", new Vector3(0, 8, 0), new Vector3(79, 3.6f, 51), Enamel);
+        Feet(root, 33, 21);
+        Cylinder(root, "Pillar mounting flange", new Vector3(30, 10.5f, 13), 19, 3, Dark);
+        Rod(root, "Microscope pillar", new Vector3(30, 10, 13), new Vector3(32, 73, 13), 12, Enamel);
+        Rod(root, "Microscope upper arm", new Vector3(32, 73, 13), new Vector3(14, 91, 13), 12, Enamel);
+        Sphere(root, "Rounded cast arm joint", new Vector3(32, 73, 13), Vector3.one * 12, Enamel);
+        Rod(root, "Microscope tube support", new Vector3(14, 91, 13), new Vector3(0, 91, 6), 10, Enamel);
+        var knob = Mark(Group(root, "Fine-focus knob", new Vector3(32, 70, 2)), "Focusing knob");
         knob.localRotation = Quaternion.Euler(90, 0, 0);
+        Cylinder(knob, "Focus wheel", Vector3.zero, 14, 7, Brass);
+        Knurl(knob, 7, 3.5f);
+        Cylinder(root, "Coarse focus wheel", new Vector3(32, 70, 20), 20, 7, Dark).localRotation = Quaternion.Euler(90, 0, 0);
         var stage = Mark(Group(root, "Specimen stage", Vector3.zero), "Specimen and glass slide");
         foreach (float x in new[] { -18f, 18f })
             Box(stage, "Stage wing", new Vector3(x, 28, 0), new Vector3(22, 4, 38), Dark);
         Box(stage, "Stage back", new Vector3(0, 28, 16), new Vector3(58, 4, 7), Dark);
         Box(stage, "Glass slide", new Vector3(0, 30.5f, 0), new Vector3(43, 1, 13), Glass);
+        Box(stage, "Stage measuring strip", new Vector3(0, 30.1f, -15.5f), new Vector3(53, .3f, 7), Steel);
+        MillimetreScale(stage, new Vector3(-23, 30.32f, -16.1f), 40, 10);
+        Box(stage, "Stage support bracket", new Vector3(26, 24, 12), new Vector3(16, 5, 14), Enamel);
+        foreach (int side in new[] { -1, 1 })
+        {
+            Box(stage, "Spring slide clip", new Vector3(side * 18, 31.2f, 3), new Vector3(3, 1.2f, 17), Steel);
+            Screw(stage, new Vector3(side * 18, 32, 10));
+        }
         OpticsArrow(stage, "Small specimen arrow", new Vector3(0, 31, 0), 2.5f, Red, true);
         var mirror = Mark(Sphere(root, "Illuminating mirror", new Vector3(0, 15, 0), new Vector3(25, 2, 25), Steel), "Illuminating mirror");
         mirror.localRotation = Quaternion.Euler(0, 0, -24);
+        OpticsRing(mirror.parent, "Mirror frame", mirror.localPosition, 12.5f, 1, Dark).localRotation = mirror.localRotation * Quaternion.Euler(0, 0, 90);
+        Rod(root, "Mirror tilt yoke", new Vector3(13, 12, 0), new Vector3(18, 18, 6), 3, Brass);
         Rod(root, "Illumination path", new Vector3(0, 17, 0), new Vector3(0, 30, 0), .8f, Yellow);
         var objective = Mark(Group(root, "Microscope objective", new Vector3(0, 45, 0)), "Short-focus objective lens");
         Sphere(objective, "Objective glass", Vector3.zero, new Vector3(18, 2, 18), Glass);
@@ -245,13 +284,9 @@ public sealed partial class Class10ExperimentModel
         var eyepiece = Mark(Group(root, "Microscope eyepiece", new Vector3(0, 92, 0)), "Eyepiece magnifies the image");
         Sphere(eyepiece, "Eyepiece glass", Vector3.zero, new Vector3(28, 2.5f, 28), Glass);
         OpticsRing(eyepiece, "Eyepiece rim", Vector3.zero, 15, 1.4f, Dark).localRotation = Quaternion.Euler(0, 0, 90);
-        // The open front of the tube exposes the two lenses and the ray path.
-        for (int i = 0; i <= 6; i++)
-        {
-            float angle = Mathf.PI * i / 6;
-            var lower = new Vector3(13 * Mathf.Cos(angle), 48, 13 * Mathf.Sin(angle));
-            Rod(root, "Cutaway body tube", lower, new Vector3(lower.x, 89, lower.z), 2, Brass);
-        }
+        OpticsShell(root, "Sectioned microscope body tube", new Vector3(0, 67, 0), 13.5f, 11.5f, 45, Enamel);
+        OpticsShell(root, "Upper tube collar", new Vector3(0, 88, 0), 15, 11.5f, 5, Dark);
+        OpticsShell(objective, "Threaded objective barrel", new Vector3(0, 4, 0), 10.7f, 8.9f, 8, Brass);
         var intermediate = Mark(OpticsArrow(root, "Real intermediate image", new Vector3(0, 79, 0), -7.5f, Green, true), "Real inverted intermediate image");
         var virtualImage = Mark(OpticsArrow(root, "Magnified virtual image", new Vector3(0, 45.2f, -1), -27, Blue, true), "Magnified virtual image");
         var rays = new Transform[2, 3];
@@ -317,30 +352,60 @@ public sealed partial class Class10ExperimentModel
     Transform OpticsBoard(string name, float width, float depth)
     {
         var board = Group(root, name, Vector3.zero);
-        Box(board, "Drawing board", new Vector3(0, 2.5f, 0), new Vector3(width, 5, depth), Wood);
+        Box(board, "Drawing board", new Vector3(0, 3.2f, 0), new Vector3(width, 3.6f, depth), Wood);
+        Feet(board, width / 2 - 10, depth / 2 - 10);
         Box(board, "White paper", new Vector3(0, 5.4f, 0), new Vector3(width - 6, .8f, depth - 6), White);
+        MillimetreScale(board, new Vector3(-60, 5.89f, -depth / 2 + 9), 120, 20);
+        foreach (int side in new[] { -1, 1 })
+        {
+            float x = side * (width / 2 - 12);
+            Box(board, "Paper clip", new Vector3(x, 6.2f, depth / 2 - 6), new Vector3(10, 1.1f, 6), Steel);
+            Screw(board, new Vector3(x, 6.8f, depth / 2 - 4));
+        }
         return board;
     }
 
     Transform OpticsBench()
     {
         var bench = Group(root, "Optical bench", Vector3.zero);
-        Box(bench, "Bench base", new Vector3(0, 4, 0), new Vector3(164, 8, 46), Wood);
+        Box(bench, "Bench base", new Vector3(0, 4.7f, 0), new Vector3(164, 6.6f, 46), Wood);
+        Feet(bench, 71, 16);
+        foreach (int side in new[] { -1, 1 })
+        {
+            Box(bench, "Rail end casting", new Vector3(side * 76, 9.9f, 0), new Vector3(9, 4.8f, 29), Dark);
+            Screw(bench, new Vector3(side * 76, 12.4f, 0));
+        }
         foreach (float z in new[] { -10f, 10f })
             Rod(bench, "Sliding rail", new Vector3(-77, 12, z), new Vector3(77, 12, z), 2.5f, Steel);
-        Box(bench, "Bench ruler", new Vector3(0, 8.7f, -23), new Vector3(154, 1, 7), White);
-        for (int i = 0; i <= 20; i++)
-            Box(bench, "Bench graduation", new Vector3(-74 + 7.4f * i, 9.4f, -23), new Vector3(.5f, .4f, i % 5 == 0 ? 6 : 3), Dark);
+        Box(bench, "Bench ruler", new Vector3(0, 8.7f, -23), new Vector3(154, 1, 9), White);
+        MillimetreScale(bench, new Vector3(-70, 9.29f, -23), 140, 20);
         return bench;
+    }
+
+    void AngleScale(Transform parent, Vector3 center, Vector3 zeroDirection, float radius, int sweep)
+    {
+        var scale = Group(parent, "Protractor Scale", center);
+        float sign = Mathf.Sign(sweep);
+        for (int degrees = 0; degrees <= Mathf.Abs(sweep); degrees += 5)
+        {
+            var radial = Quaternion.AngleAxis(degrees * sign, Vector3.up) * zeroDirection;
+            bool major = degrees % 15 == 0;
+            Rod(scale, "Angle tick", radial * (radius - (major ? 2.2f : 1.1f)), radial * radius, .26f, Dark);
+            if (major) PlateText(scale, degrees + "°", radial * (radius + 3.5f) + Vector3.up * .12f, 13);
+        }
     }
 
     Transform OpticsLens(string name, Vector3 position, float diameter)
     {
         var lens = Group(root, name, position);
         Sphere(lens, "Convex glass", Vector3.zero, new Vector3(3.5f, diameter, diameter), Glass);
-        OpticsRing(lens, "Lens mount", Vector3.zero, diameter / 2 + 1.2f, 1.2f, Dark);
+        OpticsRing(lens, "Lens mount", Vector3.zero, diameter / 2 + 1, 2.2f, Dark);
+        foreach (int side in new[] { -1, 1 })
+            OpticsRing(lens, "Brass retaining ring", Vector3.right * (side * 1.9f), diameter / 2 + .4f, .55f, Brass);
         Rod(lens, "Lens upright", new Vector3(0, 14 - position.y, 0), new Vector3(0, -diameter / 2, 0), 3, Steel);
-        Box(lens, "Lens slider", new Vector3(0, 14 - position.y, 0), new Vector3(14, 5, 29), Red);
+        Box(lens, "Lens slider", new Vector3(0, 14 - position.y, 0), new Vector3(14, 5, 29), Enamel);
+        Cylinder(lens, "Upright clamp collar", new Vector3(0, 17 - position.y, 0), 7, 3, Brass);
+        Cylinder(lens, "Slide lock screw", new Vector3(0, 14 - position.y, -16), 6, 4, Dark).localRotation = Quaternion.Euler(90, 0, 0);
         return lens;
     }
 
@@ -349,6 +414,7 @@ public sealed partial class Class10ExperimentModel
         var pin = Group(parent, name, new Vector3(at.x, 6, at.z));
         Rod(pin, "Pin shaft", Vector3.zero, Vector3.up * 22, .7f, Steel);
         Sphere(pin, "Pin head", Vector3.up * 22, Vector3.one * 2.2f, Red);
+        Cylinder(pin, "Pin holder", Vector3.up * .6f, 4.3f, 1.2f, Brass);
     }
 
     Transform OpticsDashes(Transform parent, string name, Vector3 start, Vector3 end, Color32 color)
@@ -397,16 +463,64 @@ public sealed partial class Class10ExperimentModel
         shape.GetComponent<MeshFilter>().sharedMesh = mesh;
         for (int i = 0; i < 3; i++)
         {
-            Rod(root, "Prism upper edge", corners[i + 3] + Vector3.up * 6, corners[(i + 1) % 3 + 3] + Vector3.up * 6, .65f, Blue);
-            Rod(root, "Prism vertical edge", corners[i] + Vector3.up * 6, corners[i + 3] + Vector3.up * 6, .65f, Blue);
+            Rod(root, "Prism upper edge", corners[i + 3] + Vector3.up * 6, corners[(i + 1) % 3 + 3] + Vector3.up * 6, .65f, GlassEdge);
+            Rod(root, "Prism vertical edge", corners[i] + Vector3.up * 6, corners[i + 3] + Vector3.up * 6, .65f, GlassEdge);
         }
         return shape;
+    }
+
+    void Knurl(Transform wheel, float radius, float halfHeight)
+    {
+        for (int i = 0; i < 16; i++)
+        {
+            float angle = i * Mathf.PI / 8;
+            var groove = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle)) * radius;
+            Rod(wheel, "Knurled grip", groove - Vector3.up * halfHeight, groove + Vector3.up * halfHeight, .6f, Dark);
+        }
+    }
+
+    void OpticsShell(Transform parent, string name, Vector3 position, float outer, float inner, float height, Color32 color)
+    {
+        const int segments = 20;
+        var vertices = new Vector3[(segments + 1) * 4];
+        var uv = new Vector2[vertices.Length];
+        var triangles = new List<int>();
+        for (int i = 0; i <= segments; i++)
+        {
+            float angle = Mathf.PI * i / segments;
+            var radial = new Vector3(Mathf.Cos(angle), 0, Mathf.Sin(angle));
+            int v = i * 4;
+            vertices[v] = radial * outer - Vector3.up * height / 2;
+            vertices[v + 1] = radial * outer + Vector3.up * height / 2;
+            vertices[v + 2] = radial * inner + Vector3.up * height / 2;
+            vertices[v + 3] = radial * inner - Vector3.up * height / 2;
+            float u = i / (float)segments;
+            uv[v] = uv[v + 3] = new Vector2(u, 0);
+            uv[v + 1] = uv[v + 2] = new Vector2(u, 1);
+            if (i == segments) break;
+            for (int side = 0; side < 4; side++)
+            {
+                int next = (side + 1) % 4;
+                Quad(v + side, v + next, v + 4 + next, v + 4 + side);
+            }
+        }
+        Quad(0, 3, 2, 1);
+        int last = segments * 4;
+        Quad(last, last + 1, last + 2, last + 3);
+        var mesh = new Mesh { name = name, vertices = vertices, uv = uv, triangles = triangles.ToArray() };
+        mesh.RecalculateNormals();
+        mesh.RecalculateTangents();
+        mesh.RecalculateBounds();
+        Box(parent, name, position, Vector3.one, color).GetComponent<MeshFilter>().sharedMesh = mesh;
+
+        void Quad(int a, int b, int c, int d) => triangles.AddRange(new[] { a, b, c, a, c, d });
     }
 
     Transform OpticsRing(Transform parent, string name, Vector3 position, float radius, float thickness, Color32 color)
     {
         const int segments = 24, sides = 6;
         var vertices = new Vector3[segments * sides];
+        var uv = new Vector2[vertices.Length];
         var triangles = new List<int>(segments * sides * 6);
         for (int i = 0; i < segments; i++)
             for (int j = 0; j < sides; j++)
@@ -414,12 +528,13 @@ public sealed partial class Class10ExperimentModel
                 float a = 2 * Mathf.PI * i / segments, b = 2 * Mathf.PI * j / sides;
                 float r = radius + thickness * Mathf.Cos(b);
                 vertices[i * sides + j] = new Vector3(thickness * Mathf.Sin(b), r * Mathf.Cos(a), r * Mathf.Sin(a));
+                uv[i * sides + j] = new Vector2(i / (float)segments, j / (float)sides);
                 int n = ((i + 1) % segments) * sides, next = (j + 1) % sides;
                 triangles.Add(i * sides + j); triangles.Add(n + j); triangles.Add(n + next);
                 triangles.Add(i * sides + j); triangles.Add(n + next); triangles.Add(i * sides + next);
             }
-        var mesh = new Mesh { name = "Class10 " + name, vertices = vertices, triangles = triangles.ToArray() };
-        mesh.RecalculateNormals(); mesh.RecalculateBounds();
+        var mesh = new Mesh { name = "Class10 " + name, vertices = vertices, uv = uv, triangles = triangles.ToArray() };
+        mesh.RecalculateNormals(); mesh.RecalculateTangents(); mesh.RecalculateBounds();
         var ring = Box(parent, name, position, Vector3.one, color);
         ring.GetComponent<MeshFilter>().sharedMesh = mesh;
         return ring;
@@ -429,6 +544,8 @@ public sealed partial class Class10ExperimentModel
     {
         const int segments = 24, rings = 6;
         var vertices = new Vector3[1 + segments * rings];
+        var uv = new Vector2[vertices.Length];
+        uv[0] = Vector2.one * .5f;
         var triangles = new List<int>();
         for (int ring = 1; ring <= rings; ring++)
             for (int i = 0; i < segments; i++)
@@ -436,6 +553,7 @@ public sealed partial class Class10ExperimentModel
                 float r = radius * ring / rings, a = 2 * Mathf.PI * i / segments;
                 vertices[1 + (ring - 1) * segments + i] = new Vector3(r * Mathf.Cos(a), sag * r * r / (radius * radius), r * Mathf.Sin(a));
                 int here = 1 + (ring - 1) * segments + i, next = 1 + (ring - 1) * segments + (i + 1) % segments;
+                uv[here] = new Vector2(vertices[here].x, vertices[here].z) / (radius * 2) + Vector2.one * .5f;
                 if (ring == 1) { triangles.Add(0); triangles.Add(next); triangles.Add(here); }
                 else
                 {
@@ -444,7 +562,7 @@ public sealed partial class Class10ExperimentModel
                     triangles.Add(inner); triangles.Add(innerNext); triangles.Add(next);
                 }
             }
-        var mesh = new Mesh { name = "Class10 concave mirror", vertices = vertices, triangles = triangles.ToArray() };
+        var mesh = new Mesh { name = "Class10 concave mirror", vertices = vertices, uv = uv, triangles = triangles.ToArray() };
         mesh.RecalculateNormals(); mesh.RecalculateBounds();
         var dish = Box(parent, name, position, Vector3.one, Steel);
         dish.GetComponent<MeshFilter>().sharedMesh = mesh;

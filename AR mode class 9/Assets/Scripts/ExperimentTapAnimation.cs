@@ -21,11 +21,14 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
     public bool IsPlaying { get; private set; }
     public float Elapsed { get; private set; }
     public bool LabelsVisible { get; private set; }
-    public bool CanToggleLabels => isActiveAndEnabled && labels != null && labels.Length > 2 &&
-        (!target || (revealTracked && revealElapsed >= RevealDuration));
+    public bool CanToggleLabels => ViewReady && labels != null && labels.Length > 2;
+    public bool CanRotateView => ViewReady && revealRoot && viewBounds;
+    bool ViewReady => isActiveAndEnabled && (!target || (revealTracked && revealElapsed >= RevealDuration));
 
     ImageTargetBehaviour target;
-    Vector2 pressStart;
+    Vector2 pressStart, lastPointerPosition;
+    Pointer capturedPointer;
+    bool dragging;
     float pressTime;
     bool pressing;
     int currentStep = -1;
@@ -35,6 +38,9 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
     const float HoverHeight = .008f;
     const float LabelDuration = .5f;
     Transform revealRoot;
+    BoxCollider viewBounds;
+    Quaternion restRotation;
+    Vector3 restPosition;
     bool revealTracked;
     float revealElapsed, hoverHeight;
     float trackingLostAt = float.NegativeInfinity;
@@ -45,6 +51,12 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
     {
         labelPositions = labels?.Select(label => label ? label.transform.localPosition : Vector3.zero).ToArray();
         target = GetComponentInParent<ImageTargetBehaviour>(true);
+        if (referenceNumber >= 101 && referenceNumber <= 112)
+        {
+            viewBounds = GetComponent<BoxCollider>();
+            restPosition = transform.localPosition;
+            restRotation = transform.localRotation;
+        }
         if (target)
         {
             // Lift along the page normal without changing the model's calibrated scale or pinch zoom.
@@ -181,6 +193,8 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
     {
         IsPlaying = false;
         pressing = false;
+        dragging = false;
+        capturedPointer = null;
         Elapsed = 0;
         if (animationPlayer && animationPlayer.clip)
         {
@@ -217,11 +231,13 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
         if (target && target.TargetStatus.Status != Status.TRACKED) return;
         if (revealRoot && revealElapsed < RevealDuration) return;
         Advance(Time.deltaTime);
-        var pointer = Pointer.current;
+        var pointer = capturedPointer ?? Pointer.current;
         if (pointer == null) return;
         if (Touchscreen.current != null && Touchscreen.current.touches.Count(t => t.press.isPressed) > 1)
         {
             pressing = false;
+            dragging = false;
+            capturedPointer = null;
             return;
         }
         var position = pointer.position.ReadValue();
@@ -235,14 +251,57 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
                 hit.collider.GetComponentInParent<ExperimentTapAnimation>() == this)
             {
                 pressing = true;
-                pressStart = position;
+                dragging = false;
+                capturedPointer = pointer;
+                pressStart = lastPointerPosition = position;
                 pressTime = Time.unscaledTime;
             }
         }
         if (!pressing) return;
-        if (Vector2.Distance(position, pressStart) > 20 || Time.unscaledTime - pressTime > .6f)
-            pressing = false;
-        else if (pointer.press.wasReleasedThisFrame) PlayAnimation();
+        float threshold = CanRotateView ? Mathf.Clamp(Mathf.Min(Screen.width, Screen.height) * .012f, 8, 20) : 20;
+        bool moved = Vector2.Distance(position, pressStart) > threshold;
+        if (CanRotateView && (dragging || moved))
+        {
+            var camera = ActiveCamera();
+            if (camera) RotateView(position - lastPointerPosition, camera.transform);
+            dragging = true;
+        }
+        lastPointerPosition = position;
+        if (pointer.press.wasReleasedThisFrame)
+        {
+            bool tapped = !dragging && !moved && Time.unscaledTime - pressTime <= .6f;
+            pressing = dragging = false;
+            capturedPointer = null;
+            if (tapped) PlayAnimation();
+        }
+        else if (!pointer.press.isPressed || (!CanRotateView && (moved || Time.unscaledTime - pressTime > .6f)))
+        {
+            pressing = dragging = false;
+            capturedPointer = null;
+        }
+    }
+
+    void RotateView(Vector2 pixels, Transform camera)
+    {
+        float sensitivity = 360f / Mathf.Max(1, Mathf.Min(Screen.width, Screen.height));
+        var yaw = Quaternion.AngleAxis(-pixels.x * sensitivity, revealRoot.InverseTransformDirection(camera.up));
+        var pitch = Quaternion.AngleAxis(pixels.y * sensitivity, revealRoot.InverseTransformDirection(camera.right));
+        var center = Vector3.Scale(viewBounds.center, transform.localScale);
+        var rotation = pitch * yaw * transform.localRotation;
+        transform.SetLocalPositionAndRotation(restPosition + restRotation * center - rotation * center, rotation);
+    }
+
+    public void ResetView()
+    {
+        if (CanRotateView) transform.SetLocalPositionAndRotation(restPosition, restRotation);
+    }
+
+    Vector3 LabelHome(Transform label, int index)
+    {
+        var local = labelPositions[index];
+        if (viewBounds && revealRoot)
+            return revealRoot.TransformPoint(restPosition + restRotation * Vector3.Scale(local, transform.localScale));
+        return label.parent.TransformPoint(local);
     }
 
     public void Advance(float deltaTime)
@@ -283,7 +342,11 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
     {
         if (!camera || labels == null) return;
         for (int i = 0; i < Mathf.Min(2, labels.Length); i++)
-            if (labels[i]) labels[i].transform.rotation = camera.transform.rotation;
+            if (labels[i])
+            {
+                if (viewBounds && revealRoot) labels[i].transform.position = LabelHome(labels[i].transform, i);
+                labels[i].transform.rotation = camera.transform.rotation;
+            }
         float progress = labelPositions == null ? 1 : Mathf.SmoothStep(0, 1, labelProgress);
         if (progress == 0) return;
         if (partRenderers == null || partRenderers.Length != labelledParts.Length)
@@ -302,7 +365,7 @@ public sealed class ExperimentTapAnimation : MonoBehaviour
             var label = labels[i + 2];
             if (labelPositions != null)
             {
-                var home = label.transform.parent.TransformPoint(labelPositions[i + 2]);
+                var home = LabelHome(label.transform, i + 2);
                 label.transform.position = Vector3.Lerp(point, home, progress);
                 label.alpha = progress;
             }
