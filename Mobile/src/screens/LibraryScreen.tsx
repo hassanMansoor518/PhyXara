@@ -2,8 +2,9 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import { ChevronRight, Search, Sparkles } from 'lucide-react-native';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { class9Labs } from '../data/class9Labs';
 import { ClassBannerAtomSvg } from '../components/illustrations/ClassBannerAtomSvg';
@@ -58,19 +59,19 @@ export const LibraryScreen: React.FC = () => {
       case 'Easy':
         return (
           <View className="bg-[#DCFCE7] px-2 py-0.5 rounded-md">
-            <Text className="text-[10px] font-bold text-[#16A34A]">Easy</Text>
+            <Text style={styles.interMedium} className="text-[10px] text-[#16A34A]">Easy</Text>
           </View>
         );
       case 'Medium':
         return (
           <View className="bg-[#FEF3C7] px-2 py-0.5 rounded-md">
-            <Text className="text-[10px] font-bold text-[#D97706]">Medium</Text>
+            <Text style={styles.interMedium} className="text-[10px] text-[#D97706]">Medium</Text>
           </View>
         );
       case 'Hard':
         return (
           <View className="bg-[#F3E8FF] px-2 py-0.5 rounded-md">
-            <Text className="text-[10px] font-bold text-[#7C3AED]">Hard</Text>
+            <Text style={styles.interMedium} className="text-[10px] text-[#7C3AED]">Hard</Text>
           </View>
         );
     }
@@ -78,25 +79,27 @@ export const LibraryScreen: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top', 'left', 'right']}>
-      {/* Top Header */}
-      <View className="flex-row items-center justify-between px-5 pt-3 pb-3">
-        <View className="flex-row items-center">
-          {/* Blue Sparkle Icon Badge */}
-          <View className="w-10 h-10 rounded-2xl bg-[#2563EB] items-center justify-center mr-3 shadow-sm shadow-blue-500/30">
+      <AppHeader
+        showBack={false}
+        title="Explore Physics"
+        leftAccessory={
+          <View className="w-10 h-10 rounded-2xl bg-[#2563EB] items-center justify-center shadow-sm shadow-blue-500/30">
             <Sparkles size={20} color="#FFFFFF" />
           </View>
-          <Text className="text-xl font-extrabold text-[#0F172A]">Explore Physics</Text>
-        </View>
-
-        {/* Search Action */}
-        <Pressable
-          onPress={() => searchInput.current?.focus()}
-          className="w-10 h-10 rounded-full items-center justify-center active:bg-gray-100"
-          hitSlop={8}
-        >
-          <Search size={20} color="#64748B" />
-        </Pressable>
-      </View>
+        }
+        rightAccessory={
+          <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Search"
+            onPress={() => searchInput.current?.focus()}
+            style={({ pressed }) => [pressed && { opacity: 0.75 }]}
+            className="w-10 h-10 rounded-full bg-white border border-[#E2E8F0] items-center justify-center"
+            hitSlop={8}
+          >
+            <Search size={20} color="#64748B" />
+          </Pressable>
+        }
+      />
 
       <ScrollView
         contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 28 }}
@@ -111,6 +114,7 @@ export const LibraryScreen: React.FC = () => {
             onChangeText={setSearchQuery}
             placeholder={selectedClass === 'Class 9' ? 'Search practicals or apparatus…' : 'Search chapters or topics…'}
             placeholderTextColor="#94A3B8"
+            style={styles.interRegular}
             className="flex-1 ml-3 text-sm text-[#0F172A] py-1"
           />
         </View>
@@ -133,6 +137,7 @@ export const LibraryScreen: React.FC = () => {
                   }`}
                 >
                   <Text
+                    style={styles.interMedium}
                     className={`text-xs font-bold ${
                       isSelected ? 'text-white' : 'text-[#0F172A]'
                     }`}
@@ -148,11 +153,11 @@ export const LibraryScreen: React.FC = () => {
         {/* Sindh Textbook Board Banner */}
         <View className="bg-[#0D2444] rounded-[24px] p-5 mb-6 flex-row items-center justify-between shadow-md relative overflow-hidden">
           <View className="flex-1 mr-3">
-            <Text className="text-[9px] font-black tracking-wider text-[#38BDF8] uppercase mb-1">
+            <Text style={styles.interMedium} className="text-[9px] tracking-wider text-[#38BDF8] uppercase mb-1">
               SINDH TEXTBOOK BOARD
             </Text>
-            <Text className="text-xl font-black text-white mb-1">{selectedClass} Physics</Text>
-            <Text className="text-xs text-[#94A3B8] font-medium">
+            <Text style={styles.poppinsBold} className="text-xl text-white mb-1">{selectedClass} Physics</Text>
+            <Text style={styles.interRegular} className="text-xs text-[#94A3B8]">
               {selectedClass === 'Class 9' ? '16 practical experiments • 3D apparatus' : 'Chapter theory and activities'}
             </Text>
           </View>
@@ -166,8 +171,8 @@ export const LibraryScreen: React.FC = () => {
         {selectedClass === 'Class 9' && (
           <View className="mb-2">
             <View className="flex-row items-center justify-between mb-3.5">
-              <Text className="text-lg font-black text-[#0F172A]">All Practicals</Text>
-              <Text className="text-xs font-semibold text-[#94A3B8]">{filteredPracticals.length} practicals</Text>
+              <Text style={styles.poppinsSemiBold} className="text-lg text-[#0F172A]">All Practicals</Text>
+              <Text style={styles.interMedium} className="text-xs text-[#94A3B8]">{filteredPracticals.length} practicals</Text>
             </View>
             <View className="gap-3">
               {filteredPracticals.map(({ lab, number }) => (
@@ -175,32 +180,32 @@ export const LibraryScreen: React.FC = () => {
                   className="bg-white rounded-3xl p-4 border border-[#E2E8F0] shadow-sm flex-row items-center active:bg-gray-50/80"
                   onPress={() => router.push({ pathname: '/practical', params: { experiment: String(number) } })}>
                   <View className="w-14 h-16 rounded-2xl bg-[#EFF6FF] items-center justify-center mr-3.5 border border-[#DBEAFE]/40">
-                    <Text className="text-lg font-black text-[#2563EB]">{String(number).padStart(2, '0')}</Text>
+                    <Text style={styles.poppinsBold} className="text-lg text-[#2563EB]">{String(number).padStart(2, '0')}</Text>
                   </View>
                   <View className="flex-1 mr-2">
                     <View className="flex-row items-center mb-1">
                       <View className="bg-[#E0F2FE] px-2 py-0.5 rounded-md mr-1.5">
-                        <Text className="text-[9px] font-black text-[#0284C7] uppercase tracking-wide">3D Apparatus</Text>
+                        <Text style={styles.interMedium} className="text-[9px] text-[#0284C7] uppercase tracking-wide">3D Apparatus</Text>
                       </View>
                       <View className="bg-[#DCFCE7] px-2 py-0.5 rounded-md">
-                        <Text className="text-[10px] font-bold text-[#16A34A]">Calculations</Text>
+                        <Text style={styles.interMedium} className="text-[10px] text-[#16A34A]">Calculations</Text>
                       </View>
                     </View>
-                    <Text className="text-base font-extrabold text-[#0F172A]" numberOfLines={2}>{lab.title}</Text>
-                    <Text className="text-xs text-[#64748B] mt-0.5" numberOfLines={1}>PDF pp. {lab.pages} • {lab.apparatus}</Text>
+                    <Text style={styles.poppinsSemiBold} className="text-base text-[#0F172A]" numberOfLines={2}>{lab.title}</Text>
+                    <Text style={styles.interRegular} className="text-xs text-[#64748B] mt-0.5" numberOfLines={1}>PDF pp. {lab.pages} • {lab.apparatus}</Text>
                   </View>
                   <ChevronRight size={18} color="#94A3B8" />
                 </Pressable>
               ))}
-              {filteredPracticals.length === 0 && <Text className="text-sm text-[#64748B]">No practicals match your search.</Text>}
+              {filteredPracticals.length === 0 && <Text style={styles.interRegular} className="text-sm text-[#64748B]">No practicals match your search.</Text>}
             </View>
           </View>
         )}
         {selectedClass !== 'Class 9' && <>
         {/* All Chapters Section Header */}
         <View className="flex-row items-center justify-between mb-3.5">
-          <Text className="text-lg font-black text-[#0F172A]">All Chapters</Text>
-          <Text className="text-xs font-semibold text-[#94A3B8]">
+          <Text style={styles.poppinsSemiBold} className="text-lg text-[#0F172A]">All Chapters</Text>
+          <Text style={styles.interMedium} className="text-xs text-[#94A3B8]">
             {filteredChapters.length} chapters
           </Text>
         </View>
@@ -224,7 +229,7 @@ export const LibraryScreen: React.FC = () => {
               >
                 {/* Left Chapter Number Badge */}
                 <View className="w-14 h-16 rounded-2xl bg-[#EFF6FF] items-center justify-center mr-3.5 border border-[#DBEAFE]/40">
-                  <Text className="text-lg font-black text-[#2563EB]">{numStr}</Text>
+                  <Text style={styles.poppinsBold} className="text-lg text-[#2563EB]">{numStr}</Text>
                 </View>
 
                 {/* Middle Content */}
@@ -233,7 +238,7 @@ export const LibraryScreen: React.FC = () => {
                   <View className="flex-row items-center mb-1">
                     {chapter.hasAR && (
                       <View className="bg-[#E0F2FE] px-2 py-0.5 rounded-md mr-1.5">
-                        <Text className="text-[9px] font-black text-[#0284C7] uppercase tracking-wide">
+                        <Text style={styles.interMedium} className="text-[9px] text-[#0284C7] uppercase tracking-wide">
                           AR AVAILABLE
                         </Text>
                       </View>
@@ -242,12 +247,12 @@ export const LibraryScreen: React.FC = () => {
                   </View>
 
                   {/* Chapter Title */}
-                  <Text className="text-base font-extrabold text-[#0F172A]" numberOfLines={1}>
+                  <Text style={styles.poppinsSemiBold} className="text-base text-[#0F172A]" numberOfLines={1}>
                     {chapter.title}
                   </Text>
 
                   {/* Description */}
-                  <Text className="text-xs text-[#64748B] mt-0.5 mb-2.5" numberOfLines={1}>
+                  <Text style={styles.interRegular} className="text-xs text-[#64748B] mt-0.5 mb-2.5" numberOfLines={1}>
                     {chapter.description}
                   </Text>
 
@@ -262,7 +267,7 @@ export const LibraryScreen: React.FC = () => {
                       />
                     </View>
                     {completion > 0 && (
-                      <Text className="text-xs font-bold text-[#2563EB] ml-2.5">
+                      <Text style={styles.interMedium} className="text-xs text-[#2563EB] ml-2.5">
                         {completion}%
                       </Text>
                     )}
@@ -283,5 +288,12 @@ export const LibraryScreen: React.FC = () => {
     </SafeAreaView>
   );
 };
+
+const styles = StyleSheet.create({
+  poppinsBold: { fontFamily: 'AuthPoppins-Bold' },
+  poppinsSemiBold: { fontFamily: 'AuthPoppins-SemiBold' },
+  interRegular: { fontFamily: 'AuthInter-Regular' },
+  interMedium: { fontFamily: 'AuthInter-Medium' },
+});
 
 export default LibraryScreen;

@@ -1,7 +1,7 @@
 import React from 'react';
-import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { ArrowLeft, Heart, HelpCircle } from 'lucide-react-native';
-import { VIEWER_TOKENS } from './tokens';
+import { Pressable, StyleSheet, View } from 'react-native';
+import { Heart, HelpCircle } from 'lucide-react-native';
+import { AppHeader } from '../AppHeader';
 
 interface ViewerHeaderProps {
   title?: string;
@@ -19,112 +19,63 @@ export const ViewerHeader: React.FC<ViewerHeaderProps> = ({
   onBack,
   onToggleFavorite,
   onHelp,
-}) => {
-  return (
-    <View style={styles.header}>
-      {/* Back Button */}
-      <Pressable
-        onPress={onBack}
-        style={({ pressed }) => [styles.circleButton, pressed && styles.buttonPressed]}
-        hitSlop={10}
-        accessibilityRole="button"
-        accessibilityLabel="Go back"
-      >
-        <ArrowLeft size={18} color={VIEWER_TOKENS.colors.primaryText} />
-      </Pressable>
-
-      {/* Title & Board Subtitle */}
-      <View style={styles.titleContainer}>
-        <Text style={styles.title} numberOfLines={1}>
-          {title}
-        </Text>
-        <Text style={styles.subtitle} numberOfLines={1}>
-          {subtitle}
-        </Text>
-      </View>
-
-      {/* Right Actions: Favorite & Help */}
-      <View style={styles.actionsContainer}>
+}) => (
+  <AppHeader
+    title={title}
+    subtitle={subtitle}
+    onBack={onBack}
+    rightAccessory={
+      <View style={styles.actions}>
         <Pressable
-          onPress={onToggleFavorite}
-          style={({ pressed }) => [
-            styles.circleButton,
-            isStarred && styles.circleButtonStarred,
-            pressed && styles.buttonPressed,
-          ]}
-          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel={isStarred ? 'Remove from favorites' : 'Add to favorites'}
+          accessibilityState={{ selected: isStarred }}
+          onPress={onToggleFavorite}
+          style={({ pressed }) => [styles.actionButton, isStarred && styles.starred, pressed && styles.buttonPressed]}
+          hitSlop={8}
         >
           <Heart
             size={18}
-            color={isStarred ? '#EF4444' : VIEWER_TOKENS.colors.secondaryText}
+            color={isStarred ? '#EF4444' : '#737A96'}
             fill={isStarred ? '#EF4444' : 'none'}
           />
         </Pressable>
-
         <Pressable
-          onPress={onHelp}
-          style={({ pressed }) => [styles.circleButton, pressed && styles.buttonPressed]}
-          hitSlop={8}
           accessibilityRole="button"
           accessibilityLabel="Help and guide"
+          onPress={onHelp}
+          style={({ pressed }) => [styles.actionButton, pressed && styles.buttonPressed]}
+          hitSlop={8}
         >
-          <HelpCircle size={18} color={VIEWER_TOKENS.colors.secondaryText} />
+          <HelpCircle size={18} color="#737A96" />
         </Pressable>
       </View>
-    </View>
-  );
-};
+    }
+  />
+);
 
 const styles = StyleSheet.create({
-  header: {
+  actions: {
     flexDirection: 'row',
     alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: VIEWER_TOKENS.spacing.lg,
-    paddingTop: VIEWER_TOKENS.spacing.sm,
-    paddingBottom: VIEWER_TOKENS.spacing.md,
-    backgroundColor: VIEWER_TOKENS.colors.mainBg,
+    gap: 8,
   },
-  circleButton: {
-    width: 38,
-    height: 38,
-    borderRadius: 19,
-    backgroundColor: VIEWER_TOKENS.colors.cardBg,
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 1,
-    borderColor: VIEWER_TOKENS.colors.border,
   },
-  circleButtonStarred: {
+  starred: {
     borderColor: 'rgba(239, 68, 68, 0.4)',
     backgroundColor: 'rgba(239, 68, 68, 0.12)',
   },
   buttonPressed: {
     opacity: 0.75,
-    transform: [{ scale: 0.96 }],
-  },
-  titleContainer: {
-    flex: 1,
-    marginHorizontal: VIEWER_TOKENS.spacing.md,
-  },
-  title: {
-    fontSize: VIEWER_TOKENS.typography.title,
-    fontWeight: '700',
-    color: VIEWER_TOKENS.colors.primaryText,
-    letterSpacing: -0.2,
-  },
-  subtitle: {
-    fontSize: VIEWER_TOKENS.typography.subtitle,
-    color: VIEWER_TOKENS.colors.secondaryText,
-    marginTop: 2,
-    fontWeight: '500',
-  },
-  actionsContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: VIEWER_TOKENS.spacing.sm,
   },
 });
 

@@ -16,6 +16,7 @@ import {
 import React from 'react';
 import { Image, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
 import { HeroLabIllustration } from '../components/illustrations/HeroLabIllustration';
 import { VernierHeroIllustration } from '../components/illustrations/VernierHeroIllustration';
@@ -48,9 +49,9 @@ export const HomeScreen: React.FC = () => {
 
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top', 'left', 'right']}>
-      {/* Header */}
-      <View className="px-5 pt-3 pb-4 bg-[#F8FAFC]">
-        <View className="flex-row items-center justify-between">
+      <AppHeader
+        showBack={false}
+        leftAccessory={
           <View className="flex-row items-center">
             <PhyXaraLogo size={36} />
             <View className="ml-2">
@@ -61,7 +62,8 @@ export const HomeScreen: React.FC = () => {
               <Text style={styles.interMedium} className="text-[9px] text-[#64748B]">AI-Powered AR Learning</Text>
             </View>
           </View>
-
+        }
+        rightAccessory={
           <View className="flex-row items-center gap-2">
             <Pressable
               onPress={() => router.push('/profile')}
@@ -85,9 +87,8 @@ export const HomeScreen: React.FC = () => {
               )}
             </Pressable>
           </View>
-        </View>
-
-      </View>
+        }
+      />
 
       {/* Main Scroll Content */}
       <ScrollView

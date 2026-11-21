@@ -1,10 +1,11 @@
 import React from 'react';
-import { View, Text, Pressable } from 'react-native';
-import { ArrowLeft, Star, Share2, Settings, Bookmark, Bell } from 'lucide-react-native';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { ArrowLeft, Bell, Bookmark, Settings, Share2, Star } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 interface AppHeaderProps {
   title?: string;
+  subtitle?: string;
   showBack?: boolean;
   onBack?: () => void;
   rightIcon?: 'star' | 'share' | 'settings' | 'bookmark' | 'bell' | 'none';
@@ -12,17 +13,22 @@ interface AppHeaderProps {
   onRightPress?: () => void;
   textColor?: string;
   backgroundColor?: string;
+  leftAccessory?: React.ReactNode;
+  rightAccessory?: React.ReactNode;
 }
 
 export const AppHeader: React.FC<AppHeaderProps> = ({
   title,
+  subtitle,
   showBack = true,
   onBack,
   rightIcon = 'none',
   isStarred = false,
   onRightPress,
   textColor = '#101A43',
-  backgroundColor = 'transparent',
+  backgroundColor = '#F8FAFC',
+  leftAccessory,
+  rightAccessory,
 }) => {
   const handleBack = () => {
     if (onBack) {
@@ -34,92 +40,122 @@ export const AppHeader: React.FC<AppHeaderProps> = ({
     }
   };
 
+  const renderRightAction = () => {
+    if (rightIcon === 'none') return null;
+
+    const icon = {
+      star: <Star size={20} color={isStarred ? '#FFB020' : '#737A96'} fill={isStarred ? '#FFB020' : 'none'} />,
+      share: <Share2 size={18} color="#737A96" />,
+      settings: <Settings size={20} color="#101A43" />,
+      bookmark: <Bookmark size={20} color={isStarred ? '#2563EB' : '#737A96'} fill={isStarred ? '#DBEAFE' : 'none'} />,
+      bell: <Bell size={18} color="#101A43" />,
+    }[rightIcon];
+    const accessibilityLabel = {
+      star: isStarred ? 'Remove from favorites' : 'Add to favorites',
+      share: 'Share',
+      settings: 'Settings',
+      bookmark: isStarred ? 'Remove bookmark' : 'Bookmark',
+      bell: 'Notifications',
+    }[rightIcon];
+
+    return (
+      <Pressable
+        accessibilityRole="button"
+        accessibilityLabel={accessibilityLabel}
+        accessibilityState={rightIcon === 'bookmark' ? { selected: isStarred } : undefined}
+        onPress={onRightPress}
+        style={({ pressed }) => [styles.actionButton, pressed && styles.buttonPressed]}
+        hitSlop={8}
+      >
+        {icon}
+      </Pressable>
+    );
+  };
+
   return (
-    <View
-      className="flex-row items-center justify-between px-5 pt-3 pb-3"
-      style={{ backgroundColor }}
-    >
-      <View className="w-10">
-        {showBack ? (
+    <View style={[styles.header, { backgroundColor, borderBottomColor: '#E2E8F0' }]}>
+      <View style={styles.leading}>
+        {showBack && (
           <Pressable
+            accessibilityRole="button"
+            accessibilityLabel="Go back"
             onPress={handleBack}
-            className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
-            hitSlop={10}
+            style={({ pressed }) => [styles.backButton, pressed && styles.buttonPressed]}
+            hitSlop={8}
           >
             <ArrowLeft size={20} color={textColor === '#FFFFFF' ? '#101A43' : textColor} />
           </Pressable>
+        )}
+        {leftAccessory}
+        {title ? (
+          <View style={styles.titleContainer}>
+            <Text accessibilityRole="header" numberOfLines={1} style={[styles.title, { color: textColor }]}>
+              {title}
+            </Text>
+            {subtitle ? <Text numberOfLines={1} style={styles.subtitle}>{subtitle}</Text> : null}
+          </View>
         ) : null}
       </View>
-
-      {title ? (
-        <Text
-          className="text-lg font-bold text-center flex-1 mx-2"
-          style={{ color: textColor }}
-          numberOfLines={1}
-        >
-          {title}
-        </Text>
-      ) : (
-        <View className="flex-1" />
-      )}
-
-      <View className="w-10 items-end">
-        {rightIcon === 'star' && (
-          <Pressable
-            onPress={onRightPress}
-            className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
-            hitSlop={10}
-          >
-            <Star
-              size={20}
-              color={isStarred ? '#FFB020' : '#737A96'}
-              fill={isStarred ? '#FFB020' : 'none'}
-            />
-          </Pressable>
-        )}
-        {rightIcon === 'share' && (
-          <Pressable
-            onPress={onRightPress}
-            className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
-            hitSlop={10}
-          >
-            <Share2 size={18} color="#737A96" />
-          </Pressable>
-        )}
-        {rightIcon === 'settings' && (
-          <Pressable
-            onPress={onRightPress}
-            className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
-            hitSlop={10}
-          >
-            <Settings size={20} color="#101A43" />
-          </Pressable>
-        )}
-        {rightIcon === 'bookmark' && (
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel={isStarred ? 'Remove bookmark' : 'Bookmark'}
-            accessibilityState={{ selected: isStarred }}
-            onPress={onRightPress}
-            className="w-10 h-10 rounded-full bg-white/80 border border-border items-center justify-center active:bg-gray-100"
-            hitSlop={10}
-          >
-            <Bookmark size={20} color={isStarred ? "#2563EB" : "#737A96"} fill={isStarred ? "#DBEAFE" : "none"} />
-          </Pressable>
-        )}
-        {rightIcon === 'bell' && (
-          <Pressable
-            onPress={onRightPress}
-            className="w-10 h-10 rounded-full bg-white border border-border items-center justify-center active:bg-gray-100 shadow-sm"
-            hitSlop={10}
-          >
-            <Bell size={18} color="#101A43" />
-          </Pressable>
-        )}
-        {rightIcon === 'none' && <View className="w-10" />}
-      </View>
+      {rightAccessory || renderRightAction()}
     </View>
   );
 };
+
+const styles = StyleSheet.create({
+  header: {
+    minHeight: 70,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    borderBottomWidth: StyleSheet.hairlineWidth,
+  },
+  leading: {
+    flex: 1,
+    minWidth: 0,
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 8,
+  },
+  titleContainer: {
+    flex: 1,
+    minWidth: 0,
+    marginLeft: 12,
+  },
+  title: {
+    fontFamily: 'AuthPoppins-SemiBold',
+    fontSize: 17,
+    lineHeight: 23,
+  },
+  subtitle: {
+    fontFamily: 'AuthInter-Regular',
+    fontSize: 11,
+    lineHeight: 15,
+    color: '#64748B',
+  },
+  backButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  actionButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#FFFFFF',
+    borderWidth: 1,
+    borderColor: '#E2E8F0',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  buttonPressed: {
+    opacity: 0.75,
+  },
+});
 
 export default AppHeader;
