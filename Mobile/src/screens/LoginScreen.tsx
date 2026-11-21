@@ -1,27 +1,46 @@
-import { useOAuth } from '@clerk/expo';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useSignIn } from '@clerk/expo/legacy';
 import { router } from 'expo-router';
-import * as WebBrowser from 'expo-web-browser';
-import { Eye, EyeOff, Lock, Mail } from 'lucide-react-native';
-import React, { useCallback, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
-import { SafeAreaView } from 'react-native-safe-area-context';
-import { PrimaryButton } from '../components/PrimaryButton';
+import { Check, Lock, Mail } from 'lucide-react-native';
+import React, { useEffect, useRef, useState } from 'react';
+import { Pressable, StyleSheet, Text, View } from 'react-native';
+import { AuthButton, AuthError, AuthInput, SocialAuthButtons } from '../components/auth/AuthControls';
+import { AuthLayout, authColors, authStyles } from '../components/auth/AuthLayout';
+import { useSocialAuth } from '../hooks/useSocialAuth';
 
-WebBrowser.maybeCompleteAuthSession();
+const REMEMBERED_EMAIL_KEY = 'phyxara.remembered-email';
 
 export const LoginScreen: React.FC = () => {
   const { isLoaded, signIn, setActive } = useSignIn();
-  const { startOAuthFlow: startGoogleOAuth } = useOAuth({ strategy: 'oauth_google' });
-
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [rememberMe, setRememberMe] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [errorMsg, setErrorMsg] = useState('');
+  const edited = useRef(false);
+  const socialAuth = useSocialAuth(setIsLoading, setErrorMsg);
 
+  useEffect(() => {
+    let active = true;
+    void AsyncStorage.getItem(REMEMBERED_EMAIL_KEY).then((savedEmail) => {
+      if (active && !edited.current && savedEmail) {
+        setEmail(savedEmail);
+        setRememberMe(true);
+      }
+    }).catch(() => {});
+    return () => { active = false; };
+  }, []);
+
+  const rememberEmail = async () => {
+    try {
+      if (rememberMe) await AsyncStorage.setItem(REMEMBERED_EMAIL_KEY, email.trim());
+      else await AsyncStorage.removeItem(REMEMBERED_EMAIL_KEY);
+    } catch {
+      // A storage failure must not prevent login.
+    }
+  };
   const handleLogin = async () => {
-    if (!isLoaded) return;
+    if (!isLoaded || isLoading) return;
     setErrorMsg('');
 
     if (!email.trim()) {
@@ -41,6 +60,7 @@ export const LoginScreen: React.FC = () => {
       });
 
       if (result.status === 'complete') {
+        await rememberEmail();
         await setActive({ session: result.createdSessionId });
         router.replace('/(tabs)');
       } else {
@@ -57,137 +77,44 @@ export const LoginScreen: React.FC = () => {
     }
   };
 
-  const handleGoogleLogin = useCallback(async () => {
-    setErrorMsg('');
-    setIsLoading(true);
-    try {
-      const { createdSessionId, setActive: setOAuthActive } = await startGoogleOAuth();
-      if (createdSessionId && setOAuthActive) {
-        await setOAuthActive({ session: createdSessionId });
-        router.replace('/(tabs)');
-      }
-    } catch (err: any) {
-      const message = err?.errors?.[0]?.message || 'Google sign in was cancelled or failed.';
-      setErrorMsg(message);
-    } finally {
-      setIsLoading(false);
-    }
-  }, [startGoogleOAuth]);
-
   return (
-    <SafeAreaView className="flex-1 bg-[#FFFFFF] justify-between">
-      <ScrollView contentContainerStyle={{ paddingHorizontal: 24, paddingTop: 32, paddingBottom: 24 }}>
-        {/* Header */}
-        <View className="mb-8">
-          <View className="w-12 h-12 rounded-2xl bg-[#EFF6FF] items-center justify-center mb-4 border border-[#DBEAFE]">
-            <Text className="text-xl font-black text-[#2563EB]">PX</Text>
-          </View>
-          <Text className="text-2xl font-black text-[#0F172A]">Welcome Back! 👋</Text>
-          <Text className="text-sm text-[#64748B] mt-1">
-            Log in to continue your Sindh Board Physics journey
-          </Text>
-        </View>
-
-        {/* Error Banner */}
-        {errorMsg ? (
-          <View className="bg-red-50 border border-red-200 rounded-2xl p-3.5 mb-5">
-            <Text className="text-xs text-[#DC2626] font-semibold">{errorMsg}</Text>
-          </View>
-        ) : null}
-
-        {/* Input Fields */}
-        <View className="gap-4">
-          {/* Email Field */}
-          <View>
-            <Text className="text-xs font-bold text-[#0F172A] mb-2">Email</Text>
-            <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
-              <Mail size={18} color="#64748B" />
-              <TextInput
-                value={email}
-                onChangeText={setEmail}
-                placeholder="student@gmail.com"
-                placeholderTextColor="#64748B"
-                keyboardType="email-address"
-                autoCapitalize="none"
-                className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
-              />
-            </View>
-          </View>
-
-          {/* Password Field */}
-          <View>
-            <Text className="text-xs font-bold text-[#0F172A] mb-2">Password</Text>
-            <View className="flex-row items-center bg-[#F8FAFC] rounded-2xl px-4 py-1.5 border border-[#E2E8F0]">
-              <Lock size={18} color="#64748B" />
-              <TextInput
-                value={password}
-                onChangeText={setPassword}
-                placeholder="••••••••"
-                placeholderTextColor="#64748B"
-                secureTextEntry={!showPassword}
-                className="flex-1 ml-3 text-sm text-[#0F172A] py-2.5"
-              />
-              <Pressable onPress={() => setShowPassword(!showPassword)} hitSlop={10}>
-                {showPassword ? (
-                  <EyeOff size={18} color="#64748B" />
-                ) : (
-                  <Eye size={18} color="#64748B" />
-                )}
-              </Pressable>
-            </View>
-          </View>
-
-          {/* Forgot Password */}
-          <View className="items-end mb-2">
-            <Pressable
-              onPress={() => router.push('/forgot-password')}
-              hitSlop={8}
-            >
-              <Text className="text-xs font-bold text-[#2563EB]">Forgot Password?</Text>
-            </Pressable>
-          </View>
-
-          {/* Login Button */}
-          <PrimaryButton
-            title="Log In"
-            onPress={handleLogin}
-            isLoading={isLoading}
-            disabled={isLoading}
-            className="w-full shadow-md"
-          />
-
-          {/* Divider */}
-          <View className="flex-row items-center my-4">
-            <View className="flex-1 h-[1px] bg-[#E2E8F0]" />
-            <Text className="text-xs text-[#64748B] px-4 font-medium">or continue with</Text>
-            <View className="flex-1 h-[1px] bg-[#E2E8F0]" />
-          </View>
-
-          {/* Social Logins */}
-          <View className="flex-row">
-            <Pressable
-              onPress={handleGoogleLogin}
-              disabled={isLoading}
-              className="flex-1 flex-row items-center justify-center bg-white rounded-2xl py-3.5 border border-[#E2E8F0] shadow-sm active:bg-gray-50"
-            >
-              <View className="w-5 h-5 rounded-full bg-red-500 items-center justify-center mr-2">
-                <Text className="text-white text-xs font-bold">G</Text>
-              </View>
-              <Text className="text-xs font-bold text-[#0F172A]">Google</Text>
-            </Pressable>
-          </View>
-        </View>
-      </ScrollView>
-
-      {/* Sign Up Footer */}
-      <View className="flex-row items-center justify-center py-5 border-t border-[#E2E8F0] bg-white">
-        <Text className="text-xs text-[#64748B]">Don't have an account? </Text>
-        <Pressable onPress={() => router.push('/register')} hitSlop={10}>
-          <Text className="text-xs font-bold text-[#2563EB]">Sign Up</Text>
+    <AuthLayout title="Welcome Back" subtitle="Login to continue your learning journey" footer={
+      <View style={authStyles.footerRow}>
+        <Text style={authStyles.text}>Don&apos;t have an account?</Text>
+        <Pressable accessibilityRole="link" onPress={() => router.push('/register')} hitSlop={10}>
+          <Text style={authStyles.link}>Sign Up</Text>
         </Pressable>
       </View>
-    </SafeAreaView>
+    }>
+      <View style={authStyles.form}>
+        <AuthError message={errorMsg} />
+        <AuthInput icon={Mail} value={email} onChangeText={(value) => { edited.current = true; setEmail(value); }} placeholder="Email Address" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" editable={!isLoading} />
+        <AuthInput icon={Lock} password value={password} onChangeText={setPassword} placeholder="Password" autoCapitalize="none" autoCorrect={false} autoComplete="current-password" textContentType="password" returnKeyType="go" onSubmitEditing={handleLogin} editable={!isLoading} />
+        <View style={styles.options}>
+          <Pressable accessibilityRole="checkbox" accessibilityLabel="Remember me" accessibilityHint="Save your email address on this device for your next login" accessibilityState={{ checked: rememberMe }} aria-checked={rememberMe} disabled={isLoading} onPress={() => {
+            edited.current = true;
+            setRememberMe(!rememberMe);
+            if (rememberMe) void AsyncStorage.removeItem(REMEMBERED_EMAIL_KEY).catch(() => {});
+          }} style={styles.remember}>
+            <View style={[styles.checkbox, rememberMe && styles.checked]}>{rememberMe && <Check size={12} color="#FFFFFF" strokeWidth={3} />}</View>
+            <Text style={authStyles.text}>Remember me</Text>
+          </Pressable>
+          <Pressable accessibilityRole="link" onPress={() => router.push('/forgot-password')} hitSlop={8}>
+            <Text style={authStyles.link}>Forgot Password?</Text>
+          </Pressable>
+        </View>
+        <AuthButton title="Login" onPress={handleLogin} loading={isLoading} disabled={!isLoaded} />
+        <SocialAuthButtons disabled={isLoading || !isLoaded} onGoogle={() => socialAuth('Google')} onGithub={() => socialAuth('GitHub')} />
+      </View>
+    </AuthLayout>
   );
 };
+
+const styles = StyleSheet.create({
+  options: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', columnGap: 8, paddingHorizontal: 4 },
+  remember: { flexDirection: 'row', alignItems: 'center', gap: 8, minHeight: 32 },
+  checkbox: { width: 16, height: 16, borderRadius: 4, borderWidth: 1, borderColor: authColors.border, alignItems: 'center', justifyContent: 'center' },
+  checked: { backgroundColor: authColors.purple, borderColor: authColors.purple },
+});
 
 export default LoginScreen;
