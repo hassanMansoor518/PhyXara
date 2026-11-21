@@ -22,7 +22,7 @@ function validateEvent(number, body) {
   return { answers, elapsedSeconds, score, total: quiz.length, percentage: Math.round(100 * score / quiz.length) };
 }
 
-async function practicalRoute({ endpoint, method, req, res, send, readBody, getDatabase, authenticate }) {
+async function practicalRoute({ endpoint, method, req, res, send, readBody, getDatabase, authenticate, getPreferences }) {
   if (endpoint === '/practicals' && method === 'GET') {
     return send(res, 200, { practicals: class9Labs.map(publicLab) });
   }
@@ -67,18 +67,34 @@ async function practicalRoute({ endpoint, method, req, res, send, readBody, getD
     return send(res, 200, event.payload);
   }
   const db = await getDatabase();
-  const [status, attempts] = await Promise.all([
+  const { timeZone } = await getPreferences(db, user);
+  const [status, attempts, perfect, totals, days] = await Promise.all([
     db.query(`SELECT DISTINCT ON (kind) kind, payload FROM practical_events
       WHERE user_id = $1 AND practical_number = $2 AND kind <> 'quiz'
       ORDER BY kind, occurred_at DESC, event_id DESC`, [user, number]),
     db.query(`SELECT event_id, payload, occurred_at FROM practical_events
       WHERE user_id = $1 AND practical_number = $2 AND kind = 'quiz'
       ORDER BY occurred_at DESC, event_id DESC LIMIT 25`, [user, number]),
+    db.query(`SELECT EXISTS (SELECT 1 FROM practical_events
+      WHERE user_id = $1 AND practical_number = $2 AND kind = 'quiz'
+        AND (payload->>'total')::integer > 0
+        AND (payload->>'score')::integer = (payload->>'total')::integer) AS earned`, [user, number]),
+    db.query(`SELECT count(*)::integer AS count,
+      COALESCE(sum((payload->>'score')::integer), 0)::integer AS correct,
+      COALESCE(sum((SELECT count(*) FROM jsonb_array_elements(payload->'answers') AS answers(answer)
+        WHERE answer <> 'null'::jsonb)), 0)::integer AS answered
+      FROM practical_events WHERE user_id = $1 AND practical_number = $2 AND kind = 'quiz'`, [user, number]),
+    db.query(`SELECT DISTINCT to_char(occurred_at AT TIME ZONE $3, 'YYYY-MM-DD') AS day
+      FROM practical_events WHERE user_id = $1 AND practical_number = $2 AND kind <> 'bookmark'`, [user, number, timeZone]),
   ]);
   const latest = Object.fromEntries(status.rows.map(row => [row.kind, row.payload]));
   return send(res, 200, {
     learned: Boolean(latest.learn), viewed: Boolean(latest.view), calculated: Boolean(latest.calculation),
     bookmarked: latest.bookmark?.bookmarked ?? false,
+    perfectQuiz: perfect.rows[0].earned,
+    quizTotals: totals.rows[0],
+    activityDays: days.rows.map(row => row.day),
+    timeZone,
     attempts: attempts.rows.map(row => ({ ...row.payload, id: row.event_id, createdAt: row.occurred_at })),
   });
 }

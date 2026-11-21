@@ -22,14 +22,14 @@ import { HeroLabIllustration } from '../components/illustrations/HeroLabIllustra
 import { VernierHeroIllustration } from '../components/illustrations/VernierHeroIllustration';
 import { emptyPracticalState, type PracticalState } from '../data/practicalProgress';
 import { PhyXaraLogo } from '../components/PhyXaraLogo';
-import { emptyStats, Home, useLearningData } from '../services/learningService';
+import { useLearningData, usePracticalOverview } from '../services/learningService';
 
 export const HomeScreen: React.FC = () => {
   const { user } = useUser();
 
-  const { data } = useLearningData<Home>('/home');
+  const practicalOverview = usePracticalOverview();
   const { data: practicalState } = useLearningData<PracticalState>('/practicals/1/state');
-  const stats = data?.stats ?? emptyStats;
+  const stats = practicalOverview.statistics;
   const practicalProgress = practicalState ?? emptyPracticalState;
   const practicalCompletion = Math.round(25 * (
     Number(Boolean(practicalProgress.learned)) +
@@ -53,11 +53,11 @@ export const HomeScreen: React.FC = () => {
         showBack={false}
         leftAccessory={
           <View className="flex-row items-center">
-            <PhyXaraLogo size={36} />
+            <PhyXaraLogo size={40} />
             <View className="ml-2">
               <View className="flex-row">
-                <Text style={styles.poppinsBold} className="text-[17px] text-[#0F172A]">Phy</Text>
-                <Text style={styles.poppinsBold} className="text-[17px] text-[#702EFF]">Xara</Text>
+                <Text style={styles.poppinsBold} className="text-[18px] text-[#0F172A]">Phy</Text>
+                <Text style={styles.poppinsBold} className="text-[18px] text-[#702EFF]">Xara</Text>
               </View>
               <Text style={styles.interMedium} className="text-[9px] text-[#64748B]">AI-Powered AR Learning</Text>
             </View>
@@ -92,7 +92,7 @@ export const HomeScreen: React.FC = () => {
 
       {/* Main Scroll Content */}
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 2, paddingBottom: 28 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 6, paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
       >
         <View className="mb-5">
@@ -296,10 +296,10 @@ export const HomeScreen: React.FC = () => {
             {/* Divider */}
             <View className="w-[1px] h-8 bg-[#E2E8F0]" />
 
-            {/* Stat 3: Chapters */}
+            {/* Stat 3: Completed practicals */}
             <View className="flex-1 items-center">
-              <Text className="text-2xl font-black text-[#0F172A]">{stats.chaptersCompleted}</Text>
-              <Text className="text-[11px] text-[#64748B] font-medium mt-0.5">Chapters</Text>
+              <Text className="text-2xl font-black text-[#0F172A]">{practicalOverview.completed}</Text>
+              <Text className="text-[11px] text-[#64748B] font-medium mt-0.5">Practicals</Text>
             </View>
           </Pressable>
         </View>

@@ -1,8 +1,8 @@
 import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
-import { ChevronRight, Search, Sparkles } from 'lucide-react-native';
-import React, { useEffect, useMemo, useRef, useState } from 'react';
-import { Pressable, ScrollView, StyleSheet, Text, TextInput, View } from 'react-native';
+import { ChevronRight } from 'lucide-react-native';
+import React, { useEffect, useMemo, useState } from 'react';
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { AppHeader } from '../components/AppHeader';
 import { BottomTabBar } from '../components/BottomTabBar';
@@ -14,7 +14,6 @@ import { PhysicsChapter, SINDH_PHYSICS_CHAPTERS } from '../data/physicsTopics';
 export const LibraryScreen: React.FC = () => {
   const [selectedClass, setSelectedClass] = useState<'Class 9' | 'Class 10' | 'Class 11' | 'Class 12'>('Class 9');
   const [searchQuery, setSearchQuery] = useState('');
-  const searchInput = useRef<React.ComponentRef<typeof TextInput>>(null);
 
   const classFilters: ('Class 9' | 'Class 10' | 'Class 11' | 'Class 12')[] = [
     'Class 9',
@@ -80,44 +79,23 @@ export const LibraryScreen: React.FC = () => {
   return (
     <SafeAreaView className="flex-1 bg-[#F8FAFC]" edges={['top', 'left', 'right']}>
       <AppHeader
-        showBack={false}
         title="Explore Physics"
-        leftAccessory={
-          <View className="w-10 h-10 rounded-2xl bg-[#2563EB] items-center justify-center shadow-sm shadow-blue-500/30">
-            <Sparkles size={20} color="#FFFFFF" />
-          </View>
-        }
-        rightAccessory={
-          <Pressable
-            accessibilityRole="button"
-            accessibilityLabel="Search"
-            onPress={() => searchInput.current?.focus()}
-            style={({ pressed }) => [pressed && { opacity: 0.75 }]}
-            className="w-10 h-10 rounded-full bg-white border border-[#E2E8F0] items-center justify-center"
-            hitSlop={8}
-          >
-            <Search size={20} color="#64748B" />
-          </Pressable>
-        }
+        rightIcon="bell"
+        onRightPress={() => Alert.alert('Learning updates',
+          data ? 'You have unlocked ' + data.achievements.filter(item => item.unlocked).length +
+            ' of ' + data.achievements.length + ' badges. View your progress for details.'
+            : 'Open your progress to see learning updates and achievements.',
+          [
+            { text: 'Close', style: 'cancel' },
+            { text: 'View progress', onPress: () => router.push('/progress') },
+          ])}
       />
 
       <ScrollView
-        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 4, paddingBottom: 28 }}
+        contentContainerStyle={{ paddingHorizontal: 20, paddingTop: 15, paddingBottom: 28 }}
         showsVerticalScrollIndicator={false}
       >
-        {/* Search Input Bar */}
-        <View className="flex-row items-center bg-white rounded-2xl px-4 py-2.5 border border-[#E2E8F0] shadow-sm mb-4">
-          <Search size={18} color="#94A3B8" />
-          <TextInput
-            ref={searchInput}
-            value={searchQuery}
-            onChangeText={setSearchQuery}
-            placeholder={selectedClass === 'Class 9' ? 'Search practicals or apparatus…' : 'Search chapters or topics…'}
-            placeholderTextColor="#94A3B8"
-            style={styles.interRegular}
-            className="flex-1 ml-3 text-sm text-[#0F172A] py-1"
-          />
-        </View>
+
 
         {/* Class Filter Chips */}
         <View className="mb-5">

@@ -125,7 +125,15 @@ export const ProfileScreen: React.FC = () => {
       {/* Header */}
       <AppHeader
         title="Student Profile"
-        rightIcon="none"
+        rightIcon="bell"
+        onRightPress={() => Alert.alert('Learning updates',
+          progress ? 'You have unlocked ' + progress.achievements.filter(item => item.unlocked).length +
+            ' of ' + progress.achievements.length + ' badges. View your progress for details.'
+            : 'Open your progress to see learning updates and achievements.',
+          [
+            { text: 'Close', style: 'cancel' },
+            { text: 'View progress', onPress: () => router.push('/progress') },
+          ])}
         onBack={() => router.replace('/(tabs)')}
       />
 

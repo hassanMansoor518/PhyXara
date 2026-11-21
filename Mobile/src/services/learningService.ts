@@ -2,7 +2,8 @@ import { useAuth } from '@clerk/expo';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useFocusEffect } from 'expo-router';
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { applyPracticalEvent, emptyPracticalState, type PracticalEvent, type PracticalState } from '../data/practicalProgress';
+import { applyPracticalEvent, emptyPracticalState, practicalAchievements, practicalStatistics, type PracticalEvent, type PracticalState } from '../data/practicalProgress';
+import { class9Labs } from '../data/class9Labs';
 import { SINDH_PHYSICS_CHAPTERS, type PhysicsChapter } from '../data/physicsTopics';
 
 export interface Achievement {
@@ -206,5 +207,82 @@ export function useLearningData<T>(path: string) {
     data: result?.owner === userId ? result?.data : undefined,
     failed: Boolean(userId && failedOwner === userId),
     retry: () => setRevision(value => value + 1),
+  };
+}
+
+
+export function usePracticalOverview() {
+  const { userId, request, flush } = useLearningAccount();
+  const [result, setResult] = useState<{ owner: string; states: PracticalState[] }>();
+
+  useFocusEffect(useCallback(() => {
+    if (!userId) return;
+    const owner = userId;
+    let current = true;
+    const snapshotKey = (number: number) => '@phyxara_snapshot:' + owner + ':/practicals/' + number + '/state';
+
+    async function loadSaved() {
+      const keys = await AsyncStorage.getAllKeys();
+      const snapshots = class9Labs.map((_, index) => snapshotKey(index + 1));
+      const eventKeys = keys.filter(key => key.startsWith('@phyxara_practical:' + owner + ':'));
+      const values = new Map(await AsyncStorage.multiGet([...snapshots, ...eventKeys]));
+      const states = class9Labs.map((_, index) => {
+        const number = index + 1;
+        const raw = values.get(snapshotKey(number));
+        let state: PracticalState = raw ? { ...emptyPracticalState, ...JSON.parse(raw) } : emptyPracticalState;
+        const prefix = practicalLocalPrefix(owner, number);
+        const events = eventKeys.filter(key => key.startsWith(prefix)).flatMap(key => {
+          const rawEvent = values.get(key);
+          if (!rawEvent) return [];
+          const payload = JSON.parse(rawEvent) as { event: PracticalEvent; occurredAt: string };
+          return [{ ...payload, id: key.slice(prefix.length) }];
+        }).sort((a, b) => a.occurredAt.localeCompare(b.occurredAt) || a.id.localeCompare(b.id));
+        for (const event of events) {
+          state = applyPracticalEvent(state, number, event.event, event.id, event.occurredAt);
+        }
+        return state;
+      });
+      if (current) setResult({ owner, states });
+    }
+
+    async function refresh() {
+      try {
+        await loadSaved();
+        if (!current) return;
+        await flush();
+        const savedKeys = new Set(await AsyncStorage.getAllKeys());
+        const acknowledged = [...savedKeys].filter(key => key.startsWith('@phyxara_practical:' + owner + ':') &&
+          !savedKeys.has('@phyxara_queue:' + owner + ':' + key.slice(key.lastIndexOf(':') + 1)));
+        await Promise.allSettled(class9Labs.map(async (_, index) => {
+          const number = index + 1;
+          const state = await request<PracticalState>('/practicals/' + number + '/state');
+          if (!current) return;
+          await AsyncStorage.setItem(snapshotKey(number), JSON.stringify(state));
+          const synced = acknowledged.filter(key => key.startsWith(practicalLocalPrefix(owner, number)));
+          if (synced.length) await AsyncStorage.multiRemove(synced);
+        }));
+        if (current) await loadSaved();
+      } catch (error) {
+        console.warn('Practical overview could not refresh', error);
+      }
+    }
+
+    void refresh();
+    return () => { current = false; };
+  }, [userId, request, flush]));
+
+  const states = (result?.owner === userId ? result?.states : undefined) ?? [];
+  const completedSections = states.reduce((total, state) => total +
+    Number(state.learned) + Number(state.viewed) + Number(state.calculated) + Number(state.attempts.length > 0), 0);
+  const statistics = practicalStatistics(states, states.find(state => state.timeZone)?.timeZone);
+  return {
+    statistics,
+    loaded: Boolean(userId && result?.owner === userId),
+    percentage: Math.round(100 * completedSections / (class9Labs.length * 4)),
+    completed: states.filter(state => state.learned && state.viewed && state.calculated && state.attempts.length > 0).length,
+    questionsAnswered: statistics.questionsAnswered,
+    total: class9Labs.length,
+    completedSections,
+    achievements: practicalAchievements(states),
   };
 }

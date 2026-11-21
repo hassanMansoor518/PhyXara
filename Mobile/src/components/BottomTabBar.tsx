@@ -1,5 +1,6 @@
 import { router, usePathname } from 'expo-router';
-import { Award, BookOpen, Home, User } from 'lucide-react-native';
+import { Award, BookOpen, ChartNoAxesColumnIncreasing, Home, ScanLine, User } from 'lucide-react-native';
+import { LinearGradient } from 'expo-linear-gradient';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -7,9 +8,10 @@ import { PhyXaraLogo } from './PhyXaraLogo';
 
 export interface BottomTabBarProps {
   activeTab?: 'home' | 'explore' | 'scan' | 'progress' | 'profile';
+  variant?: 'default' | 'progress';
 }
 
-export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
+export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab, variant = 'default' }) => {
   const insets = useSafeAreaInsets();
 
   const pathname = usePathname();
@@ -39,6 +41,22 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
   const navigateTo = (path: string) => {
     router.push(path as any);
   };
+
+  // Opt-in styling for Progress only; the existing routes remain shared.
+  if (variant === 'progress') {
+    const tabs = [
+      { label: 'Home', path: '/(tabs)', Icon: Home, selected: isHome },
+      { label: 'Explore', path: '/library', Icon: BookOpen, selected: isExplore },
+      { label: 'AR Scanner', path: '/scanner', Icon: ScanLine, selected: false },
+      { label: 'Progress', path: '/progress', Icon: ChartNoAxesColumnIncreasing, selected: isProgress },
+      { label: 'Profile', path: '/profile', Icon: User, selected: isProfile },
+    ];
+    return <View style={[styles.progressBar, { paddingBottom: Math.max(insets.bottom, 10) }]}>
+      {tabs.map(({ label, path, Icon, selected }, index) => <Pressable key={label} accessibilityRole="button" accessibilityLabel={label} accessibilityState={{ selected }} onPress={() => { if (!selected) navigateTo(path); }} style={({ pressed }) => [styles.progressTab, pressed && { opacity: 0.7, transform: [{ scale: 0.95 }] }]}>
+        {index === 2 ? <LinearGradient colors={['#8354FF', '#702EFF']} style={styles.progressScan}><Icon size={24} color="#FFFFFF" /></LinearGradient> : <><Icon size={20} color={selected ? '#5700DC' : '#494456'} /><Text style={[styles.progressLabel, { color: selected ? '#5700DC' : '#494456' }]}>{label}</Text></>}
+      </Pressable>)}
+    </View>;
+  }
 
   return (
     <View
@@ -112,6 +130,10 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
 };
 
 const styles = StyleSheet.create({
+  progressBar: { backgroundColor: '#FFFFFF', borderTopWidth: 1, borderColor: '#D5D1E499', flexDirection: 'row', alignItems: 'center', paddingHorizontal: 8, paddingTop: 8, boxShadow: '0 -3px 16px rgba(8,15,56,0.04)' },
+  progressTab: { flex: 1, minHeight: 44, alignItems: 'center', justifyContent: 'center', gap: 4 },
+  progressScan: { width: 56, height: 56, marginTop: -24, borderRadius: 28, borderWidth: 4, borderColor: '#FFFFFF', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 22px rgba(112,46,255,0.35)' },
+  progressLabel: { fontFamily: 'AuthInter-Medium', fontSize: 11, lineHeight: 16 },
   scanButtonShadow: {
     boxShadow: '0 6px 8px rgba(37, 99, 235, 0.35)',
     elevation: 8,

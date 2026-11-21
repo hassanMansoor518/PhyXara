@@ -140,3 +140,58 @@ test('the practical catalog works without a database and private history require
     await new Promise(resolve => server.close(resolve));
   }
 });
+
+test('practical badges reflect saved activity and keep a perfect score after history is capped', () => {
+  const { practicalQuiz } = require('../src/data/practicalQuiz.ts');
+  const { applyPracticalEvent, emptyPracticalState, practicalAchievements } = require('../src/data/practicalProgress.ts');
+  const fresh = practicalAchievements([]);
+  assert.equal(fresh.length, 4);
+  assert.ok(fresh.every(badge => !badge.unlocked && badge.completedCount === 0));
+  assert.ok(fresh.every(badge => !Object.hasOwn(badge, 'rewardXP')));
+  const questions = practicalQuiz(1);
+  const date = '2026-11-22T00:00:00Z';
+  let state = applyPracticalEvent(emptyPracticalState, 1,
+    { kind: 'quiz', answers: questions.map(question => question.correct), elapsedSeconds: 20 }, 'perfect-attempt', date);
+  for (let index = 0; index < 30; index++) {
+    state = applyPracticalEvent(state, 1,
+      { kind: 'quiz', answers: questions.map(() => null), elapsedSeconds: 20 }, 'skipped-' + index, date);
+  }
+  assert.equal(state.attempts.length, 25);
+  assert.ok(state.attempts.every(attempt => attempt.score === 0));
+  assert.equal(state.perfectQuiz, true);
+  for (const kind of ['learn', 'view', 'calculation']) {
+    state = applyPracticalEvent(state, 1, { kind }, 'event-' + kind, date);
+  }
+  const badges = practicalAchievements([state]);
+  assert.equal(badges.length, 4);
+  assert.ok(badges.every(badge => badge.unlocked));
+  assert.ok(practicalAchievements(Array(16).fill(state)).every(badge => badge.unlocked));
+});
+
+test('practical statistics count real attempts, unique model views and local study days', () => {
+  const { practicalQuiz } = require('../src/data/practicalQuiz.ts');
+  const { applyPracticalEvent, emptyPracticalState, practicalStatistics } = require('../src/data/practicalProgress.ts');
+  const now = new Date('2026-11-22T01:00:00Z');
+  const quiz = practicalQuiz(1);
+  const answers = quiz.map(question => question.correct);
+  const event = { kind: 'quiz', answers, elapsedSeconds: 10 };
+  let state = applyPracticalEvent(emptyPracticalState, 1, { kind: 'learn' }, 'learn-one', '2026-11-21T01:00:00Z');
+  state = applyPracticalEvent(state, 1, { kind: 'view' }, 'view-one', now.toISOString());
+  state = applyPracticalEvent(state, 1, { kind: 'view' }, 'view-again', now.toISOString());
+  for (let index = 0; index < 30; index++) {
+    state = applyPracticalEvent(state, 1, event, 'quiz-' + index, now.toISOString());
+  }
+  state = applyPracticalEvent(state, 1, event, 'quiz-0', now.toISOString());
+  const stats = practicalStatistics([state], 'Asia/Karachi', now);
+  assert.equal(state.attempts.length, 25);
+  assert.equal(stats.quizzesCompleted, 30);
+  assert.equal(stats.modelsExplored, 1);
+  assert.equal(stats.xp, 30 * quiz.length * 10 + 25);
+  assert.equal(stats.questionsAnswered, 30 * quiz.length);
+  assert.equal(stats.streak, 2);
+  assert.deepEqual(practicalStatistics([], 'Asia/Karachi', now), {
+    xp: 0, streak: 0, quizzesCompleted: 0, modelsExplored: 0, questionsAnswered: 0,
+  });
+  const bookmark = applyPracticalEvent(emptyPracticalState, 1, { kind: 'bookmark', bookmarked: true }, 'bookmark-one', now.toISOString());
+  assert.equal(practicalStatistics([bookmark], 'Asia/Karachi', now).streak, 0);
+});

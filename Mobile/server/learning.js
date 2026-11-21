@@ -148,7 +148,7 @@ async function handleLearning(req, res, url) {
     const endpoint = route.pathname.slice('/api/v1'.length);
     const method = req.method;
     if (endpoint === '/practicals' || endpoint.startsWith('/practicals/')) {
-      return await practicalRoute({ endpoint, method, req, res, send, readBody, getDatabase, authenticate });
+      return await practicalRoute({ endpoint, method, req, res, send, readBody, getDatabase, authenticate, getPreferences });
     }
     if (method === 'GET' && endpoint === '/health') {
       await (await getDatabase()).query('SELECT 1');
