@@ -1,8 +1,8 @@
 import { router } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Box, Eye, GraduationCap, ScanLine, Zap } from 'lucide-react-native';
 import React, { useCallback, useRef, useState } from 'react';
 import {
-  Animated,
   FlatList,
   NativeScrollEvent,
   NativeSyntheticEvent,
@@ -12,6 +12,7 @@ import {
   useWindowDimensions,
   View,
 } from 'react-native';
+import { StatusBar } from 'expo-status-bar';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { ARIllustration } from '../components/illustrations/ARIllustration';
 import { PhysicsModelIllustration } from '../components/illustrations/PhysicsModelIllustration';
@@ -96,46 +97,33 @@ const SlideItem: React.FC<{
   slideWidth: number;
   slideHeight: number;
   illustrationH: number;
-  scrollX: Animated.Value;
-}> = ({ item, index, slideWidth, slideHeight, illustrationH, scrollX }) => {
-  const illustrationScale = scrollX.interpolate({
-    inputRange: [(index - 1) * slideWidth, index * slideWidth, (index + 1) * slideWidth],
-    outputRange: [0.88, 1, 0.88],
-    extrapolate: 'clamp',
-  });
-
-  const contentOpacity = scrollX.interpolate({
-    inputRange: [(index - 1) * slideWidth, index * slideWidth, (index + 1) * slideWidth],
-    outputRange: [0.35, 1, 0.35],
-    extrapolate: 'clamp',
-  });
-
+}> = ({ item, index, slideWidth, slideHeight, illustrationH }) => {
   return (
     <View style={[styles.slide, { width: slideWidth, height: slideHeight }]}>
+      <View style={[styles.decorativeGlow, { pointerEvents: 'none' }]} />
       {/* Top Section */}
-      <Animated.View style={[styles.topSection, { opacity: contentOpacity }]}>
-        <View style={styles.topBadgeCard}>
+      <View style={styles.topSection}>
+        <LinearGradient
+          colors={['#EEF2FF', '#FFFFFF']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.topBadgeCard}
+        >
           <TopBadgeIcon badgeKey={item.topBadgeKey} />
-        </View>
+        </LinearGradient>
 
         <Text style={styles.slideTitle}>{item.title}</Text>
         <Text style={styles.slideHighlight}>{item.highlight}</Text>
         <Text style={styles.slideDesc}>{item.description}</Text>
-      </Animated.View>
+      </View>
 
       {/* Middle Section: Illustration */}
-      <Animated.View
-        style={[
-          styles.illustrationArea,
-          { height: illustrationH },
-          { transform: [{ scale: illustrationScale }] },
-        ]}
-      >
+      <View style={[styles.illustrationArea, { height: illustrationH }]}>
         <IllustrationForSlide index={index} size={slideWidth - 32} illustrationH={illustrationH} />
-      </Animated.View>
+      </View>
 
       {/* Bottom Feature Card */}
-      <Animated.View style={[styles.bottomSection, { opacity: contentOpacity }]}>
+      <View style={styles.bottomSection}>
         <View style={styles.featureCard}>
           <View style={styles.featureIconBox}>
             <FeatureIcon iconKey={item.featureIconKey} />
@@ -145,38 +133,37 @@ const SlideItem: React.FC<{
             <Text style={styles.featureDesc}>{item.featureDesc}</Text>
           </View>
         </View>
-      </Animated.View>
+      </View>
     </View>
   );
 };
 
-const TOPBAR_H = 48;
-const BOTTOMNAV_H = 74;
+const TOPBAR_H = 64;
+const BOTTOMNAV_H = 92;
 
 export const OnboardingScreen: React.FC = () => {
   const { width, height } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const flatListRef = useRef<any>(null);
-  const scrollX = useRef(new Animated.Value(0)).current;
 
   const slideHeight = height - TOPBAR_H - BOTTOMNAV_H;
-  const illustrationH = Math.round(slideHeight * 0.44);
+  const illustrationH = Math.round(Math.min(slideHeight * 0.43, width < 390 ? 260 : 300));
 
-  const handleSkip = useCallback(async () => {
-    await authService.setOnboardingDone();
-    router.push('/login');
+  const handleSkip = useCallback(() => {
+    void authService.setOnboardingDone();
+    router.replace('/login');
   }, []);
 
-  const handleNext = useCallback(async () => {
+  const handleNext = useCallback(() => {
     if (currentIndex < SLIDES.length - 1) {
       const next = currentIndex + 1;
-      flatListRef.current?.scrollToIndex({ index: next, animated: true });
       setCurrentIndex(next);
+      flatListRef.current?.scrollToOffset({ offset: next * width, animated: true });
     } else {
-      await authService.setOnboardingDone();
-      router.push('/login');
+      void authService.setOnboardingDone();
+      router.replace('/login');
     }
-  }, [currentIndex]);
+  }, [currentIndex, width]);
 
   const onMomentumScrollEnd = useCallback(
     (e: NativeSyntheticEvent<NativeScrollEvent>) => {
@@ -188,6 +175,7 @@ export const OnboardingScreen: React.FC = () => {
 
   return (
     <SafeAreaView style={styles.container}>
+      <StatusBar style="dark" />
       {/* Top Bar */}
       <View style={[styles.topBar, { height: TOPBAR_H }]}>
         {/* Pagination Dots */}
@@ -213,16 +201,19 @@ export const OnboardingScreen: React.FC = () => {
       <FlatList
         ref={flatListRef}
         data={SLIDES}
+        extraData={currentIndex}
         keyExtractor={(item) => item.id}
         horizontal
         pagingEnabled
+        decelerationRate="fast"
+        removeClippedSubviews
+        initialNumToRender={1}
+        maxToRenderPerBatch={1}
+        windowSize={1}
+        snapToInterval={width}
+        snapToAlignment="start"
         showsHorizontalScrollIndicator={false}
         bounces={false}
-        scrollEventThrottle={16}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
         onMomentumScrollEnd={onMomentumScrollEnd}
         getItemLayout={(_, i) => ({ length: width, offset: width * i, index: i })}
         renderItem={({ item, index }) => (
@@ -232,7 +223,6 @@ export const OnboardingScreen: React.FC = () => {
             slideWidth={width}
             slideHeight={slideHeight}
             illustrationH={illustrationH}
-            scrollX={scrollX}
           />
         )}
       />
@@ -242,25 +232,33 @@ export const OnboardingScreen: React.FC = () => {
         {currentIndex < SLIDES.length - 1 ? (
           <Pressable
             onPress={handleNext}
+            accessibilityRole="button"
+            accessibilityLabel="Next onboarding slide"
+            hitSlop={8}
             style={({ pressed }) => [
               styles.arrowBtn,
               pressed && styles.arrowBtnPressed,
             ]}
           >
-            <ArrowRight size={22} color="#FFFFFF" />
+            <LinearGradient colors={['#702EFF', '#2563EB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.arrowBtnFill}>
+              <ArrowRight size={22} color="#FFFFFF" />
+            </LinearGradient>
           </Pressable>
         ) : (
           <Pressable
             onPress={handleNext}
+            accessibilityRole="button"
+            accessibilityLabel="Finish onboarding and continue to login"
+            hitSlop={8}
             style={({ pressed }) => [
               styles.getStartedBtn,
               pressed && styles.getStartedBtnPressed,
             ]}
           >
-            <Text style={styles.getStartedText}>Get Started</Text>
-            <View style={{ marginLeft: 8 }}>
+            <LinearGradient colors={['#702EFF', '#2563EB']} start={{ x: 0, y: 0 }} end={{ x: 1, y: 1 }} style={styles.getStartedFill}>
+              <Text style={styles.getStartedText}>Get Started</Text>
               <ArrowRight size={18} color="#FFFFFF" />
-            </View>
+            </LinearGradient>
           </Pressable>
         )}
       </View>
@@ -271,13 +269,14 @@ export const OnboardingScreen: React.FC = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#FFFFFF',
+    backgroundColor: '#F8FAFF',
   },
   topBar: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'space-between',
     paddingHorizontal: 24,
+    backgroundColor: '#F8FAFF',
   },
   dotsRow: {
     flexDirection: 'row',
@@ -297,59 +296,72 @@ const styles = StyleSheet.create({
     backgroundColor: '#DBEAFE',
   },
   skipBtn: {
-    paddingVertical: 4,
-    paddingHorizontal: 8,
+    minHeight: 36,
+    minWidth: 52,
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderRadius: 18,
+    backgroundColor: '#EEF2FF',
+    borderWidth: 1,
+    borderColor: '#E0E7FF',
   },
   skipText: {
+    fontFamily: 'AuthInter-Medium',
     fontSize: 14,
-    fontWeight: '700',
     color: '#2563EB',
   },
   slide: {
     flex: 1,
     justifyContent: 'space-between',
+    backgroundColor: '#F8FAFF',
+  },
+  decorativeGlow: {
+    position: 'absolute',
+    width: 260,
+    height: 260,
+    borderRadius: 130,
+    backgroundColor: '#E8E0FF',
+    opacity: 0.38,
+    top: 120,
+    right: -150,
   },
   topSection: {
     paddingHorizontal: 24,
-    paddingTop: 6,
+    paddingTop: 8,
   },
   topBadgeCard: {
-    width: 44,
-    height: 44,
-    borderRadius: 14,
-    backgroundColor: '#EFF6FF',
+    width: 48,
+    height: 48,
+    borderRadius: 16,
     alignItems: 'center',
     justifyContent: 'center',
-    marginBottom: 14,
+    marginBottom: 16,
     borderWidth: 1,
     borderColor: '#DBEAFE',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.1,
-    shadowRadius: 10,
-    elevation: 3,
+    boxShadow: '0 6px 14px rgba(37, 99, 235, 0.14)',
+    elevation: 4,
   },
   slideTitle: {
-    fontSize: 32,
-    fontWeight: '900',
+    fontFamily: 'AuthPoppins-Bold',
+    fontSize: 30,
     color: '#0F172A',
-    letterSpacing: -0.6,
-    lineHeight: 38,
+    letterSpacing: -0.8,
+    lineHeight: 36,
   },
   slideHighlight: {
-    fontSize: 32,
-    fontWeight: '900',
-    color: '#2563EB',
-    letterSpacing: -0.6,
-    lineHeight: 38,
-    marginBottom: 12,
+    fontFamily: 'AuthPoppins-Bold',
+    fontSize: 30,
+    color: '#702EFF',
+    letterSpacing: -0.8,
+    lineHeight: 36,
+    marginBottom: 10,
   },
   slideDesc: {
-    fontSize: 14.5,
-    fontWeight: '400',
+    fontFamily: 'AuthInter-Regular',
+    fontSize: 14,
     color: '#475569',
-    lineHeight: 22,
-    maxWidth: '96%',
+    lineHeight: 21,
+    maxWidth: 330,
   },
   illustrationArea: {
     alignItems: 'center',
@@ -357,22 +369,19 @@ const styles = StyleSheet.create({
   },
   bottomSection: {
     paddingHorizontal: 24,
-    paddingBottom: 6,
+    paddingBottom: 10,
   },
   featureCard: {
     flexDirection: 'row',
     alignItems: 'center',
-    backgroundColor: '#FFFFFF',
-    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.94)',
+    borderRadius: 22,
     borderWidth: 1,
-    borderColor: '#E2E8F0',
+    borderColor: '#E2E6F5',
     paddingHorizontal: 16,
-    paddingVertical: 14,
-    shadowColor: '#000000',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.05,
-    shadowRadius: 12,
-    elevation: 2,
+    paddingVertical: 13,
+    boxShadow: '0 8px 18px rgba(97, 87, 165, 0.09)',
+    elevation: 4,
   },
   featureIconBox: {
     width: 42,
@@ -389,14 +398,14 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   featureTitle: {
+    fontFamily: 'AuthPoppins-SemiBold',
     fontSize: 15,
-    fontWeight: '800',
     color: '#0F172A',
     marginBottom: 3,
   },
   featureDesc: {
+    fontFamily: 'AuthInter-Regular',
     fontSize: 12.5,
-    fontWeight: '400',
     color: '#64748B',
     lineHeight: 18,
   },
@@ -404,45 +413,51 @@ const styles = StyleSheet.create({
     paddingHorizontal: 24,
     justifyContent: 'center',
     alignItems: 'flex-end',
+    backgroundColor: '#F8FAFF',
   },
   arrowBtn: {
-    width: 54,
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#2563EB',
+    width: 58,
+    height: 58,
+    borderRadius: 29,
     alignItems: 'center',
     justifyContent: 'center',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
+    boxShadow: '0 8px 16px rgba(112, 46, 255, 0.28)',
+    elevation: 7,
+  },
+  arrowBtnFill: {
+    width: 58,
+    height: 58,
+    borderRadius: 29,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   arrowBtnPressed: {
     transform: [{ scale: 0.94 }],
     opacity: 0.9,
   },
   getStartedBtn: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
+    boxShadow: '0 8px 16px rgba(112, 46, 255, 0.28)',
+    elevation: 7,
+  },
+  getStartedFill: {
+    width: '100%',
+    height: 56,
+    borderRadius: 28,
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    width: '100%',
-    height: 54,
-    borderRadius: 27,
-    backgroundColor: '#2563EB',
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 12,
-    elevation: 6,
+    gap: 8,
   },
   getStartedBtnPressed: {
     transform: [{ scale: 0.98 }],
     opacity: 0.92,
   },
   getStartedText: {
+    fontFamily: 'AuthPoppins-SemiBold',
     fontSize: 16,
-    fontWeight: '800',
     color: '#FFFFFF',
     letterSpacing: 0.2,
   },

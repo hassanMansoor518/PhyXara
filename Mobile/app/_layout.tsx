@@ -2,6 +2,7 @@ import '../global.css';
 import { ClerkProvider, useAuth } from '@clerk/expo';
 import { Stack, useRouter, useSegments } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import { useFonts } from 'expo-font';
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
@@ -71,10 +72,10 @@ function InitialLayout() {
     <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="splash" options={{ headerShown: false }} />
-      <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-      <Stack.Screen name="login" options={{ headerShown: false }} />
-      <Stack.Screen name="register" options={{ headerShown: false }} />
-      <Stack.Screen name="forgot-password" options={{ headerShown: false }} />
+      <Stack.Screen name="onboarding" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="login" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="register" options={{ headerShown: false, animation: 'none' }} />
+      <Stack.Screen name="forgot-password" options={{ headerShown: false, animation: 'none' }} />
       <Stack.Screen name="(tabs)" options={{ headerShown: false }} />
       <Stack.Screen name="scanner" options={{ headerShown: false, animation: 'fade' }} />
       <Stack.Screen name="unity" options={{ headerShown: false, animation: 'fade', gestureEnabled: false }} />
@@ -95,6 +96,13 @@ function InitialLayout() {
 }
 
 export default function RootLayout() {
+  useFonts({
+    'AuthPoppins-Bold': require('../assets/fonts/Poppins-Bold.ttf'),
+    'AuthPoppins-SemiBold': require('../assets/fonts/Poppins-SemiBold.ttf'),
+    'AuthInter-Regular': require('../assets/fonts/Inter-Regular.ttf'),
+    'AuthInter-Medium': require('../assets/fonts/Inter-Medium.ttf'),
+  });
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <ClerkProvider publishableKey={publishableKey || ''} tokenCache={tokenCache}>

@@ -41,7 +41,7 @@ export const PhysicsModelIllustration: React.FC<Props> = ({ width, height }) => 
       -1,
       true
     );
-  }, []);
+  }, [cubeFloat, shadowScale]);
 
   const animatedCubeStyle = useAnimatedStyle(() => ({
     transform: [{ translateY: cubeFloat.value }],
@@ -89,16 +89,20 @@ export const PhysicsModelIllustration: React.FC<Props> = ({ width, height }) => 
         <Svg width={width} height={height} viewBox="0 0 300 270">
           <Defs>
             <LinearGradient id="pm_top" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0%" stopColor="#C084FC" />
-              <Stop offset="100%" stopColor="#8B5CF6" />
+              <Stop offset="0%" stopColor="#F3E8FF" />
+              <Stop offset="28%" stopColor="#C084FC" />
+              <Stop offset="70%" stopColor="#8B5CF6" />
+              <Stop offset="100%" stopColor="#6D28D9" />
             </LinearGradient>
             <LinearGradient id="pm_left" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0%" stopColor="#581C87" />
-              <Stop offset="100%" stopColor="#3B0764" />
+              <Stop offset="0%" stopColor="#7E22CE" />
+              <Stop offset="55%" stopColor="#581C87" />
+              <Stop offset="100%" stopColor="#2E1065" />
             </LinearGradient>
             <LinearGradient id="pm_right" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0%" stopColor="#7E22CE" />
-              <Stop offset="100%" stopColor="#581C87" />
+              <Stop offset="0%" stopColor="#A855F7" />
+              <Stop offset="48%" stopColor="#7E22CE" />
+              <Stop offset="100%" stopColor="#4C1D95" />
             </LinearGradient>
           </Defs>
 
@@ -127,6 +131,8 @@ export const PhysicsModelIllustration: React.FC<Props> = ({ width, height }) => 
           {/* Edge Highlights */}
           <Path d="M 150 72 L 206 105 M 150 72 L 94 105 M 150 72 L 150 138"
             stroke="#F3E8FF" strokeWidth="1.2" strokeOpacity="0.8" strokeLinecap="round" />
+          <Path d="M 94 105 L 150 138 L 150 203" stroke="#C084FC" strokeWidth="1" strokeOpacity="0.38" fill="none" />
+          <Path d="M 206 105 L 150 138 L 150 203" stroke="#DDD6FE" strokeWidth="1" strokeOpacity="0.28" fill="none" />
 
           {/* Force Vectors */}
 

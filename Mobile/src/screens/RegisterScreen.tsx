@@ -146,7 +146,7 @@ export const RegisterScreen: React.FC = () => {
             <AuthInput icon={Mail} value={email} onChangeText={setEmail} placeholder="Email Address" keyboardType="email-address" autoCapitalize="none" autoCorrect={false} autoComplete="email" textContentType="emailAddress" editable={!isLoading} />
             <AuthInput icon={Lock} password value={password} onChangeText={setPassword} placeholder="Password" accessibilityHint="Use at least 8 characters" autoCapitalize="none" autoCorrect={false} autoComplete="new-password" textContentType="newPassword" returnKeyType="go" onSubmitEditing={handleSignUp} editable={!isLoading} />
             <AuthButton title="Sign Up" onPress={handleSignUp} loading={isLoading} disabled={!isLoaded} />
-            <SocialAuthButtons signUp disabled={isLoading || !isLoaded} onGoogle={() => socialAuth('Google')} onGithub={() => socialAuth('GitHub')} />
+            <SocialAuthButtons signUp disabled={isLoading || !isLoaded} onGoogle={() => socialAuth('Google')} onFacebook={() => socialAuth('Facebook')} />
           </>
         )}
       </View>

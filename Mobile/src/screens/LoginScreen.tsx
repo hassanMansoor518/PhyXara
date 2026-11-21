@@ -104,7 +104,7 @@ export const LoginScreen: React.FC = () => {
           </Pressable>
         </View>
         <AuthButton title="Login" onPress={handleLogin} loading={isLoading} disabled={!isLoaded} />
-        <SocialAuthButtons disabled={isLoading || !isLoaded} onGoogle={() => socialAuth('Google')} onGithub={() => socialAuth('GitHub')} />
+        <SocialAuthButtons disabled={isLoading || !isLoaded} onGoogle={() => socialAuth('Google')} onFacebook={() => socialAuth('Facebook')} />
       </View>
     </AuthLayout>
   );

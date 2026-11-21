@@ -2,7 +2,7 @@ import { useFonts } from 'expo-font';
 import { LinearGradient } from 'expo-linear-gradient';
 import { StatusBar } from 'expo-status-bar';
 import React, { PropsWithChildren, useEffect, useId } from 'react';
-import { ActivityIndicator, KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
+import { KeyboardAvoidingView, Platform, ScrollView, StyleSheet, Text, View } from 'react-native';
 import Animated, {
   Easing,
   useAnimatedStyle,
@@ -68,7 +68,7 @@ export function AuthLayout({ title, subtitle, footer, children }: PropsWithChild
   const waveMiddleStyle = useAnimatedStyle(() => ({
     transform: [{ translateX: waveMiddleX.value }, { translateY: waveMiddleY.value }],
   }));
-  const [loaded, fontError] = useFonts({
+  useFonts({
     'AuthPoppins-Bold': require('../../../assets/fonts/Poppins-Bold.ttf'),
     'AuthPoppins-SemiBold': require('../../../assets/fonts/Poppins-SemiBold.ttf'),
     'AuthInter-Regular': require('../../../assets/fonts/Inter-Regular.ttf'),
@@ -78,10 +78,9 @@ export function AuthLayout({ title, subtitle, footer, children }: PropsWithChild
   return (
     <KeyboardAvoidingView style={styles.root} behavior={Platform.OS === 'ios' ? 'padding' : undefined}>
       <StatusBar style="light" />
-      {!loaded && !fontError ? <ActivityIndicator style={styles.loading} color={authColors.purple} /> : (
-        <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled" keyboardDismissMode="on-drag" showsVerticalScrollIndicator={false}>
           <LinearGradient colors={['#050A25', '#080F38', '#080F38']} style={[styles.header, { paddingTop: Math.max(insets.top, 24) + 16 }]}>
-            <View pointerEvents="none" style={StyleSheet.absoluteFill}>
+            <View style={[StyleSheet.absoluteFill, { pointerEvents: 'none' }]}>
               <Svg width="100%" height="100%">
                 <Defs><RadialGradient id={glowId} cx="50%" cy="0%" rx="55%" ry="100%"><Stop offset="0" stopColor="#702EFF" stopOpacity={0.22} /><Stop offset="1" stopColor="#702EFF" stopOpacity={0} /></RadialGradient></Defs>
                 <Rect width="100%" height="100%" fill={'url(#' + glowId + ')'} />
@@ -107,7 +106,7 @@ export function AuthLayout({ title, subtitle, footer, children }: PropsWithChild
               <Text accessibilityRole="header" style={styles.title}>{title}</Text>
               <Text style={styles.subtitle}>{subtitle}</Text>
             </View>
-            <View style={styles.wave} pointerEvents="none">
+            <View style={[styles.wave, { pointerEvents: 'none' }]}>
               <Animated.View style={[styles.waveLayer, waveBackStyle]}>
                 <Svg width={780} height={48} viewBox="0 0 780 48" preserveAspectRatio="none">
                   <Defs>
@@ -139,8 +138,7 @@ export function AuthLayout({ title, subtitle, footer, children }: PropsWithChild
             <View style={styles.content}>{children}</View>
             <View style={styles.footer}>{footer}</View>
           </LinearGradient>
-        </ScrollView>
-      )}
+      </ScrollView>
     </KeyboardAvoidingView>
   );
 }
@@ -156,7 +154,6 @@ export const authStyles = StyleSheet.create({
 
 const styles = StyleSheet.create({
   root: { flex: 1, backgroundColor: '#080F38' },
-  loading: { flex: 1 },
   scroll: { flexGrow: 1 },
   header: { paddingHorizontal: 24, paddingBottom: 64, alignItems: 'center', overflow: 'hidden' },
   brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },

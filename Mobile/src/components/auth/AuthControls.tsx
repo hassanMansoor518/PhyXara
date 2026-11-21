@@ -2,7 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowRight, Eye, EyeOff, LucideIcon } from 'lucide-react-native';
 import React, { useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, TextInput, TextInputProps, View } from 'react-native';
-import Svg, { Path } from 'react-native-svg';
+import Svg, { Circle, Path } from 'react-native-svg';
 import { authColors, authStyles } from './AuthLayout';
 
 export function AuthInput({ icon: Icon, password = false, ...props }: TextInputProps & { icon: LucideIcon; password?: boolean }) {
@@ -41,7 +41,7 @@ export function AuthError({ message }: { message: string }) {
   return <View accessibilityRole="alert" accessibilityLiveRegion="polite" style={authStyles.error}><Text style={authStyles.errorText}>{message}</Text></View>;
 }
 
-export function SocialAuthButtons({ signUp = false, disabled, onGoogle, onGithub }: { signUp?: boolean; disabled: boolean; onGoogle: () => void; onGithub: () => void }) {
+export function SocialAuthButtons({ signUp = false, disabled, onGoogle, onFacebook }: { signUp?: boolean; disabled: boolean; onGoogle: () => void; onFacebook: () => void }) {
   return <>
     <View style={styles.divider}><Text style={authStyles.text}>{signUp ? 'or sign up with' : 'or continue with'}</Text></View>
     <View style={styles.socialRow}>
@@ -53,8 +53,8 @@ export function SocialAuthButtons({ signUp = false, disabled, onGoogle, onGithub
           <Path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" />
         </Svg>
       </Pressable>
-      <Pressable accessibilityRole="button" accessibilityLabel={`${signUp ? 'Sign up' : 'Continue'} with GitHub`} disabled={disabled} onPress={onGithub} style={({ pressed }) => [styles.social, disabled && styles.disabled, pressed && styles.pressed]}>
-        <Svg width={20} height={20} viewBox="0 0 24 24"><Path fill={authColors.navy} fillRule="evenodd" d="M12 2C6.477 2 2 6.484 2 12.017c0 4.425 2.865 8.18 6.839 9.504.5.092.682-.217.682-.483 0-.237-.008-.868-.013-1.703-2.782.605-3.369-1.343-3.369-1.343-.454-1.158-1.11-1.466-1.11-1.466-.908-.62.069-.608.069-.608 1.003.07 1.53 1.032 1.53 1.032.892 1.53 2.341 1.088 2.91.832.092-.647.35-1.088.636-1.338-2.22-.253-4.555-1.113-4.555-4.951 0-1.093.39-1.988 1.029-2.688-.103-.253-.446-1.272.098-2.65 0 0 .84-.27 2.75 1.026A9.564 9.564 0 0112 6.844c.85.004 1.705.115 2.504.337 1.909-1.296 2.747-1.027 2.747-1.027.546 1.379.202 2.398.1 2.651.64.7 1.028 1.595 1.028 2.688 0 3.848-2.339 4.695-4.566 4.943.359.309.678.92.678 1.855 0 1.338-.012 2.419-.012 2.747 0 .268.18.58.688.482A10.019 10.019 0 0022 12.017C22 6.484 17.522 2 12 2z" /></Svg>
+      <Pressable accessibilityRole="button" accessibilityLabel={`${signUp ? 'Sign up' : 'Continue'} with Facebook`} disabled={disabled} onPress={onFacebook} style={({ pressed }) => [styles.social, disabled && styles.disabled, pressed && styles.pressed]}>
+        <Svg width={20} height={20} viewBox="0 0 24 24"><Circle cx="12" cy="12" r="12" fill="#1877F2" /><Path fill="#FFFFFF" d="M16.67 15.47l.53-3.47h-3.33V9.75c0-.95.47-1.88 1.96-1.88h1.51V4.92s-1.37-.23-2.68-.23c-2.74 0-4.53 1.66-4.53 4.67V12H7.08v3.47h3.05v8.39a12.1 12.1 0 003.74 0v-8.39h2.8z" /></Svg>
       </Pressable>
     </View>
   </>;
@@ -65,7 +65,7 @@ const styles = StyleSheet.create({
   focused: { borderColor: authColors.purple },
   input: { flex: 1, minWidth: 0, paddingVertical: 14, paddingHorizontal: 0, fontFamily: 'AuthInter-Regular', fontSize: 14, lineHeight: 21, color: authColors.navy },
   eye: { minWidth: 36, minHeight: 44, alignItems: 'center', justifyContent: 'center', marginRight: -8 },
-  button: { marginTop: 4, borderRadius: 999, shadowColor: authColors.purple, shadowOffset: { width: 0, height: 6 }, shadowOpacity: 0.3, shadowRadius: 12, elevation: 5 },
+  button: { marginTop: 4, borderRadius: 999, boxShadow: '0 6px 12px rgba(112, 46, 255, 0.30)', elevation: 5 },
   buttonFill: { minHeight: 50, paddingHorizontal: 32, paddingVertical: 14, borderRadius: 999, flexDirection: 'row', gap: 8, alignItems: 'center', justifyContent: 'center' },
   buttonText: { fontFamily: 'AuthPoppins-SemiBold', fontSize: 15, lineHeight: 20, letterSpacing: 0.1, color: '#FFFFFF' },
   disabled: { opacity: 0.55 },

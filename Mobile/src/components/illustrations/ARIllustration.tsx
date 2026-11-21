@@ -61,7 +61,7 @@ export const ARIllustration: React.FC<Props> = ({ width, height }) => {
       -1,
       true
     );
-  }, []);
+  }, [pendulumAngle, pillFloat1, pillFloat2, pillFloat3]);
 
   const animatedPendulumStyle = useAnimatedStyle(() => ({
     transform: [
@@ -161,12 +161,15 @@ export const ARIllustration: React.FC<Props> = ({ width, height }) => {
         <Svg width={width} height={height} viewBox="0 0 300 270">
           <Defs>
             <LinearGradient id="ar_bob" x1="0" y1="0" x2="1" y2="1">
-              <Stop offset="0%" stopColor="#C084FC" />
-              <Stop offset="50%" stopColor="#9333EA" />
-              <Stop offset="100%" stopColor="#581C87" />
+              <Stop offset="0%" stopColor="#E9D5FF" />
+              <Stop offset="18%" stopColor="#C084FC" />
+              <Stop offset="48%" stopColor="#9333EA" />
+              <Stop offset="78%" stopColor="#6B21A8" />
+              <Stop offset="100%" stopColor="#2E1065" />
             </LinearGradient>
             <RadialGradient id="ar_bobShine" cx="35%" cy="35%" r="50%">
-              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.85" />
+              <Stop offset="0%" stopColor="#FFFFFF" stopOpacity="0.92" />
+              <Stop offset="28%" stopColor="#F5F3FF" stopOpacity="0.38" />
               <Stop offset="100%" stopColor="#FFFFFF" stopOpacity="0" />
             </RadialGradient>
           </Defs>
@@ -175,6 +178,7 @@ export const ARIllustration: React.FC<Props> = ({ width, height }) => {
           <Line x1="150" y1="92" x2="150" y2="152" stroke="#C4B5FD" strokeWidth="1.8" strokeLinecap="round" />
 
           {/* 3D Sphere Bob */}
+          <Ellipse cx="150" cy="182" rx="19" ry="5" fill="#581C87" fillOpacity="0.18" />
           <Circle cx="150" cy="155" r="23" fill="url(#ar_bob)" />
           <Circle cx="150" cy="155" r="23" fill="url(#ar_bobShine)" />
           <Circle cx="142" cy="147" r="7" fill="#FFFFFF" fillOpacity="0.4" />
