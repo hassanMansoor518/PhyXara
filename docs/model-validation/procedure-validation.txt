@@ -1,0 +1,1 @@
+PASS: 26 scene models, 13 unique experiments per scene, idle until tapped, all mapped diagram labels and 4 procedure captions each, tap colliders, drivers and animation bindings verified.

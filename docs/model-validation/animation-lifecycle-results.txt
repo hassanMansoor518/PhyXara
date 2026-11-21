@@ -1,0 +1,1 @@
+PASS: idle until activated, start, progression, single completion, replay, and stop/reset. Live device touch remains untested.

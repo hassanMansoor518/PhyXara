@@ -10,7 +10,8 @@
     "web": "expo start --web",
     "lint": "expo lint",
     "server": "node --watch server/index.js",
-    "postinstall": "node ./scripts/patch-unity-package.js"
+    "postinstall": "node ./scripts/patch-unity-package.js",
+    "unity:sync": "node scripts/sync-unity.js"
   },
   "dependencies": {
     "@azesmway/react-native-unity": "^1.1.1",

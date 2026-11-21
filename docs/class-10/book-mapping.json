@@ -1,0 +1,431 @@
+{
+  "book": "Sindh Textbook Board Physics Practical Journal, Class X, test edition",
+  "source_pdf": "C:/Users/Muhammad Rohaan/OneDrive/Pictures/refence image/837751091-10th-Class-Physics-Practical-Book-1.pdf",
+  "pdf_page_count": 47,
+  "contents_pdf_page": 7,
+  "text_extraction": "All 47 pages are scans with no extractable text; experiment and figure mappings were visually verified against rendered pages and installed target thumbnails.",
+  "database": "AR_class_10",
+  "calibration": {
+    "raw_xml_unchanged": true,
+    "scene_width_rule": "raw XML width / 100, provisionally interpreting 10/15/18 as centimetres rather than metres",
+    "status": "Nominal starting calibration; measure the actual printed target crop before claiming physical calibration.",
+    "pdf_bounds_note": "Approximate visible diagram bounds are recorded in 1100-pixel-high page renders. They exclude surrounding page borders included in some tracking crops. The named enhanced/cleaned targets can have a different aspect ratio from the scanned diagram, so these bounds must not be treated as exact target crops.",
+    "pdf_scale_rule": "At 100% printing, diagram width in metres = pixel-bounds width / render-pixel width * MediaBox width in points / 72 * 0.0254; Fit to page changes this scale."
+  },
+  "source_corrections": [
+    "Ohm's law text on printed page 16 contains an inverted R=I/V statement; use R=V/I.",
+    "Telescope apparatus on printed page 12 reverses objective and eyepiece focal-length roles. Follow the longer-focal-length objective and shorter-focal-length eyepiece shown in its procedure and diagram.",
+    "Microscope focal-length precautions on printed page 15 contradict each other; use physically consistent compound-microscope optics rather than those numeric statements.",
+    "Sample electrical observation tables contain inconsistent arithmetic. Demonstrations use explicit internally consistent example values, not purported measurements."
+  ],
+  "experiments": [
+    {
+      "number": 1,
+      "title": "Refraction through a glass slab",
+      "target": "glass_slab_refraction_no_watermark",
+      "printed_start_page": 1,
+      "pdf_start_page": 8,
+      "printed_diagram_page": 2,
+      "pdf_diagram_page": 9,
+      "raw_xml_width": 10.0,
+      "scene_width_meters": 0.1,
+      "visible_diagram_bounds_render_px": [
+        145,
+        325,
+        687,
+        645
+      ],
+      "steps": [
+        "Outline the slab and mark the incident ray",
+        "Align pins to trace the refracted and emergent rays",
+        "Measure the incidence and refraction angles",
+        "Repeat and compare refractive index and lateral displacement"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        595.2,
+        792.0
+      ],
+      "render_pixels": [
+        827,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.13761
+    },
+    {
+      "number": 2,
+      "title": "Refractive index of water using a concave mirror",
+      "target": "referencematerial_14",
+      "printed_start_page": 4,
+      "pdf_start_page": 11,
+      "printed_diagram_page": 4,
+      "pdf_diagram_page": 11,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        285,
+        660,
+        580,
+        1018
+      ],
+      "steps": [
+        "Place the horizontal mirror under a vertical needle",
+        "Remove parallax without water and record OC",
+        "Add a thin water layer and refocus to record OA",
+        "Repeat and calculate refractive index n = OC / OA"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        612.0,
+        769.0
+      ],
+      "render_pixels": [
+        876,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.07271
+    },
+    {
+      "number": 3,
+      "title": "Critical angle and total internal reflection in glass",
+      "target": "prism_total_reflection_no_watermark",
+      "printed_start_page": 6,
+      "pdf_start_page": 13,
+      "printed_diagram_page": 7,
+      "pdf_diagram_page": 14,
+      "raw_xml_width": 10.0,
+      "scene_width_meters": 0.1,
+      "visible_diagram_bounds_render_px": [
+        188,
+        193,
+        570,
+        540
+      ],
+      "steps": [
+        "Direct a narrow ray into the glass",
+        "Increase the internal angle of incidence",
+        "Observe grazing refraction followed by total internal reflection",
+        "Record the critical angle and repeat"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        564.0,
+        792.0
+      ],
+      "render_pixels": [
+        784,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.09695
+    },
+    {
+      "number": 4,
+      "title": "Ray path and angle of deviation through a prism",
+      "target": "prism_diagram_enhanced",
+      "printed_start_page": 8,
+      "pdf_start_page": 15,
+      "printed_diagram_page": 8,
+      "pdf_diagram_page": 15,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        155,
+        660,
+        670,
+        990
+      ],
+      "steps": [
+        "Outline the prism and place incident-ray pins",
+        "Align emergent-ray pins through the prism",
+        "Draw both normals and extend the incident and emergent rays",
+        "Measure deviation and repeat for other incidence angles"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        579.8,
+        792.0
+      ],
+      "render_pixels": [
+        806,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.13069
+    },
+    {
+      "number": 5,
+      "title": "Convex-lens focal length by parallax",
+      "target": "referencematerial_16",
+      "printed_start_page": 10,
+      "pdf_start_page": 17,
+      "printed_diagram_page": 10,
+      "pdf_diagram_page": 17,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        145,
+        782,
+        620,
+        1012
+      ],
+      "steps": [
+        "Align the object pin, convex lens and search pin",
+        "Move the search pin to the inverted image",
+        "Remove parallax and measure object distance p and image distance q",
+        "Repeat and calculate f = p q / (p + q)"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        585.8,
+        792.0
+      ],
+      "render_pixels": [
+        814,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.12059
+    },
+    {
+      "number": 6,
+      "title": "Astronomical telescope",
+      "target": "referencematerial_17",
+      "printed_start_page": 12,
+      "pdf_start_page": 19,
+      "printed_diagram_page": 12,
+      "pdf_diagram_page": 19,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        78,
+        700,
+        730,
+        974
+      ],
+      "steps": [
+        "Align a long-focus objective with a distant object",
+        "Locate its real inverted image",
+        "Place a short-focus eyepiece near that image and focus",
+        "Compare angular sizes and calculate magnification fo / fe"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        585.8,
+        792.0
+      ],
+      "render_pixels": [
+        814,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.16553
+    },
+    {
+      "number": 7,
+      "title": "Compound microscope",
+      "target": "referencematerial_18",
+      "printed_start_page": 14,
+      "pdf_start_page": 21,
+      "printed_diagram_page": 14,
+      "pdf_diagram_page": 21,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        155,
+        602,
+        692,
+        970
+      ],
+      "steps": [
+        "Place a small object just beyond the objective focus",
+        "Locate the enlarged real inverted intermediate image",
+        "Align an eyepiece with the intermediate image inside its focus",
+        "Observe the enlarged virtual image and refine the focus"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        578.5,
+        792.0
+      ],
+      "render_pixels": [
+        804,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.13631
+    },
+    {
+      "number": 8,
+      "title": "Ohm's law using a wire conductor",
+      "target": "referencematerial_19",
+      "printed_start_page": 16,
+      "pdf_start_page": 23,
+      "printed_diagram_page": 16,
+      "pdf_diagram_page": 23,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        205,
+        776,
+        600,
+        1005
+      ],
+      "steps": [
+        "Connect the source, key, rheostat and ammeter in series",
+        "Connect the voltmeter across the test wire",
+        "Close the key and vary current with the rheostat",
+        "Compare voltage and current; verify constant R = V / I"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        582.6,
+        792.0
+      ],
+      "render_pixels": [
+        810,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.10023
+    },
+    {
+      "number": 9,
+      "title": "Resistors in series",
+      "target": "referencematerial_20",
+      "printed_start_page": 18,
+      "pdf_start_page": 25,
+      "printed_diagram_page": 19,
+      "pdf_diagram_page": 26,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        120,
+        210,
+        695,
+        578
+      ],
+      "steps": [
+        "Connect two resistors and the ammeter in one series path",
+        "Connect the voltmeter across the resistors being measured",
+        "Close the key and record voltage and current",
+        "Compare individual and combined resistances: Rs = R1 + R2"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        594.0,
+        792.0
+      ],
+      "render_pixels": [
+        825,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.14605
+    },
+    {
+      "number": 10,
+      "title": "Resistors in parallel",
+      "target": "parallel_circuit_no_watermark",
+      "printed_start_page": 21,
+      "pdf_start_page": 28,
+      "printed_diagram_page": 21,
+      "pdf_diagram_page": 28,
+      "raw_xml_width": 15.0,
+      "scene_width_meters": 0.15,
+      "visible_diagram_bounds_render_px": [
+        235,
+        364,
+        621,
+        612
+      ],
+      "steps": [
+        "Connect resistor branches across the same two source terminals",
+        "Measure the common branch voltage",
+        "Compare branch currents with the total source current",
+        "Verify I = I1 + I2 + I3 and reciprocal resistance addition"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        590.4,
+        792.0
+      ],
+      "render_pixels": [
+        820,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.09804
+    },
+    {
+      "number": 11,
+      "title": "Galvanometer resistance by half deflection",
+      "target": "referencematerial_22",
+      "printed_start_page": 23,
+      "pdf_start_page": 30,
+      "printed_diagram_page": 23,
+      "pdf_diagram_page": 30,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        430,
+        641,
+        785,
+        875
+      ],
+      "steps": [
+        "Connect a high resistance R in series with the galvanometer",
+        "Close the main key and note the initial deflection",
+        "Close the shunt path and adjust S to halve the deflection",
+        "Repeat and calculate galvanometer resistance G = R S / (R - S)"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        606.2,
+        792.0
+      ],
+      "render_pixels": [
+        842,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.09016
+    },
+    {
+      "number": 12,
+      "title": "Magnetic field of a bar magnet",
+      "target": "referencematerial_24",
+      "printed_start_page": 25,
+      "pdf_start_page": 32,
+      "printed_diagram_page": 26,
+      "pdf_diagram_page": 33,
+      "raw_xml_width": 18.0,
+      "scene_width_meters": 0.18,
+      "visible_diagram_bounds_render_px": [
+        225,
+        177,
+        590,
+        450
+      ],
+      "steps": [
+        "Place the magnet on paper and trace its outline",
+        "Use a compass to mark the field direction near a pole",
+        "Move the compass along the marks and join the points",
+        "Repeat along other paths; outside lines run from north to south"
+      ],
+      "pdf_media_box_points": [
+        0.0,
+        0.0,
+        588.4,
+        792.0
+      ],
+      "render_pixels": [
+        818,
+        1100
+      ],
+      "approx_visible_diagram_width_at_pdf_100_percent_meters": 0.09262
+    }
+  ]
+}

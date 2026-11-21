@@ -1,0 +1,1 @@
+PASS: 50 models; hidden callouts, outward/fade animation, extending lines, retraction, rapid reversal, zoom, tracking reset, preserved captions/calibration, and shared Label button wiring. Physical-device touch/layout remain untested.

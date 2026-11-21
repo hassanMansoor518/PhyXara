@@ -1,0 +1,186 @@
+{
+  "package": "C:\\Users\\Muhammad Rohaan\\Downloads\\AR_class_10.unitypackage",
+  "packageBytes": 742544,
+  "assetCount": 14,
+  "targetCount": 12,
+  "targets": [
+    {
+      "name": "glass_slab_refraction_no_watermark",
+      "size": "10.000000 4.824940"
+    },
+    {
+      "name": "prism_total_reflection_no_watermark",
+      "size": "10.000000 7.798233"
+    },
+    {
+      "name": "parallel_circuit_no_watermark",
+      "size": "15.000000 5.773050"
+    },
+    {
+      "name": "referencematerial_18",
+      "size": "18.000000 9.033596"
+    },
+    {
+      "name": "referencematerial_17",
+      "size": "18.000000 8.524375"
+    },
+    {
+      "name": "referencematerial_19",
+      "size": "18.000000 5.775124"
+    },
+    {
+      "name": "referencematerial_20",
+      "size": "18.000000 7.927273"
+    },
+    {
+      "name": "prism_diagram_enhanced",
+      "size": "18.000000 8.540146"
+    },
+    {
+      "name": "referencematerial_24",
+      "size": "18.000000 7.172104"
+    },
+    {
+      "name": "referencematerial_22",
+      "size": "18.000000 11.551584"
+    },
+    {
+      "name": "referencematerial_16",
+      "size": "18.000000 6.082818"
+    },
+    {
+      "name": "referencematerial_14",
+      "size": "18.000000 9.021176"
+    }
+  ],
+  "assets": [
+    {
+      "path": "Assets/StreamingAssets/Vuforia/AR_class_10.dat",
+      "guid": "7a15291ddd984fb4ac4fb61f6d9640af",
+      "bytes": 336493,
+      "sha256": "25c1b7d95aa0a1b9bbb9645e0cce7eaa35536f3068a331f0d8f0634c30f91432",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/StreamingAssets/Vuforia/AR_class_10.xml",
+      "guid": "79ac343462304ca982950be5bba1a1d9",
+      "bytes": 1022,
+      "sha256": "d3f59c1f547dcfd5b8179819a211021c4cfde37468a611ca52422ec2b9d4f048",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/glass_slab_refraction_no_watermark_scaled.jpg",
+      "guid": "bd1a1c6a2c58491ea32a7057034cd209",
+      "bytes": 33412,
+      "sha256": "04c6897ae304a53b6a74ea8436bf63af86b834690ed8c0e43d64534c37047f8b",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/prism_total_reflection_no_watermark_scaled.jpg",
+      "guid": "8a8cac8a52c2439e98d17efb884d9bab",
+      "bytes": 43332,
+      "sha256": "4dcc40b81accb7cf6c13dbf8c8df37f397c83777c24ac63e50e816cc80397df9",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/parallel_circuit_no_watermark_scaled.jpg",
+      "guid": "9defc344e2454e229d713365652c08f8",
+      "bytes": 22721,
+      "sha256": "ec53d5ba46c581e2d95a04e1002a13e619e3f66f4843d68a552d988d491a325c",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_18_scaled.jpg",
+      "guid": "5287425856bb492a9de805c0e059b446",
+      "bytes": 53329,
+      "sha256": "ae6ce94242c74bd905766d0f977c7f9dc79d1914d589596e219d1d32dfd7db36",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_17_scaled.jpg",
+      "guid": "27e6dea45a484f9ea4fa677d76198ca7",
+      "bytes": 41471,
+      "sha256": "0f70ccc7110f1c389027d545a4eebcea9c5b87515de085c5ea462bed0817b57d",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_19_scaled.jpg",
+      "guid": "0f582f19c11044fe83f4e724f9062552",
+      "bytes": 29688,
+      "sha256": "7cddf2d2888cb7931c6107ce7165a83660fa751c50b3f01073e81feccc356da6",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_20_scaled.jpg",
+      "guid": "d2706d346f7c4ed590348bbe14876a25",
+      "bytes": 49820,
+      "sha256": "209e42a320e0ae7e70e222d08bb57819da789440d59b974f7d2b6a6ade8fbf4f",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/prism_diagram_enhanced_scaled.jpg",
+      "guid": "b6f9e6d12c794f9992f041dbe7c0c8b8",
+      "bytes": 27540,
+      "sha256": "c5740aaec1e43b2cd796d2386816aaf5214767ad34321dd5aabb0d257583b302",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_24_scaled.jpg",
+      "guid": "cab6843405f7495f8ca7561faea2a9a2",
+      "bytes": 44222,
+      "sha256": "6e123c9ebf7154317be9b9dc91a22066d354648fc0adbaee73fc2823862aa700",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_22_scaled.jpg",
+      "guid": "357bf0454d7649e0b71ffc8af6752c0b",
+      "bytes": 37931,
+      "sha256": "e4a5acc0de8d939ef542f3babdce1a7382b7b06ca8e1c7e5b8104c45e58b0fc5",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_16_scaled.jpg",
+      "guid": "71ec0fa922a5428fb2f6674f95528473",
+      "bytes": 34275,
+      "sha256": "b66464119ee8a9b176ef59be96855a0a2ba78e8eafcac8d77e865e384f2209c5",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    },
+    {
+      "path": "Assets/Editor/Vuforia/ImageTargetTextures/AR_class_10/referencematerial_14_scaled.jpg",
+      "guid": "79044bdb72e84d7ab821581d7cc4165a",
+      "bytes": 47022,
+      "sha256": "6fe3526986ddae26795b4d3a97c4e6d64ba4c84eb9abf8648fd40cd5138ccf72",
+      "assetIdentical": true,
+      "guidIdentical": true,
+      "packageMetadataBytes": 0
+    }
+  ],
+  "guidCollisions": {},
+  "metadataNote": "Vuforia package includes empty metaData entries and no asset.meta payloads. Installed GUIDs match package GUID folder names."
+}

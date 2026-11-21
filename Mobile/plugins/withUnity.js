@@ -4,7 +4,7 @@ const { withAndroidManifest, withAppBuildGradle, withGradleProperties, withDange
 const fs = require('fs');
 const path = require('path');
 
-const MIN_SDK = '26'; // highest of: RN 0.86 (24), ARCore (24), Unity 6 export (set in ExportAndroid.cs)
+const MIN_SDK = '29'; // Vuforia 11.4.4 requires Android 10 or newer.
 
 // @reactvision/react-viro (xRMode "AR") already adds CAMERA, camera.ar and the ARCore meta-data;
 // duplicates of the same <meta-data> break the manifest merge, so only add them when Viro is absent.
@@ -13,7 +13,7 @@ const hasViro = (config) => (config.plugins || []).some((p) => (Array.isArray(p)
 const withArManifest = (config) =>
   hasViro(config) ? config : withAndroidManifest(config, (mod) => {
     const manifest = mod.modResults;
-    AndroidConfig.Permissions.ensurePermissions(manifest, ['android.permission.CAMERA']);
+    AndroidConfig.Permissions.ensurePermissions(manifest, ['android.permission.CAMERA', 'android.permission.HIGH_SAMPLING_RATE_SENSORS']);
 
     const root = manifest.manifest;
     root['uses-feature'] = root['uses-feature'] || [];
@@ -96,6 +96,11 @@ const withLibraryGradle9Fix = (config) =>
         const fixed = src.replace(/^\s*jcenter\(\)\s*$/gm, '');
         if (fixed !== src) fs.writeFileSync(file, fixed);
       }
+      const proguard = path.join(mod.modRequest.platformProjectRoot, 'app', 'proguard-rules.pro');
+      const bridgeRule = '-keep class com.azesmwayreactnativeunity.ReactNativeUnityViewManager { public static void sendMessageToMobileApp(java.lang.String); }';
+      if (fs.existsSync(proguard) && !fs.readFileSync(proguard, 'utf8').includes(bridgeRule)) {
+        fs.appendFileSync(proguard, `\n# Called from Unity through AndroidJavaClass.\n${bridgeRule}\n`);
+      }
       return mod;
     },
   ]);
@@ -121,21 +126,25 @@ const withUnityGradleProperties = (config) =>
     const candidates = [
       path.join(mod.modRequest.projectRoot, 'unity', 'builds', 'android', 'gradle.properties'),
       path.join(mod.modRequest.projectRoot, '..', 'AR_MODE', 'Builds', 'android', 'gradle.properties'),
-      'E:/hassan/hassan uni work/semester 8/PhyXara/AR_MODE/Builds/android/gradle.properties',
     ];
-    const exported = candidates.find((p) => p && fs.existsSync(p));
+    const exported = candidates.find((p) => fs.existsSync(p));
     const wanted = new Map();
     if (exported) {
       for (const line of fs.readFileSync(exported, 'utf8').split('\n')) {
         const m = line.trim().match(/^(unity[A-Za-z.]*)=(.*)$/);
-        if (m && m[1] !== 'unityStreamingAssets') wanted.set(m[1], m[2]);
+        if (m) wanted.set(m[1], m[2]);
       }
     } else {
-      console.warn('[withUnity] AR_MODE/Builds/android/gradle.properties not found: export from Unity first');
+      console.warn('[withUnity] unity/builds/android/gradle.properties not found: export Unity and run npm run unity:sync first');
     }
+    const streaming = (wanted.get('unityStreamingAssets') || '').split(',').map((value) => value.trim()).filter(Boolean);
+    wanted.set('unityStreamingAssets', [...new Set(['.unity3d', ...streaming])].join(', '));
     wanted.set('org.gradle.parallel', 'false');
     wanted.set('org.gradle.workers.max', '2');
     wanted.set('org.gradle.jvmargs', '-Xmx3g -XX:MaxMetaspaceSize=512m');
+    wanted.set('reactNativeArchitectures', 'arm64-v8a');
+    wanted.set('android.enableMinifyInReleaseBuilds', 'true');
+    wanted.set('android.enableShrinkResourcesInReleaseBuilds', 'true');
     mod.modResults = mod.modResults.filter((p) => !(p.type === 'property' && wanted.has(p.key)));
     for (const [key, value] of wanted) mod.modResults.push({ type: 'property', key, value });
     return mod;

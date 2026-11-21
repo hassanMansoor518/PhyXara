@@ -5,12 +5,20 @@ import { BackHandler, Pressable, StyleSheet, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { UnityBridge } from './UnityBridge';
 
+class ReusableUnityView extends UnityView {
+  componentWillUnmount() {
+    // Keep the native player alive so reopening AR can resume the same scene.
+    this.pauseUnity(true);
+  }
+}
+
 /** Full-screen host for the Unity view: the view plus the app's usual round back button, nothing else. */
 export const UnityHostScreen: React.FC = () => {
   const insets = useSafeAreaInsets();
   const unityRef = useRef<UnityView>(null);
 
   useEffect(() => {
+    unityRef.current?.resumeUnity();
     UnityBridge.attach(unityRef);
     const sub = BackHandler.addEventListener('hardwareBackPress', () => {
       UnityBridge.close(); // sends {"type":"stop"} then pops this screen
@@ -27,7 +35,7 @@ export const UnityHostScreen: React.FC = () => {
 
   return (
     <View style={styles.root}>
-      <UnityView
+      <ReusableUnityView
         ref={unityRef}
         style={StyleSheet.absoluteFill}
         onUnityMessage={(e) => UnityBridge.handleNativeMessage(e.nativeEvent.message)}

@@ -1,0 +1,1 @@
+PASS: 50 models; page-axis reveal timing, stationary 8 mm hover, 60 fps request, repeated tracking, frozen reveal on loss and fresh reveal after a long loss, authored transforms, animation paths, pinch scale, preview isolation and skipped untracked label updates. Physical-device appearance remains untested.
