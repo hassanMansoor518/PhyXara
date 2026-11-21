@@ -31,6 +31,9 @@ export const ProfileScreen: React.FC = () => {
   const { data, failed, retry } = useLearningData<Preferences>('/me/preferences');
   const { request } = useLearningAccount();
   const [saving, setSaving] = useState(false);
+  const [logoutConfirmationVisible, setLogoutConfirmationVisible] = useState(false);
+  const [loggingOut, setLoggingOut] = useState(false);
+  const [logoutError, setLogoutError] = useState('');
   const stats = progress?.stats ?? emptyStats;
   const preferences = data ?? defaultPreferences;
 
@@ -104,21 +107,17 @@ export const ProfileScreen: React.FC = () => {
   ];
 
   const handleLogout = async () => {
-    Alert.alert('Log Out', 'Are you sure you want to log out of your account?', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: async () => {
-          try {
-            await signOut();
-          } catch {
-            // ignore
-          }
-          router.replace('/login');
-        },
-      },
-    ]);
+    if (loggingOut) return;
+    setLoggingOut(true);
+    setLogoutError('');
+    try {
+      await signOut();
+      router.replace('/login');
+    } catch {
+      setLogoutError('Unable to log out. Please try again.');
+    } finally {
+      setLoggingOut(false);
+    }
   };
 
   return (
@@ -218,13 +217,48 @@ export const ProfileScreen: React.FC = () => {
 
         {/* Log Out Button */}
         <Pressable
-          onPress={handleLogout}
+          onPress={() => {
+            setLogoutError('');
+            setLogoutConfirmationVisible(true);
+          }}
           className="flex-row items-center justify-center bg-red-50 rounded-2xl py-3.5 border border-red-200 shadow-sm active:bg-red-100"
         >
           <LogOut size={16} color="#DC2626" className="mr-2" />
           <Text className="text-xs font-extrabold text-[#DC2626] ml-1.5">Log Out</Text>
         </Pressable>
       </ScrollView>
+
+      {logoutConfirmationVisible && (
+        <View className="absolute inset-0 z-50 items-center justify-center bg-black/40 px-6">
+          <View className="w-full max-w-sm rounded-3xl bg-white p-6 shadow-lg">
+            <Text className="text-lg font-black text-[#0F172A]">Log Out</Text>
+            <Text className="mt-2 text-sm text-[#64748B]">
+              Are you sure you want to log out of your account?
+            </Text>
+            {logoutError ? (
+              <Text className="mt-3 text-sm font-semibold text-[#DC2626]">{logoutError}</Text>
+            ) : null}
+            <View className="mt-5 flex-row justify-end gap-3">
+              <Pressable
+                onPress={() => setLogoutConfirmationVisible(false)}
+                disabled={loggingOut}
+                className="rounded-xl border border-[#E2E8F0] px-4 py-3"
+              >
+                <Text className="text-sm font-bold text-[#475569]">Cancel</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => void handleLogout()}
+                disabled={loggingOut}
+                className="rounded-xl bg-[#DC2626] px-4 py-3"
+              >
+                <Text className="text-sm font-bold text-white">
+                  {loggingOut ? 'Logging Out...' : 'Log Out'}
+                </Text>
+              </Pressable>
+            </View>
+          </View>
+        </View>
+      )}
 
       {/* Bottom Navigation */}
       {failed && <Text onPress={retry}>Settings unavailable. Tap to retry.</Text>}

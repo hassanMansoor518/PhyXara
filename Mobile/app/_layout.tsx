@@ -5,7 +5,6 @@ import { StatusBar } from 'expo-status-bar';
 import React, { useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
-import SplashScreen from '../src/screens/SplashScreen';
 import { tokenCache } from '../src/services/tokenCache';
 
 const publishableKey = process.env.EXPO_PUBLIC_CLERK_PUBLISHABLE_KEY;
@@ -20,9 +19,7 @@ export const unstable_settings = {
   initialRouteName: 'index',
 };
 
-// Clerk loads over the network (no resource cache is configured). <ClerkLoaded> rendered nothing until that
-// finished, so a slow or unreachable network left a blank screen forever. Show the splash meanwhile and give
-// up waiting after this long: the user is then treated as signed out and lands on the login flow.
+// Keep route guards from waiting forever when Clerk cannot load.
 const CLERK_LOAD_TIMEOUT_MS = 8000;
 
 function InitialLayout() {
@@ -69,10 +66,6 @@ function InitialLayout() {
       router.replace('/(tabs)');
     }
   }, [isLoaded, isSignedIn, router, segments]);
-
-  if (!isLoaded) {
-    return <SplashScreen autoNavigate={false} />;
-  }
 
   return (
     <Stack screenOptions={{ headerShown: false, animation: 'fade_from_bottom' }}>
