@@ -1,8 +1,9 @@
 import { router, usePathname } from 'expo-router';
-import { Award, BookOpen, Home, ScanLine, User } from 'lucide-react-native';
+import { Award, BookOpen, Home, User } from 'lucide-react-native';
 import React from 'react';
 import { Pressable, StyleSheet, Text, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { PhyXaraLogo } from './PhyXaraLogo';
 
 export interface BottomTabBarProps {
   activeTab?: 'home' | 'explore' | 'scan' | 'progress' | 'profile';
@@ -11,12 +12,7 @@ export interface BottomTabBarProps {
 export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
   const insets = useSafeAreaInsets();
 
-  let pathname = '';
-  try {
-    pathname = usePathname();
-  } catch {
-    pathname = '';
-  }
+  const pathname = usePathname();
 
   const isHome =
     activeTab === 'home' ||
@@ -82,7 +78,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
           className="w-14 h-14 rounded-full bg-[#2563EB] items-center justify-center shadow-lg active:scale-95 border-4 border-white"
           style={styles.scanButtonShadow}
         >
-          <ScanLine size={24} color="#FFFFFF" strokeWidth={2.5} />
+          <PhyXaraLogo size={32} white />
         </Pressable>
       </View>
 
@@ -117,10 +113,7 @@ export const BottomTabBar: React.FC<BottomTabBarProps> = ({ activeTab }) => {
 
 const styles = StyleSheet.create({
   scanButtonShadow: {
-    shadowColor: '#2563EB',
-    shadowOffset: { width: 0, height: 6 },
-    shadowOpacity: 0.35,
-    shadowRadius: 8,
+    boxShadow: '0 6px 8px rgba(37, 99, 235, 0.35)',
     elevation: 8,
   },
 });

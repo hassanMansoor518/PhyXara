@@ -10,7 +10,7 @@ function publicLab(lab, index) {
 function validateEvent(number, body) {
   if (typeof body.eventId !== 'string' || !/^[\w-]{8,100}$/.test(body.eventId)) return null;
   const { kind } = body;
-  if (kind === 'learn' || kind === 'view') return {};
+  if (kind === 'learn' || kind === 'view' || kind === 'calculation') return {};
   if (kind === 'bookmark' && typeof body.bookmarked === 'boolean') return { bookmarked: body.bookmarked };
   if (kind !== 'quiz') return null;
   const quiz = practicalQuiz(number);
@@ -77,7 +77,8 @@ async function practicalRoute({ endpoint, method, req, res, send, readBody, getD
   ]);
   const latest = Object.fromEntries(status.rows.map(row => [row.kind, row.payload]));
   return send(res, 200, {
-    learned: Boolean(latest.learn), viewed: Boolean(latest.view), bookmarked: latest.bookmark?.bookmarked ?? false,
+    learned: Boolean(latest.learn), viewed: Boolean(latest.view), calculated: Boolean(latest.calculation),
+    bookmarked: latest.bookmark?.bookmarked ?? false,
     attempts: attempts.rows.map(row => ({ ...row.payload, id: row.event_id, createdAt: row.occurred_at })),
   });
 }

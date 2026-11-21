@@ -135,6 +135,7 @@ function Experiment({ number }: { number: number }) {
       if (next.some(([, value]) => !Number.isFinite(value))) throw new Error('The result is outside the supported range.');
       setResults(next);
       setError('');
+      update({ kind: 'calculation' });
       if (graph) {
         const point = graph.point(values);
         setPoints(previous => {
@@ -255,7 +256,9 @@ function Experiment({ number }: { number: number }) {
           <Pressable accessibilityRole="button" disabled={progress.learned} onPress={() => update({ kind: 'learn' })} className="rounded-xl bg-[#2563EB] p-3">
             <Text className="text-center font-bold text-white">{progress.learned ? 'Learn completed' : 'Mark Learn complete'}</Text>
           </Pressable>
-          <Text className="text-xs text-[#475569] text-center">{Number(progress.learned) + Number(progress.viewed) + Number(progress.attempts.length > 0)} of 3 sections completed</Text>
+          <Text className="text-xs text-[#475569] text-center">
+            {Number(progress.learned) + Number(progress.viewed) + Number(progress.calculated) + Number(progress.attempts.length > 0)} of 4 sections completed
+          </Text>
         </>}
         <View style={activeTab === 'practice' ? undefined : { display: 'none' }}>
           <PracticalAssessment number={number} history={progress.attempts} save={save} onReview={() => setActiveTab('learn')} />

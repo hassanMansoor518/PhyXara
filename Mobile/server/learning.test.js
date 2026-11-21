@@ -104,6 +104,24 @@ test('all 16 practical quizzes have unique options and grade identically on the 
   }
 });
 
+test('practical progress only advances from saved learning, model, calculation, and quiz events', () => {
+  const { applyPracticalEvent, emptyPracticalState } = require('../src/data/practicalProgress.ts');
+  const { validateEvent } = require('./practicals');
+  let state = emptyPracticalState;
+
+  assert.equal(state.learned || state.viewed || state.calculated || state.attempts.length > 0, false);
+
+  for (const kind of ['learn', 'view', 'calculation']) {
+    const event = { kind, eventId: 'progress-' + kind };
+    assert.deepEqual(validateEvent(1, event), {});
+    state = applyPracticalEvent(state, 1, event, event.eventId, '2026-11-11T00:00:00Z');
+  }
+
+  assert.equal(state.learned, true);
+  assert.equal(state.viewed, true);
+  assert.equal(state.calculated, true);
+});
+
 test('the practical catalog works without a database and private history requires sign-in', async () => {
   server.listen(0, '127.0.0.1');
   await once(server, 'listening');

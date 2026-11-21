@@ -1,6 +1,6 @@
 import { practicalQuiz } from './practicalQuiz.ts';
 
-export type PracticalEvent = { kind: 'learn' | 'view' } |
+export type PracticalEvent = { kind: 'learn' | 'view' | 'calculation' } |
   { kind: 'bookmark'; bookmarked: boolean } |
   { kind: 'quiz'; answers: (number | null)[]; elapsedSeconds: number };
 
@@ -17,18 +17,20 @@ export type PracticalAttempt = {
 export type PracticalState = {
   learned: boolean;
   viewed: boolean;
+  calculated: boolean;
   bookmarked: boolean;
   attempts: PracticalAttempt[];
 };
 
 export const emptyPracticalState: PracticalState = {
-  learned: false, viewed: false, bookmarked: false, attempts: [],
+  learned: false, viewed: false, calculated: false, bookmarked: false, attempts: [],
 };
 
 export function applyPracticalEvent(state: PracticalState, number: number, event: PracticalEvent, id: string, createdAt: string): PracticalState {
   switch (event.kind) {
     case 'learn': return { ...state, learned: true };
     case 'view': return { ...state, viewed: true };
+    case 'calculation': return { ...state, calculated: true };
     case 'bookmark': return { ...state, bookmarked: event.bookmarked };
     case 'quiz': {
       const quiz = practicalQuiz(number);
